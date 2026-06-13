@@ -1,0 +1,43 @@
+{
+  "name": "openclaw-siri-bridge",
+  "version": "0.1.0",
+  "description": "Authenticated Apple Shortcuts/Siri webhook bridge for sending dictated messages into OpenClaw.",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "openclaw",
+    "siri",
+    "shortcuts",
+    "apple-watch",
+    "voice",
+    "webhook"
+  ],
+  "author": "Brian Snyder",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "pino": "^9.6.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.7",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.48.0",
+    "vitest": "^4.1.8"
+  }
+}
