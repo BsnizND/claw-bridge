@@ -31,6 +31,13 @@ function eventWithLocationAndMemo(text = 'find burritos near me'): NormalizedSir
       filename: 'Latest memo.m4a',
       duration_seconds: 90,
       recorded_at: '2026-06-13T16:00:00.000Z'
+    },
+    shared_item: {
+      kind: 'audio',
+      filename: 'Latest memo.m4a',
+      mime_type: 'audio/mp4',
+      file_path: '/tmp/Latest memo.m4a',
+      size_bytes: 1234
     }
   };
 }
@@ -136,6 +143,9 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('agent:jay:telegram:default:direct:brian');
     expect(args).toContain('--message');
     expect(args).toContain('Sent via Apple Watch voice message: please find a burrito place nearby');
+    expect(args).toContain('Shared item:');
+    expect(args).toContain('Kind: audio');
+    expect(args).toContain('File path: /tmp/Latest memo.m4a');
     expect(args).toContain('Location: 33.6001, -111.9002');
     expect(args).toContain('Accuracy: 8m');
     expect(args).toContain('Map: https://maps.apple.com/?ll=33.6001,-111.9002');

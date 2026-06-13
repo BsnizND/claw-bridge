@@ -14,6 +14,7 @@ The bridge is assistant-agnostic. `jay` is only the default example assistant id
 ## Features
 
 - `POST /shortcuts/message` for Apple Shortcuts.
+- `POST /shortcuts/share` for iOS/iPadOS share-sheet text, URLs, files, images, PDFs, and audio.
 - Bearer-token authentication.
 - Source allowlist for `siri_watch`, `siri_iphone`, and custom Shortcut clients.
 - Message length limits and payload validation.
@@ -23,6 +24,7 @@ The bridge is assistant-agnostic. `jay` is only the default example assistant id
 - Optional OpenClaw reply delivery back to a messaging channel, such as an existing Telegram direct session.
 - Optional structured location context, including latitude, longitude, altitude, accuracy, and a map URL.
 - Optional voice memo metadata/transcript context for Shortcuts that can provide an audio transcript.
+- Optional server-side audio transcription for shared Voice Memos/audio files.
 - Shortcut-friendly `spoken` response field for confirmation.
 
 ## Non-goals
@@ -93,6 +95,27 @@ Body:
 }
 ```
 
+### `POST /shortcuts/share`
+
+Headers:
+
+```text
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+Form fields:
+
+- `file`: optional shared file/audio/image/PDF.
+- `shared_text`: optional text extracted from the share-sheet input.
+- `shared_url`: optional shared URL.
+- `shared_title`: optional shared title.
+- `location_json`: optional JSON object with `latitude`, `longitude`, `altitude`, and `maps_url`.
+- `latitude`, `longitude`, `altitude`, `maps_url`: optional plain form-field alternative to `location_json`.
+- `source`: defaults to `ios_share_sheet`.
+
+When `AUDIO_TRANSCRIBE_ENABLED=true`, audio uploads are transcribed server-side before the event is queued for OpenClaw.
+
 For voice memo workflows, send a transcript as either the main `message` or as `voice_memo.transcript`:
 
 ```json
@@ -137,6 +160,11 @@ Important settings:
 - `QUEUE_PATH`: JSONL queue path.
 - `MAX_MESSAGE_CHARS`: maximum accepted dictated text length.
 - `ALLOWED_SOURCES`: comma-separated source allowlist.
+- `SHARE_UPLOAD_DIR`: directory where share-sheet uploads are stored.
+- `SHARE_MAX_UPLOAD_BYTES`: maximum accepted upload size.
+- `AUDIO_TRANSCRIBE_ENABLED`: when `true`, transcribe shared audio before delivery.
+- `AUDIO_TRANSCRIBE_CLI_BIN`: CLI used for transcription; defaults to `openclaw`.
+- `AUDIO_TRANSCRIBE_MODEL` / `AUDIO_TRANSCRIBE_LANGUAGE`: optional transcription hints.
 
 ## Shortcut setup
 

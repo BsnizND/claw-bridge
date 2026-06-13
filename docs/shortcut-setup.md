@@ -41,6 +41,16 @@ OUTPUT_DIR="$PWD/artifacts/shortcuts" \
 ./scripts/build-shortcut.sh
 ```
 
+To generate the share-sheet Shortcut:
+
+```bash
+export SIRI_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
+export SIRI_BRIDGE_TOKEN='your-long-random-token'
+SHORTCUT_NAME='Share with Jay' \
+SOURCE_TEMPLATE="$PWD/examples/share-with-jay.cherri.template" \
+./scripts/build-shortcut.sh
+```
+
 `SHORTCUT_SIGN_MODE=contacts` maps to Cherri's contacts signing mode. Use `SHORTCUT_SIGN_MODE=anyone` only if you are comfortable sharing the Shortcut more broadly. Apple notes that signing validates the Shortcut for sharing.
 
 Send the generated `.shortcut` file to the iPhone through AirDrop, Mail, Messages, or iCloud Drive, then open it on the iPhone and approve the import. Apple requires the user import step.
@@ -98,9 +108,17 @@ Name the shortcut something Siri can hear reliably, for example `Tell Jay`.
 
 Apple Voice Memos can show and copy transcripts on current iOS versions, and Shortcuts has a native `Transcribe Audio` action for audio files. The reliable automation boundary is the audio file, not the Voice Memos app's internal transcript UI.
 
+The best bridge workflow is now the share sheet:
+
+1. Import the generated `Share with Jay.shortcut`.
+2. Open the Shortcut details and confirm `Show in Share Sheet` is enabled.
+3. In Voice Memos, choose a recording, tap Share, and run `Share with Jay`.
+4. The Shortcut uploads the memo as a multipart `file` field to `/shortcuts/share`.
+5. If server-side transcription is enabled, the bridge transcribes the audio on the OpenClaw host and includes the transcript in the message to Jay.
+
 Recommended options:
 
-- Share-sheet workflow: in Voice Memos, share a recording to a `Send Voice Memo to Jay` shortcut. The shortcut receives the audio file, runs `Transcribe Audio`, gets current location, and posts the transcript to `/shortcuts/message` with `source: siri_iphone` and a `voice_memo` object.
+- Share-sheet workflow: in Voice Memos, share a recording to `Share with Jay`. The shortcut uploads the audio file, gets current location, and lets the bridge transcribe it server-side.
 - Select-file workflow: run `Hey Siri, Send voice memo to Jay`, have the shortcut ask you to choose an audio file, run `Transcribe Audio`, then POST the transcript.
 - "Most recent Voice Memo" workflow: only use this if your device exposes a Voice Memos action that can return the latest recording as a file. If it does, sort recordings by creation date, take the newest item, transcribe it, and POST it. If that action is not present, the share-sheet workflow is the safer public setup.
 

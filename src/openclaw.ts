@@ -31,12 +31,32 @@ function formatVoiceMemo(event: NormalizedSiriEvent): string[] {
   return parts.filter((part): part is string => Boolean(part));
 }
 
+function formatSharedItem(event: NormalizedSiriEvent): string[] {
+  if (!event.shared_item) {
+    return [];
+  }
+  const parts = [
+    'Shared item:',
+    `Kind: ${event.shared_item.kind}`,
+    event.shared_item.title ? `Title: ${event.shared_item.title}` : undefined,
+    event.shared_item.url ? `URL: ${event.shared_item.url}` : undefined,
+    event.shared_item.filename ? `Filename: ${event.shared_item.filename}` : undefined,
+    event.shared_item.mime_type ? `MIME type: ${event.shared_item.mime_type}` : undefined,
+    event.shared_item.size_bytes !== undefined ? `Size: ${event.shared_item.size_bytes} bytes` : undefined,
+    event.shared_item.file_path ? `File path: ${event.shared_item.file_path}` : undefined,
+    event.shared_item.text ? `Text: ${event.shared_item.text}` : undefined
+  ];
+  return parts.filter((part): part is string => Boolean(part));
+}
+
 function buildAssistantMessage(event: NormalizedSiriEvent): string {
   return [
     `Voice message from Siri/Shortcuts for ${event.assistant}:`,
     '',
     event.raw_text,
     '',
+    ...formatSharedItem(event),
+    ...(event.shared_item ? [''] : []),
     ...formatLocation(event),
     ...(event.location ? [''] : []),
     ...formatVoiceMemo(event),
@@ -54,7 +74,7 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   const prefix = config.siriMessagePrefix?.trim();
   const message = prefix ? `${prefix} ${event.raw_text}` : event.raw_text;
-  const context = [...formatLocation(event), ...formatVoiceMemo(event)];
+  const context = [...formatSharedItem(event), ...formatLocation(event), ...formatVoiceMemo(event)];
   return context.length ? [message, '', ...context].join('\n') : message;
 }
 

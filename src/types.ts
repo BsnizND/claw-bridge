@@ -26,6 +26,13 @@ export interface BridgeConfig {
   queuePath: string;
   queueDrainIntervalMs: number;
   queueMaxAttempts: number;
+  shareUploadDir: string;
+  shareMaxUploadBytes: number;
+  audioTranscribeEnabled: boolean;
+  audioTranscribeCliBin: string;
+  audioTranscribeTimeoutMs: number;
+  audioTranscribeModel?: string;
+  audioTranscribeLanguage?: string;
 }
 
 export interface ShortcutMessageRequest {
@@ -60,6 +67,19 @@ export interface VoiceMemoMetadata {
   mime_type?: string;
   duration_seconds?: number;
   recorded_at?: string;
+  file_path?: string;
+  size_bytes?: number;
+}
+
+export interface SharedItemMetadata {
+  kind: 'text' | 'url' | 'file' | 'audio' | 'image' | 'unknown';
+  text?: string;
+  url?: string;
+  title?: string;
+  filename?: string;
+  mime_type?: string;
+  file_path?: string;
+  size_bytes?: number;
 }
 
 export interface NormalizedSiriEvent {
@@ -73,6 +93,7 @@ export interface NormalizedSiriEvent {
   shortcut_name?: string;
   location?: SiriLocation;
   voice_memo?: VoiceMemoMetadata;
+  shared_item?: SharedItemMetadata;
 }
 
 export interface DeliveryResult {

@@ -17,6 +17,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/artifacts/shortcuts}"
 SIGN_MODE="${SHORTCUT_SIGN_MODE:-contacts}"
 CHERRI_VERSION="${CHERRI_VERSION:-v2.3.0}"
 CHERRI_BIN="${CHERRI_BIN:-}"
+SOURCE_TEMPLATE="${SOURCE_TEMPLATE:-$ROOT_DIR/examples/tell-jay.cherri.template}"
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -48,7 +49,7 @@ shortcut_path="$OUTPUT_DIR/$SHORTCUT_NAME.shortcut"
 
 SIRI_BRIDGE_URL="$SIRI_BRIDGE_URL" \
 SIRI_BRIDGE_TOKEN="$SIRI_BRIDGE_TOKEN" \
-SOURCE_TEMPLATE="$ROOT_DIR/examples/tell-jay.cherri.template" \
+SOURCE_TEMPLATE="$SOURCE_TEMPLATE" \
 SOURCE_OUTPUT="$source_path" \
 python3 - <<'PY'
 import os
@@ -61,9 +62,12 @@ token = os.environ["SIRI_BRIDGE_TOKEN"].strip()
 if not url.endswith("/shortcuts/message"):
     raise SystemExit("ERROR: SIRI_BRIDGE_URL should end with /shortcuts/message")
 
+share_url = url.removesuffix("/shortcuts/message") + "/shortcuts/share"
+
 rendered = (
     template
     .replace("__SIRI_BRIDGE_URL__", url.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__SIRI_BRIDGE_SHARE_URL__", share_url.replace("\\", "\\\\").replace('"', '\\"'))
     .replace("__SIRI_BRIDGE_TOKEN__", token.replace("\\", "\\\\").replace('"', '\\"'))
 )
 

@@ -9,7 +9,7 @@ const envSchema = z.object({
   SIRI_BRIDGE_TOKEN: z.string().min(24),
   OPENCLAW_ASSISTANT_ID: z.string().min(1).default('jay'),
   MAX_MESSAGE_CHARS: z.coerce.number().int().positive().max(10000).default(1200),
-  ALLOWED_SOURCES: z.string().default('siri_watch,siri_iphone,shortcuts'),
+  ALLOWED_SOURCES: z.string().default('siri_watch,siri_iphone,shortcuts,ios_share_sheet'),
   OPENCLAW_ADAPTER: z.enum(['cli', 'http']).default('cli'),
   OPENCLAW_CLI_BIN: z.string().min(1).default('openclaw'),
   OPENCLAW_CLI_DRAIN_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
@@ -25,7 +25,14 @@ const envSchema = z.object({
   OPENCLAW_INGEST_TOKEN: z.string().optional(),
   QUEUE_PATH: z.string().min(1).default('./data/siri-queue.jsonl'),
   QUEUE_DRAIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(30000),
-  QUEUE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3)
+  QUEUE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  SHARE_UPLOAD_DIR: z.string().min(1).default('./data/uploads'),
+  SHARE_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(50 * 1024 * 1024),
+  AUDIO_TRANSCRIBE_ENABLED: z.coerce.boolean().default(false),
+  AUDIO_TRANSCRIBE_CLI_BIN: z.string().min(1).default('openclaw'),
+  AUDIO_TRANSCRIBE_TIMEOUT_MS: z.coerce.number().int().positive().default(300000),
+  AUDIO_TRANSCRIBE_MODEL: z.string().min(1).optional(),
+  AUDIO_TRANSCRIBE_LANGUAGE: z.string().min(1).optional()
 });
 
 export function parseAllowedSources(value: string): Set<string> {
@@ -81,6 +88,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
     openclawIngestToken: raw.OPENCLAW_INGEST_TOKEN,
     queuePath: raw.QUEUE_PATH,
     queueDrainIntervalMs: raw.QUEUE_DRAIN_INTERVAL_MS,
-    queueMaxAttempts: raw.QUEUE_MAX_ATTEMPTS
+    queueMaxAttempts: raw.QUEUE_MAX_ATTEMPTS,
+    shareUploadDir: raw.SHARE_UPLOAD_DIR,
+    shareMaxUploadBytes: raw.SHARE_MAX_UPLOAD_BYTES,
+    audioTranscribeEnabled: raw.AUDIO_TRANSCRIBE_ENABLED,
+    audioTranscribeCliBin: raw.AUDIO_TRANSCRIBE_CLI_BIN,
+    audioTranscribeTimeoutMs: raw.AUDIO_TRANSCRIBE_TIMEOUT_MS,
+    audioTranscribeModel: raw.AUDIO_TRANSCRIBE_MODEL,
+    audioTranscribeLanguage: raw.AUDIO_TRANSCRIBE_LANGUAGE
   };
 }

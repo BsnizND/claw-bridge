@@ -30,6 +30,7 @@ Expose:
 
 ```text
 POST /shortcuts/message
+POST /shortcuts/share
 GET /healthz
 ```
 
@@ -52,6 +53,24 @@ SIRI_MESSAGE_PREFIX=Sent via Apple Watch voice message:
 ```
 
 That mode does not send a Telegram message as the human user. It injects the transcript into the OpenClaw session that backs the Telegram direct chat, then delivers Jay's response to the configured Telegram target.
+
+## Share Sheet uploads
+
+`POST /shortcuts/share` accepts multipart form data from an iOS/iPadOS share-sheet Shortcut. It can receive text, URLs, and a single uploaded file. Keep `SHARE_MAX_UPLOAD_BYTES` bounded and store uploads outside public web roots.
+
+For server-side Voice Memo transcription, enable:
+
+```text
+AUDIO_TRANSCRIBE_ENABLED=true
+AUDIO_TRANSCRIBE_CLI_BIN=openclaw
+AUDIO_TRANSCRIBE_TIMEOUT_MS=300000
+```
+
+The default transcription command is:
+
+```bash
+openclaw infer audio transcribe --file <uploaded-audio> --json
+```
 
 ## Systemd example
 

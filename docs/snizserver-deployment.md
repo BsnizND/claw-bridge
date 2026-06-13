@@ -25,6 +25,7 @@ Expected Tailscale handler:
 
 ```text
 /shortcuts/message -> http://127.0.0.1:18788/shortcuts/message
+/shortcuts/share -> http://127.0.0.1:18788/shortcuts/share
 ```
 
 The route is intentionally path-scoped. Do not expose the whole service root. These public probes should remain closed:
@@ -62,6 +63,13 @@ OPENCLAW_WORKDIR=/Users/briansnyder/.openclaw/workspace-main
 QUEUE_PATH=/Volumes/LaCie_6big/briansnyder/repos/openclaw-siri-bridge/data/siri-queue.jsonl
 QUEUE_DRAIN_INTERVAL_MS=30000
 QUEUE_MAX_ATTEMPTS=3
+SHARE_UPLOAD_DIR=/Volumes/LaCie_6big/briansnyder/repos/openclaw-siri-bridge/data/uploads
+SHARE_MAX_UPLOAD_BYTES=52428800
+AUDIO_TRANSCRIBE_ENABLED=true
+AUDIO_TRANSCRIBE_CLI_BIN=/opt/homebrew/bin/openclaw
+AUDIO_TRANSCRIBE_TIMEOUT_MS=300000
+AUDIO_TRANSCRIBE_MODEL=openai-whisper/whisper-1
+AUDIO_TRANSCRIBE_LANGUAGE=en
 ```
 
 Keep `.env.runtime` at mode `0600`.
@@ -114,6 +122,20 @@ Example body:
   }
 }
 ```
+
+## Share with Jay Shortcut
+
+The iPhone share-sheet shortcut should:
+
+1. Receive `file`, `media`, `url`, `text`, `webpage`, `image`, or `pdf` input from the share sheet.
+2. Get current location.
+3. Send a multipart form `POST` to `/shortcuts/share`.
+4. Include the shared input as form field `file` when it is a file/media item.
+5. Include `shared_text`, `latitude`, `longitude`, `altitude`, and `maps_url`.
+6. Send `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
+7. Speak `Shared with Jay`.
+
+For Voice Memos, the memo recording should upload as the form file. The deployed bridge transcribes audio server-side with `openclaw infer audio transcribe --file <path> --json` before sending the transcript to Jay.
 
 ## Known deployment findings
 
