@@ -47,6 +47,7 @@ describe('OpenClaw delivery', () => {
     const dir = join(tmpdir(), `openclaw-siri-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
 
     const result = await acceptForOpenClaw(
       {
@@ -56,6 +57,7 @@ describe('OpenClaw delivery', () => {
         assistantId: 'jay',
         openclawSessionKey: 'agent:jay:main',
         queuePath,
+        queueArchivePath: archivePath,
         queueMaxAttempts: 3
       } as BridgeConfig,
       event()
@@ -73,6 +75,7 @@ describe('OpenClaw delivery', () => {
     const dir = join(tmpdir(), `openclaw-siri-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
     const cwdPath = join(dir, 'cwd.txt');
@@ -88,16 +91,19 @@ describe('OpenClaw delivery', () => {
       assistantId: 'jay',
       openclawSessionKey: 'agent:jay:main',
       queuePath,
+      queueArchivePath: archivePath,
       queueMaxAttempts: 3
     } as BridgeConfig;
 
     await acceptForOpenClaw(config, event('drain this message'));
     const drain = await drainOpenClawQueue(config);
 
-    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0 });
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
     const queue = await readFile(queuePath, 'utf8');
-    expect(queue).toContain('"status":"delivered"');
-    expect(queue).toContain('"attempts":1');
+    expect(queue).toBe('');
+    const archive = await readFile(archivePath, 'utf8');
+    expect(archive).toContain('"status":"delivered"');
+    expect(archive).toContain('"attempts":1');
     const args = await readFile(argsPath, 'utf8');
     const cwd = await readFile(cwdPath, 'utf8');
     expect(args).toContain('--message');
@@ -113,6 +119,7 @@ describe('OpenClaw delivery', () => {
     const dir = join(tmpdir(), `openclaw-siri-telegram-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
     await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
@@ -131,13 +138,14 @@ describe('OpenClaw delivery', () => {
       assistantId: 'jay',
       openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
       queuePath,
+      queueArchivePath: archivePath,
       queueMaxAttempts: 3
     } as BridgeConfig;
 
     await acceptForOpenClaw(config, eventWithLocationAndMemo('please find a burrito place nearby'));
     const drain = await drainOpenClawQueue(config);
 
-    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0 });
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
     const args = await readFile(argsPath, 'utf8');
     expect(args).toContain('--session-key');
     expect(args).toContain('agent:jay:telegram:default:direct:brian');
@@ -163,6 +171,7 @@ describe('OpenClaw delivery', () => {
     const dir = join(tmpdir(), `openclaw-siri-failed-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
     const binPath = join(dir, 'failing-openclaw');
     await writeFile(binPath, '#!/bin/sh\necho nope >&2\nexit 2\n', 'utf8');
     await chmod(binPath, 0o755);
@@ -174,16 +183,19 @@ describe('OpenClaw delivery', () => {
       assistantId: 'jay',
       openclawSessionKey: 'agent:jay:main',
       queuePath,
+      queueArchivePath: archivePath,
       queueMaxAttempts: 1
     } as BridgeConfig;
 
     await acceptForOpenClaw(config, event('this should fail visibly'));
     const drain = await drainOpenClawQueue(config);
 
-    expect(drain).toEqual({ delivered: 0, failed: 1, pending: 0 });
+    expect(drain).toEqual({ delivered: 0, failed: 1, pending: 0, archived: 1 });
     const queue = await readFile(queuePath, 'utf8');
-    expect(queue).toContain('"status":"failed"');
-    expect(queue).toContain('openclaw exited 2');
+    expect(queue).toBe('');
+    const archive = await readFile(archivePath, 'utf8');
+    expect(archive).toContain('"status":"failed"');
+    expect(archive).toContain('openclaw exited 2');
     await rm(dir, { recursive: true, force: true });
   });
 });

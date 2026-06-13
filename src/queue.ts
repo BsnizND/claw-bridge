@@ -37,14 +37,24 @@ async function writeQueue(queuePath: string, records: QueueRecord[]): Promise<vo
   await rename(tmpPath, queuePath);
 }
 
+async function appendQueueArchive(archivePath: string, records: QueueRecord[]): Promise<void> {
+  if (records.length === 0) return;
+  await mkdir(dirname(archivePath), { recursive: true });
+  const archivedAt = new Date().toISOString();
+  const body = records.map((record) => JSON.stringify({ ...record, archived_at: archivedAt })).join('\n');
+  await appendFile(archivePath, `${body}\n`, 'utf8');
+}
+
 export interface DrainQueueResult {
   delivered: number;
   failed: number;
   pending: number;
+  archived: number;
 }
 
 export async function drainQueue(
   queuePath: string,
+  archivePath: string,
   maxAttempts: number,
   deliver: (event: NormalizedSiriEvent) => Promise<void>
 ): Promise<DrainQueueResult> {
@@ -81,13 +91,20 @@ export async function drainQueue(
     }
   }
 
-  if (changed) {
-    await writeQueue(queuePath, records);
+  const terminalRecords = records.filter((record) => record.status !== 'pending');
+  const pendingRecords = records.filter((record) => record.status === 'pending');
+  if (terminalRecords.length > 0) {
+    await appendQueueArchive(archivePath, terminalRecords);
+  }
+
+  if (changed || terminalRecords.length > 0) {
+    await writeQueue(queuePath, pendingRecords);
   }
 
   return {
     delivered,
     failed,
-    pending: records.filter((record) => record.status === 'pending').length
+    pending: pendingRecords.length,
+    archived: terminalRecords.length
   };
 }

@@ -31,6 +31,7 @@ describe('config', () => {
     expect(config.openclawAdapter).toBe('cli');
     expect(config.openclawDeliverReply).toBe(false);
     expect(config.openclawMessageStyle).toBe('detailed');
+    expect(config.queueArchivePath).toBe('./data/siri-queue.jsonl.archive');
     expect(config.allowedSources.has('ios_share_sheet')).toBe(true);
     expect(config.shareUploadDir).toBe('./data/uploads');
     expect(config.shareMaxUploadBytes).toBe(50 * 1024 * 1024);
@@ -80,5 +81,15 @@ describe('config', () => {
     expect(config.audioTranscribeTimeoutMs).toBe(600000);
     expect(config.audioTranscribeModel).toBe('openai-whisper/whisper-1');
     expect(config.audioTranscribeLanguage).toBe('en');
+  });
+
+  it('loads an explicit queue archive path', () => {
+    const config = loadConfig({
+      SIRI_BRIDGE_TOKEN: '0123456789abcdef01234567',
+      QUEUE_PATH: '/tmp/siri-queue.jsonl',
+      QUEUE_ARCHIVE_PATH: '/tmp/siri-queue.archive.jsonl'
+    });
+    expect(config.queuePath).toBe('/tmp/siri-queue.jsonl');
+    expect(config.queueArchivePath).toBe('/tmp/siri-queue.archive.jsonl');
   });
 });

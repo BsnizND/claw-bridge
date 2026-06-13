@@ -11,8 +11,10 @@ async function drainOnce() {
   draining = true;
   try {
     const result = await drainOpenClawQueue(config);
-    if (result.delivered > 0 || result.failed > 0) {
-      console.log(`openclaw queue drain delivered=${result.delivered} failed=${result.failed} pending=${result.pending}`);
+    if (result.delivered > 0 || result.failed > 0 || result.archived > 0) {
+      console.log(
+        `openclaw queue drain delivered=${result.delivered} failed=${result.failed} archived=${result.archived} pending=${result.pending}`
+      );
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

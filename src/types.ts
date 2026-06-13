@@ -24,6 +24,7 @@ export interface BridgeConfig {
   openclawIngestUrl?: string;
   openclawIngestToken?: string;
   queuePath: string;
+  queueArchivePath: string;
   queueDrainIntervalMs: number;
   queueMaxAttempts: number;
   shareUploadDir: string;
@@ -110,4 +111,5 @@ export interface QueueRecord {
   last_error?: string;
   last_attempt_at?: string;
   delivered_at?: string;
+  archived_at?: string;
 }

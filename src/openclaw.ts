@@ -178,7 +178,7 @@ export async function deliverQueuedEventToOpenClaw(
 }
 
 export async function drainOpenClawQueue(config: BridgeConfig) {
-  return drainQueue(config.queuePath, config.queueMaxAttempts, async (event) => {
+  return drainQueue(config.queuePath, config.queueArchivePath, config.queueMaxAttempts, async (event) => {
     await deliverQueuedEventToOpenClaw(config, event);
   });
 }

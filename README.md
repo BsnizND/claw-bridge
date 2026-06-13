@@ -19,7 +19,7 @@ The bridge is assistant-agnostic. `jay` is only the default example assistant id
 - Source allowlist for `siri_watch`, `siri_iphone`, and custom Shortcut clients.
 - Message length limits and payload validation.
 - Fast `202 Accepted` response for Siri/Shortcuts.
-- Durable JSONL queue with delivered/failed status.
+- Durable JSONL queue for pending work, with delivered/failed outcomes archived separately.
 - Background delivery to OpenClaw through CLI or HTTP ingest.
 - Optional OpenClaw reply delivery back to a messaging channel, such as an existing Telegram direct session.
 - Optional structured location context, including latitude, longitude, altitude, accuracy, and a map URL.
@@ -158,6 +158,7 @@ Important settings:
 - `OPENCLAW_MESSAGE_STYLE`: `detailed` metadata payload or `compact` user-facing transcript.
 - `SIRI_MESSAGE_PREFIX`: optional prefix for compact messages, for example `Sent via Apple Watch voice message:`.
 - `QUEUE_PATH`: JSONL queue path.
+- `QUEUE_ARCHIVE_PATH`: JSONL archive path for delivered/failed queue records. Defaults to `QUEUE_PATH + ".archive"`.
 - `MAX_MESSAGE_CHARS`: maximum accepted dictated text length.
 - `ALLOWED_SOURCES`: comma-separated source allowlist.
 - `SHARE_UPLOAD_DIR`: directory where share-sheet uploads are stored.
