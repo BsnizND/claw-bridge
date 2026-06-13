@@ -93,10 +93,11 @@ Expected: root and health are Tailscale handler misses; unauthenticated Shortcut
 The iPhone/Watch shortcut should:
 
 1. Dictate text.
-2. Stop if no text was captured.
-3. POST JSON to `/shortcuts/message`.
-4. Send `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
-5. Speak the response field `spoken`.
+2. Get current location.
+3. Stop if no text was captured.
+4. POST JSON to `/shortcuts/message`.
+5. Send `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
+6. Speak the response field `spoken`.
 
 Example body:
 
@@ -105,7 +106,12 @@ Example body:
   "message": "Dictated Text",
   "source": "siri_watch",
   "device_name": "Apple Watch",
-  "shortcut_name": "Tell Jay"
+  "shortcut_name": "Tell Jay",
+  "location": {
+    "latitude": 33.6001,
+    "longitude": -111.9002,
+    "maps_url": "https://maps.apple.com/?ll=33.6001,-111.9002"
+  }
 }
 ```
 

@@ -48,12 +48,15 @@ Send the generated `.shortcut` file to the iPhone through AirDrop, Mail, Message
 The generated Shortcut:
 
 1. Uses `Dictate Text`.
-2. Checks that a message was captured.
-3. Sends a JSON `POST` to `/shortcuts/message`.
-4. Adds `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
-5. Speaks `Sent to Jay` after the request.
+2. Gets the current location and extracts latitude, longitude, altitude, and an Apple Maps URL.
+3. Checks that a message was captured.
+4. Sends a JSON `POST` to `/shortcuts/message`.
+5. Adds `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
+6. Speaks `Sent to Jay` after the request.
 
 After import, enable `Show on Apple Watch` in the Shortcut details.
+
+The first time the Shortcut runs on iPhone or Apple Watch, iOS may ask for Location permission. Choose `Always Allow` or the equivalent persistent permission if you want location included every time. If Location Services are unavailable, the generated Shortcut should fail on-device instead of sending an ungrounded message.
 
 ## Manual Shortcut actions
 
@@ -71,14 +74,56 @@ Name the shortcut something Siri can hear reliably, for example `Tell Jay`.
    - `device_name`: `Apple Watch`
    - `shortcut_name`: `Tell Jay`
    - `captured_at`: current date formatted as ISO 8601
-6. Add `Get Contents of URL`.
-7. Set URL to `https://your-public-bridge.example.com/shortcuts/message`.
-8. Set Method to `POST`.
-9. Add headers:
+6. Add `Get Current Location`.
+7. Add `Get Details of Location` for:
+   - `Latitude`
+   - `Longitude`
+   - `Altitude`
+8. Add `Get Maps Link` for the current location.
+9. Add a nested `location` dictionary with:
+   - `latitude`
+   - `longitude`
+   - `altitude`
+   - `maps_url`
+10. Add `Get Contents of URL`.
+11. Set URL to `https://your-public-bridge.example.com/shortcuts/message`.
+12. Set Method to `POST`.
+13. Add headers:
    - `Authorization`: `Bearer your-long-random-token`
    - `Content-Type`: `application/json`
-10. Set Request Body to `JSON` and pass the dictionary.
-11. Parse the response dictionary and `Speak Text` using the `spoken` value.
+14. Set Request Body to `JSON` and pass the dictionary.
+15. Parse the response dictionary and `Speak Text` using the `spoken` value.
+
+## Voice memo workflows
+
+Apple Voice Memos can show and copy transcripts on current iOS versions, and Shortcuts has a native `Transcribe Audio` action for audio files. The reliable automation boundary is the audio file, not the Voice Memos app's internal transcript UI.
+
+Recommended options:
+
+- Share-sheet workflow: in Voice Memos, share a recording to a `Send Voice Memo to Jay` shortcut. The shortcut receives the audio file, runs `Transcribe Audio`, gets current location, and posts the transcript to `/shortcuts/message` with `source: siri_iphone` and a `voice_memo` object.
+- Select-file workflow: run `Hey Siri, Send voice memo to Jay`, have the shortcut ask you to choose an audio file, run `Transcribe Audio`, then POST the transcript.
+- "Most recent Voice Memo" workflow: only use this if your device exposes a Voice Memos action that can return the latest recording as a file. If it does, sort recordings by creation date, take the newest item, transcribe it, and POST it. If that action is not present, the share-sheet workflow is the safer public setup.
+
+Voice memo JSON shape:
+
+```json
+{
+  "message": "Sent via iPhone voice memo: <transcript>",
+  "source": "siri_iphone",
+  "device_name": "iPhone",
+  "shortcut_name": "Send Voice Memo to Jay",
+  "location": {
+    "latitude": 33.6001,
+    "longitude": -111.9002,
+    "maps_url": "https://maps.apple.com/?ll=33.6001,-111.9002"
+  },
+  "voice_memo": {
+    "transcript": "<transcript>",
+    "filename": "New Recording.m4a",
+    "duration_seconds": 74
+  }
+}
+```
 
 ## Apple Watch
 

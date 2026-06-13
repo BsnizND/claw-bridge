@@ -37,6 +37,29 @@ export interface ShortcutMessageRequest {
   shortcut_name?: unknown;
   request_id?: unknown;
   locale?: unknown;
+  location?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
+  voice_memo?: unknown;
+}
+
+export interface SiriLocation {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  horizontal_accuracy?: number;
+  vertical_accuracy?: number;
+  maps_url?: string;
+  name?: string;
+  address?: string;
+}
+
+export interface VoiceMemoMetadata {
+  transcript?: string;
+  filename?: string;
+  mime_type?: string;
+  duration_seconds?: number;
+  recorded_at?: string;
 }
 
 export interface NormalizedSiriEvent {
@@ -48,6 +71,8 @@ export interface NormalizedSiriEvent {
   locale?: string;
   device_name?: string;
   shortcut_name?: string;
+  location?: SiriLocation;
+  voice_memo?: VoiceMemoMetadata;
 }
 
 export interface DeliveryResult {

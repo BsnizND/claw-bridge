@@ -17,7 +17,19 @@ describe('Siri shortcut normalization', () => {
       source: 'siri_watch',
       captured_at: '2026-06-13T16:00:00.000Z',
       device_name: 'Apple Watch',
-      shortcut_name: 'Tell Jay'
+      shortcut_name: 'Tell Jay',
+      location: {
+        latitude: '33.6001',
+        longitude: '-111.9002',
+        horizontal_accuracy: '12',
+        maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+      },
+      voice_memo: {
+        transcript: 'memo transcript',
+        filename: 'New Recording.m4a',
+        duration_seconds: '42',
+        recorded_at: '2026-06-13T15:58:00.000Z'
+      }
     });
 
     expect(event).toMatchObject({
@@ -26,7 +38,19 @@ describe('Siri shortcut normalization', () => {
       raw_text: 'remind me about the passport',
       captured_at: '2026-06-13T16:00:00.000Z',
       device_name: 'Apple Watch',
-      shortcut_name: 'Tell Jay'
+      shortcut_name: 'Tell Jay',
+      location: {
+        latitude: 33.6001,
+        longitude: -111.9002,
+        horizontal_accuracy: 12,
+        maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+      },
+      voice_memo: {
+        transcript: 'memo transcript',
+        filename: 'New Recording.m4a',
+        duration_seconds: 42,
+        recorded_at: '2026-06-13T15:58:00.000Z'
+      }
     });
     expect(event.request_id).toBeTruthy();
   });
@@ -47,5 +71,19 @@ describe('Siri shortcut normalization', () => {
     expect(() => normalizeShortcutMessage(config(), { message: 'hello', source: 'unknown' })).toThrow(
       'source is not allowed'
     );
+  });
+
+  it('rejects partial or impossible coordinates', () => {
+    expect(() =>
+      normalizeShortcutMessage(config(), { message: 'hello', source: 'siri_watch', location: { latitude: 33 } })
+    ).toThrow('location requires both latitude and longitude');
+
+    expect(() =>
+      normalizeShortcutMessage(config(), {
+        message: 'hello',
+        source: 'siri_watch',
+        location: { latitude: 133, longitude: -111 }
+      })
+    ).toThrow('location.latitude must be between -90 and 90');
   });
 });

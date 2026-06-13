@@ -17,6 +17,24 @@ function event(text = 'remember dog food'): NormalizedSiriEvent {
   };
 }
 
+function eventWithLocationAndMemo(text = 'find burritos near me'): NormalizedSiriEvent {
+  return {
+    ...event(text),
+    location: {
+      latitude: 33.6001,
+      longitude: -111.9002,
+      horizontal_accuracy: 8,
+      maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+    },
+    voice_memo: {
+      transcript: 'this is the voice memo transcript',
+      filename: 'Latest memo.m4a',
+      duration_seconds: 90,
+      recorded_at: '2026-06-13T16:00:00.000Z'
+    }
+  };
+}
+
 describe('OpenClaw delivery', () => {
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
     const dir = join(tmpdir(), `openclaw-siri-test-${Date.now()}`);
@@ -109,7 +127,7 @@ describe('OpenClaw delivery', () => {
       queueMaxAttempts: 3
     } as BridgeConfig;
 
-    await acceptForOpenClaw(config, event('please add eggs to the shopping list'));
+    await acceptForOpenClaw(config, eventWithLocationAndMemo('please find a burrito place nearby'));
     const drain = await drainOpenClawQueue(config);
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0 });
@@ -117,7 +135,12 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('--session-key');
     expect(args).toContain('agent:jay:telegram:default:direct:brian');
     expect(args).toContain('--message');
-    expect(args).toContain('Sent via Apple Watch voice message: please add eggs to the shopping list');
+    expect(args).toContain('Sent via Apple Watch voice message: please find a burrito place nearby');
+    expect(args).toContain('Location: 33.6001, -111.9002');
+    expect(args).toContain('Accuracy: 8m');
+    expect(args).toContain('Map: https://maps.apple.com/?ll=33.6001,-111.9002');
+    expect(args).toContain('Voice memo attached:');
+    expect(args).toContain('Transcript: this is the voice memo transcript');
     expect(args).toContain('--deliver');
     expect(args).toContain('--reply-channel');
     expect(args).toContain('telegram');

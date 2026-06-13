@@ -2,12 +2,45 @@ import { spawn } from 'node:child_process';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { drainQueue, queueEvent } from './queue.js';
 
+function formatLocation(event: NormalizedSiriEvent): string[] {
+  if (!event.location) {
+    return [];
+  }
+  const parts = [
+    `Location: ${event.location.latitude}, ${event.location.longitude}`,
+    event.location.horizontal_accuracy !== undefined ? `Accuracy: ${event.location.horizontal_accuracy}m` : undefined,
+    event.location.altitude !== undefined ? `Altitude: ${event.location.altitude}m` : undefined,
+    event.location.name ? `Place: ${event.location.name}` : undefined,
+    event.location.address ? `Address: ${event.location.address}` : undefined,
+    event.location.maps_url ? `Map: ${event.location.maps_url}` : undefined
+  ];
+  return parts.filter((part): part is string => Boolean(part));
+}
+
+function formatVoiceMemo(event: NormalizedSiriEvent): string[] {
+  if (!event.voice_memo) {
+    return [];
+  }
+  const parts = [
+    'Voice memo attached:',
+    event.voice_memo.filename ? `Filename: ${event.voice_memo.filename}` : undefined,
+    event.voice_memo.duration_seconds !== undefined ? `Duration: ${event.voice_memo.duration_seconds}s` : undefined,
+    event.voice_memo.recorded_at ? `Recorded at: ${event.voice_memo.recorded_at}` : undefined,
+    event.voice_memo.transcript ? `Transcript: ${event.voice_memo.transcript}` : undefined
+  ];
+  return parts.filter((part): part is string => Boolean(part));
+}
+
 function buildAssistantMessage(event: NormalizedSiriEvent): string {
   return [
     `Voice message from Siri/Shortcuts for ${event.assistant}:`,
     '',
     event.raw_text,
     '',
+    ...formatLocation(event),
+    ...(event.location ? [''] : []),
+    ...formatVoiceMemo(event),
+    ...(event.voice_memo ? [''] : []),
     `Captured at: ${event.captured_at}`,
     `Source: ${event.source}`,
     event.device_name ? `Device: ${event.device_name}` : undefined,
@@ -20,7 +53,9 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   const prefix = config.siriMessagePrefix?.trim();
-  return prefix ? `${prefix} ${event.raw_text}` : event.raw_text;
+  const message = prefix ? `${prefix} ${event.raw_text}` : event.raw_text;
+  const context = [...formatLocation(event), ...formatVoiceMemo(event)];
+  return context.length ? [message, '', ...context].join('\n') : message;
 }
 
 function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {

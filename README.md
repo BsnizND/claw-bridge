@@ -21,6 +21,8 @@ The bridge is assistant-agnostic. `jay` is only the default example assistant id
 - Durable JSONL queue with delivered/failed status.
 - Background delivery to OpenClaw through CLI or HTTP ingest.
 - Optional OpenClaw reply delivery back to a messaging channel, such as an existing Telegram direct session.
+- Optional structured location context, including latitude, longitude, altitude, accuracy, and a map URL.
+- Optional voice memo metadata/transcript context for Shortcuts that can provide an audio transcript.
 - Shortcut-friendly `spoken` response field for confirmation.
 
 ## Non-goals
@@ -80,7 +82,29 @@ Body:
   "source": "siri_watch",
   "device_name": "Apple Watch",
   "shortcut_name": "Tell Jay",
-  "captured_at": "2026-06-13T16:00:00.000Z"
+  "captured_at": "2026-06-13T16:00:00.000Z",
+  "location": {
+    "latitude": 33.6001,
+    "longitude": -111.9002,
+    "altitude": 510,
+    "horizontal_accuracy": 12,
+    "maps_url": "https://maps.apple.com/?ll=33.6001,-111.9002"
+  }
+}
+```
+
+For voice memo workflows, send a transcript as either the main `message` or as `voice_memo.transcript`:
+
+```json
+{
+  "message": "Send Jay this voice memo transcript",
+  "source": "siri_iphone",
+  "voice_memo": {
+    "transcript": "Full transcript text here",
+    "filename": "New Recording.m4a",
+    "duration_seconds": 74,
+    "recorded_at": "2026-06-13T16:00:00.000Z"
+  }
 }
 ```
 

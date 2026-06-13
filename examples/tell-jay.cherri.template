@@ -1,11 +1,17 @@
 #include 'actions/text'
 #include 'actions/web'
+#include 'actions/location'
 
 #define name Tell Jay
 #define glyph sendMessage
 #define color blue
 
 @message = listen("After Pause", "en-US")
+@currentLocation = getCurrentLocation()
+@latitude = getLocationDetail(@currentLocation, 'Latitude')
+@longitude = getLocationDetail(@currentLocation, 'Longitude')
+@altitude = getLocationDetail(@currentLocation, 'Altitude')
+@mapsUrl = getMapsLink(@currentLocation)
 
 if @message {
     @response = jsonRequest(
@@ -15,7 +21,13 @@ if @message {
             "message": "{@message}",
             "source": "siri_watch",
             "device_name": "Apple Watch",
-            "shortcut_name": "Tell Jay"
+            "shortcut_name": "Tell Jay",
+            "location": {
+                "latitude": "{@latitude}",
+                "longitude": "{@longitude}",
+                "altitude": "{@altitude}",
+                "maps_url": "{@mapsUrl}"
+            }
         },
         {
             "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
