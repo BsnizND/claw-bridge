@@ -51,23 +51,12 @@ SOURCE_TEMPLATE="$PWD/examples/share-with-jay.cherri.template" \
 ./scripts/build-shortcut.sh
 ```
 
-Use `Share with Jay` for files, audio, images, PDFs, and Voice Memos. It sends
-multipart form data and includes the shared item as a `file` field.
-
-For links, tweets, webpages, and plain text, generate the lighter link/text
-share-sheet Shortcut instead:
-
-```bash
-export SIRI_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='your-long-random-token'
-SHORTCUT_NAME='Share Link with Jay' \
-SOURCE_TEMPLATE="$PWD/examples/share-link-with-jay.cherri.template" \
-./scripts/build-shortcut.sh
-```
-
-`Share Link with Jay` sends JSON to `/shortcuts/message` and does not include a
-multipart `file` field. This avoids iOS trying to materialize a webpage or
-social post as an upload before the request is sent.
+`Share with Jay` handles both common share-sheet paths. For files, audio,
+images, PDFs, and Voice Memos, it sends multipart form data to
+`/shortcuts/share`. For links, tweets, webpages, and plain text, it sends JSON
+to `/shortcuts/message` and does not include a multipart `file` field. That
+avoids iOS trying to materialize a webpage or social post as an upload before
+the request is sent.
 
 `SHORTCUT_SIGN_MODE=contacts` maps to Cherri's contacts signing mode. Use `SHORTCUT_SIGN_MODE=anyone` only if you are comfortable sharing the Shortcut more broadly. Apple notes that signing validates the Shortcut for sharing.
 
@@ -137,7 +126,7 @@ The best bridge workflow is now the share sheet:
 Recommended options:
 
 - Share-sheet workflow: in Voice Memos, share a recording to `Share with Jay`. The shortcut uploads the audio file, gets current location, and lets the bridge transcribe it server-side.
-- Link/text workflow: for tweets, webpages, URLs, and selected text, share to `Share Link with Jay`. The shortcut sends a JSON message with current location and does not upload a file.
+- Link/text workflow: for tweets, webpages, URLs, and selected text, share to `Share with Jay`. The shortcut sends a JSON message with current location and does not upload a file.
 - Select-file workflow: run `Hey Siri, Send voice memo to Jay`, have the shortcut ask you to choose an audio file, run `Transcribe Audio`, then POST the transcript.
 - "Most recent Voice Memo" workflow: only use this if your device exposes a Voice Memos action that can return the latest recording as a file. If it does, sort recordings by creation date, take the newest item, transcribe it, and POST it. If that action is not present, the share-sheet workflow is the safer public setup.
 

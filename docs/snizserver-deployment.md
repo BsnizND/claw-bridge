@@ -123,12 +123,12 @@ Example body:
 }
 ```
 
-## Share Shortcuts
+## Share with Jay Shortcut
 
-Use two share-sheet shortcuts so iOS does not try to coerce links or webpages
-into file uploads before the request is sent.
+Use one share-sheet shortcut with separate branches for upload-capable items and
+link/text items.
 
-The `Share with Jay` file/audio shortcut should:
+For files/audio/images/PDFs, the shortcut should:
 
 1. Receive `file`, `media`, `image`, or `pdf` input from the share sheet.
 2. Get current location.
@@ -138,7 +138,7 @@ The `Share with Jay` file/audio shortcut should:
 6. Send `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
 7. Speak `Shared with Jay`.
 
-The `Share Link with Jay` link/text shortcut should:
+For links/text/webpages, the shortcut should:
 
 1. Receive `url`, `text`, or `webpage` input from the share sheet.
 2. Get current location.

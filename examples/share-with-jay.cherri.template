@@ -5,33 +5,91 @@
 #define name Share with Jay
 #define glyph sendMessage
 #define color blue
-#define inputs file, media, image, pdf
+#define inputs file, media, url, text, webpage, image, pdf
 #define noinput stopwith "No input provided"
 #define from sharesheet
 
 @sharedInput = ShortcutInput
+@inputType = typeOf(@sharedInput)
+@shouldUpload = containsText(@inputType, "File|Media|Image|PDF|Audio", false)
 @currentLocation = getCurrentLocation()
 @latitude = getLocationDetail(@currentLocation, 'Latitude')
 @longitude = getLocationDetail(@currentLocation, 'Longitude')
 @altitude = getLocationDetail(@currentLocation, 'Altitude')
 @mapsUrl = getMapsLink(@currentLocation)
 
-@response = formRequest(
-    "__SIRI_BRIDGE_SHARE_URL__",
-    "POST",
-    {
-        "file": "${sharedInput}",
-        "source": "ios_share_sheet",
-        "device_name": "iPhone",
-        "shortcut_name": "Share with Jay",
-        "latitude": "{@latitude}",
-        "longitude": "{@longitude}",
-        "altitude": "{@altitude}",
-        "maps_url": "{@mapsUrl}"
-    },
-    {
-        "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__"
+if @shouldUpload {
+    @response = formRequest(
+        "__SIRI_BRIDGE_SHARE_URL__",
+        "POST",
+        {
+            "file": "${sharedInput}",
+            "source": "ios_share_sheet",
+            "device_name": "iPhone",
+            "shortcut_name": "Share with Jay",
+            "latitude": "{@latitude}",
+            "longitude": "{@longitude}",
+            "altitude": "{@altitude}",
+            "maps_url": "{@mapsUrl}"
+        },
+        {
+            "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__"
+        }
+    )
+    speak("Shared with Jay", true)
+} else {
+    @sharedUrls = getURLs(@sharedInput)
+    @urlCount = count(@sharedUrls)
+    if @urlCount {
+        @firstUrl = getFirstItem(@sharedUrls)
+        @response = jsonRequest(
+            "__SIRI_BRIDGE_URL__",
+            "POST",
+            {
+                "message": "Shared via iPhone share sheet: {@firstUrl}",
+                "source": "ios_share_sheet",
+                "device_name": "iPhone",
+                "shortcut_name": "Share with Jay",
+                "location": {
+                    "latitude": "{@latitude}",
+                    "longitude": "{@longitude}",
+                    "altitude": "{@altitude}",
+                    "maps_url": "{@mapsUrl}"
+                }
+            },
+            {
+                "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+                "Content-Type": "application/json"
+            }
+        )
+        speak("Shared with Jay", true)
+    } else {
+        @sharedText = getText(@sharedInput)
+        if @sharedText {
+            @response = jsonRequest(
+                "__SIRI_BRIDGE_URL__",
+                "POST",
+                {
+                    "message": "Shared via iPhone share sheet: {@sharedText}",
+                    "source": "ios_share_sheet",
+                    "device_name": "iPhone",
+                    "shortcut_name": "Share with Jay",
+                    "location": {
+                        "latitude": "{@latitude}",
+                        "longitude": "{@longitude}",
+                        "altitude": "{@altitude}",
+                        "maps_url": "{@mapsUrl}"
+                    }
+                },
+                {
+                    "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+                    "Content-Type": "application/json"
+                }
+            )
+            speak("Shared with Jay", true)
+        } else {
+            speak("No shareable input captured", true)
+            stop()
+        }
     }
-)
-
-speak("Shared with Jay", true)
+}
