@@ -29,6 +29,7 @@ describe('app routes', () => {
     const res = await request(createApp(config())).post('/shortcuts/message').send({ message: 'hello' });
     expect(res.status).toBe(401);
     expect(res.body.error).toBe('unauthorized');
+    expect(res.body.spoken).toBe('Not sent: unauthorized');
   });
 
   it('accepts and normalizes authorized shortcut messages', async () => {

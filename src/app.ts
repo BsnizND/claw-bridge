@@ -67,7 +67,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
   app.post('/shortcuts/message', async (req, res) => {
     if (!isAuthorized(config, req.header('authorization'))) {
-      res.status(401).json({ ok: false, error: 'unauthorized' });
+      res.status(401).json({ ok: false, error: 'unauthorized', spoken: 'Not sent: unauthorized' });
       return;
     }
 
@@ -90,7 +90,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
   app.post('/shortcuts/share', (req, res) => {
     if (!isAuthorized(config, req.header('authorization'))) {
-      res.status(401).json({ ok: false, error: 'unauthorized' });
+      res.status(401).json({ ok: false, error: 'unauthorized', spoken: 'Not sent: unauthorized' });
       return;
     }
 
