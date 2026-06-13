@@ -36,6 +36,8 @@ GET /healthz
 
 Do not expose queue files, logs, OpenClaw admin routes, shell access, or local runtime dashboards.
 
+For a Tailscale deployment, see [Tailscale Serve and Funnel](tailscale.md).
+
 ## Delivery modes
 
 The default CLI delivery path queues Shortcut requests immediately and drains them through `openclaw agent` in the background. This gives Siri/Shortcuts a fast `202 Accepted` response even when the agent turn takes longer.

@@ -180,6 +180,8 @@ Shortcut files for you, see [docs/agent-shortcut-build.md](docs/agent-shortcut-b
 
 See [docs/deployment.md](docs/deployment.md).
 
+For Tailscale Serve or Funnel setup, see [docs/tailscale.md](docs/tailscale.md).
+
 ## Security
 
 See [docs/security.md](docs/security.md).
