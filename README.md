@@ -103,6 +103,7 @@ Important settings:
 - `SIRI_BRIDGE_TOKEN`: long random shared secret used by the Shortcut.
 - `OPENCLAW_ASSISTANT_ID`: assistant id to receive messages.
 - `OPENCLAW_SESSION_KEY`: OpenClaw session key for CLI delivery.
+- `OPENCLAW_WORKDIR`: optional directory to use when spawning the OpenClaw CLI.
 - `OPENCLAW_ADAPTER`: `cli` or `http`.
 - `QUEUE_PATH`: JSONL queue path.
 - `MAX_MESSAGE_CHARS`: maximum accepted dictated text length.

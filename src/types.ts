@@ -13,6 +13,7 @@ export interface BridgeConfig {
   openclawCliBin: string;
   openclawCliDrainTimeoutMs: number;
   openclawCliThinking?: string;
+  openclawWorkdir?: string;
   openclawSessionKey: string;
   openclawIngestUrl?: string;
   openclawIngestToken?: string;

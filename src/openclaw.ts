@@ -37,7 +37,10 @@ async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): 
   }
 
   return new Promise((resolve, reject) => {
-    const child = spawn(config.openclawCliBin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(config.openclawCliBin, args, {
+      cwd: config.openclawWorkdir,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
     let stdout = '';
     let stderr = '';
     let settled = false;

@@ -1,4 +1,4 @@
-import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
@@ -50,7 +50,8 @@ describe('OpenClaw delivery', () => {
     const queuePath = join(dir, 'queue.jsonl');
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
-    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    const cwdPath = join(dir, 'cwd.txt');
+    await writeFile(binPath, `#!/bin/sh\npwd > '${cwdPath}'\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
     await chmod(binPath, 0o755);
 
     const config = {
@@ -58,6 +59,7 @@ describe('OpenClaw delivery', () => {
       openclawCliBin: binPath,
       openclawCliDrainTimeoutMs: 1000,
       openclawCliThinking: 'minimal',
+      openclawWorkdir: dir,
       assistantId: 'jay',
       openclawSessionKey: 'agent:jay:main',
       queuePath,
@@ -72,11 +74,13 @@ describe('OpenClaw delivery', () => {
     expect(queue).toContain('"status":"delivered"');
     expect(queue).toContain('"attempts":1');
     const args = await readFile(argsPath, 'utf8');
+    const cwd = await readFile(cwdPath, 'utf8');
     expect(args).toContain('--message');
     expect(args).toContain('Voice message from Siri/Shortcuts for jay');
     expect(args).toContain('drain this message');
     expect(args).toContain('--thinking');
     expect(args).toContain('minimal');
+    expect(await realpath(cwd.trim())).toBe(await realpath(dir));
     await rm(dir, { recursive: true, force: true });
   });
 
