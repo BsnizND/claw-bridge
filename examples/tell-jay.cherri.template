@@ -35,9 +35,14 @@ if @message {
         }
     )
     @responseDict = getDictionary(@response)
+    @ok = getValue(@responseDict, "ok")
     @spoken = getValue(@responseDict, "spoken")
-    showNotification("Jay", "{@spoken}", false)
+    if @ok {
+        nothing()
+    } else {
+        showNotification("{@spoken}", "Jay", false)
+    }
 } else {
-    showNotification("Jay", "No message captured", false)
+    showNotification("No message captured", "Jay", false)
     stop()
 }

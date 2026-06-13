@@ -37,8 +37,13 @@ if @shouldUpload {
         }
     )
     @responseDict = getDictionary(@response)
+    @ok = getValue(@responseDict, "ok")
     @spoken = getValue(@responseDict, "spoken")
-    showNotification("Jay", "{@spoken}", false)
+    if @ok {
+        nothing()
+    } else {
+        showNotification("{@spoken}", "Jay", false)
+    }
 } else {
     @sharedUrls = getURLs(@sharedInput)
     @urlCount = count(@sharedUrls)
@@ -65,8 +70,13 @@ if @shouldUpload {
             }
         )
         @responseDict = getDictionary(@response)
+        @ok = getValue(@responseDict, "ok")
         @spoken = getValue(@responseDict, "spoken")
-        showNotification("Jay", "{@spoken}", false)
+        if @ok {
+            nothing()
+        } else {
+            showNotification("{@spoken}", "Jay", false)
+        }
     } else {
         @sharedText = getText(@sharedInput)
         if @sharedText {
@@ -91,10 +101,15 @@ if @shouldUpload {
                 }
             )
             @responseDict = getDictionary(@response)
+            @ok = getValue(@responseDict, "ok")
             @spoken = getValue(@responseDict, "spoken")
-            showNotification("Jay", "{@spoken}", false)
+            if @ok {
+                nothing()
+            } else {
+                showNotification("{@spoken}", "Jay", false)
+            }
         } else {
-            showNotification("Jay", "No shareable input captured", false)
+            showNotification("No shareable input captured", "Jay", false)
             stop()
         }
     }
