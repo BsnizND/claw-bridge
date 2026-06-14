@@ -1,12 +1,12 @@
 # openclaw-siri-bridge
 
-Authenticated Apple Shortcuts/Siri webhook bridge for turning your iPhone, Apple Watch, and iOS share sheet into always-available OpenClaw inputs.
+Authenticated Apple Shortcuts/Siri webhook bridge for sending voice notes and shared iOS content to OpenClaw.
 
 ![OpenClaw Siri Bridge hero showing voice, watch, and share-sheet inputs flowing through a secure bridge into an assistant chat](docs/assets/openclaw-siri-bridge-hero.png)
 
-Most Siri/LLM shortcuts stop at a spoken reply, a clipboard result, or a one-off app interaction. `openclaw-siri-bridge` is built for a different loop: capture something from the device already in your hand or on your wrist, hand it to your self-hosted OpenClaw assistant, and keep the conversation going in your normal assistant chat channel, such as Telegram.
+Most Siri/LLM shortcuts end with a spoken answer, a copied snippet, or another app popping open. `openclaw-siri-bridge` does something more practical: it lets you send a thought, file, screenshot, link, or voice memo to your self-hosted OpenClaw assistant and get the reply back in the chat you already use, such as Telegram.
 
-That makes your phone and watch feel less like separate apps and more like ambient controls for your agent.
+The phone or watch is just the capture device. The assistant thread stays the place where the work happens.
 
 This repo is built around two user stories:
 
@@ -19,24 +19,24 @@ This project is an independent integration. It is not affiliated with Apple, Tel
 
 ## What makes it different
 
-- **AirPods to assistant chat:** invoke Siri hands-free, dictate the request, and let OpenClaw reply in the chat thread where the assistant already lives.
-- **Apple Watch to OpenClaw:** capture quick thoughts, errands, reminders, and location-aware questions without taking out your phone.
-- **Share sheet as a universal inbox:** send links, tweets, screenshots, photos, PDFs, files, selected text, webpages, and voice memos to OpenClaw from almost any iOS app.
-- **One durable conversation loop:** Shortcuts stays quiet on success; the assistant response in Telegram or your configured channel is the confirmation.
-- **Agent-buildable setup:** token-free Cherri templates and docs are designed so Codex or another coding agent can generate the local `.shortcut` files for you.
+- **Hands-free capture:** invoke Siri through AirPods, dictate the request, and let OpenClaw reply in the chat thread where the assistant already lives.
+- **Apple Watch capture:** send quick thoughts, errands, reminders, and location-aware questions without taking out your phone.
+- **Share sheet capture:** send links, tweets, screenshots, photos, PDFs, files, selected text, webpages, and voice memos to OpenClaw from almost any iOS app.
+- **One conversation loop:** Shortcuts stays quiet on success. The assistant response in Telegram or your configured channel is the confirmation.
+- **Agent-buildable setup:** token-free Cherri templates and docs let Codex or another coding agent generate the local `.shortcut` files for you.
 
 ## Why this compounds
 
-The share sheet is the underrated part. Pair this bridge with a second-brain system, LLM wiki, personal knowledge base, or OpenClaw memory pipeline, and every useful thing you send can become new context for the assistant.
+The share sheet is what turns this from a voice shortcut into a capture loop. Pair this bridge with a second-brain system, LLM wiki, personal knowledge base, or OpenClaw memory pipeline, and the things you send can become reusable context for the assistant.
 
-That means the loop is bigger than "ask a question, get an answer":
+The loop becomes:
 
-1. Notice something that matters in the real world.
-2. Send it from the app you are already using.
-3. Let OpenClaw reason over it now.
-4. Let your memory layer keep it available for later.
+1. Notice something worth keeping.
+2. Share it from the app you are already using.
+3. Let OpenClaw respond now.
+4. Let your memory layer keep it around for later.
 
-Over time, your assistant can get better at the topics, people, places, projects, and preferences you actually care about. Not because the base model is changing, but because the working context around it is getting richer.
+Over time, the assistant has more of your actual context: the links you cared about, the screenshots you sent, the notes you dictated, the places you asked about, and the projects you keep returning to. The base model is not changing. The memory around it is.
 
 ## Features
 
