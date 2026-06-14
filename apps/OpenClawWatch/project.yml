@@ -27,6 +27,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.OpenClawCompanion
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
   OpenClawWatchApp:
     type: application
     platform: watchOS
@@ -46,3 +49,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.OpenClawCompanion.watchkitapp
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig

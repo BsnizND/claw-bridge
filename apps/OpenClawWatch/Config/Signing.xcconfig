@@ -1,0 +1,8 @@
+// Public signing defaults for local development.
+//
+// To deploy to your own iPhone and paired Apple Watch, copy
+// Signing.local.example.xcconfig to Signing.local.xcconfig and set
+// DEVELOPMENT_TEAM to your Apple Developer Team ID. Signing.local.xcconfig is
+// gitignored so private team identifiers do not enter the public repo.
+
+#include? "Signing.local.xcconfig"

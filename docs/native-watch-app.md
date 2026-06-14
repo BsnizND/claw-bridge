@@ -59,6 +59,31 @@ https://your-node.your-tailnet.ts.net
 
 The app appends `/watch/voice` internally.
 
+## Optional local signing config
+
+If you prefer not to set the team manually in Xcode each time, create an ignored
+local signing file:
+
+```bash
+cp apps/OpenClawWatch/Config/Signing.local.example.xcconfig \
+  apps/OpenClawWatch/Config/Signing.local.xcconfig
+```
+
+Then edit `Signing.local.xcconfig`:
+
+```text
+DEVELOPMENT_TEAM = ABCDE12345
+```
+
+Regenerate the Xcode project after changing the local signing file:
+
+```bash
+xcodegen --spec apps/OpenClawWatch/project.yml --project apps/OpenClawWatch
+```
+
+`Signing.local.xcconfig` is ignored by git. Do not commit team identifiers to
+the public repo.
+
 ## Server configuration
 
 Include `watch_app` in `ALLOWED_SOURCES`:
@@ -117,8 +142,9 @@ higher than the square center.
 ### Xcode says a development team is required
 
 Open the project in Xcode, select each target, and choose a Development Team in
-Signing & Capabilities. Do not commit team-specific signing files to the public
-repo.
+Signing & Capabilities. As an alternative, use the ignored
+`apps/OpenClawWatch/Config/Signing.local.xcconfig` file described above. Do not
+commit team-specific signing files to the public repo.
 
 ### The Watch app does not install
 
