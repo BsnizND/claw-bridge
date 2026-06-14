@@ -24,13 +24,11 @@
 if @imageCount {
     @firstImage = getFirstItem(@imageInputs)
     @imageName = getImageDetail(@firstImage, 'Name')
-    @resizedImage = resizeImageByLongestEdge(@firstImage, "1600")
-    @jpegImage = convertToJPEG(@resizedImage, 70, false)
     @response = formRequest(
         "__SIRI_BRIDGE_SHARE_URL__",
         "POST",
         {
-            "file": "${jpegImage}",
+            "file": "${firstImage}",
             "shared_title": "{@imageName}",
             "source": "ios_share_sheet",
             "device_name": "iPhone",
