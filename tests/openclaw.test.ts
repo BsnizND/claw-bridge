@@ -219,6 +219,40 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('strips generated iPhone share sheet prose in compact shared messages', async () => {
+    const dir = join(tmpdir(), `openclaw-siri-share-prose-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawMessageStyle: 'compact',
+      siriMessagePrefix: 'Wrong voice prefix:',
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:telegram:default:direct:user',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, shareEvent('Shared via iPhone share sheet: https://example.com/post'));
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('Sent via iOS share sheet: https://example.com/post');
+    expect(args).not.toContain('Sent via iOS share sheet: Shared via iPhone share sheet:');
+    expect(args).not.toContain('Wrong voice prefix:');
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('marks queued events failed after the configured attempt limit', async () => {
     const dir = join(tmpdir(), `openclaw-siri-failed-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });

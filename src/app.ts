@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import express from 'express';
@@ -25,9 +25,75 @@ function safeUploadName(originalName: string): string {
   return `${Date.now()}-${randomUUID()}-${base}${suffix}`;
 }
 
+function queryValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) return queryValue(value[0]);
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function queryBody(query: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(query)
+      .map(([key, value]) => [key, queryValue(value)] as const)
+      .filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+  );
+}
+
+function sniffImageMimeType(buffer: Buffer): string | undefined {
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return 'image/png';
+  }
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  const ascii = buffer.subarray(0, 16).toString('ascii');
+  if (ascii.startsWith('GIF87a') || ascii.startsWith('GIF89a')) {
+    return 'image/gif';
+  }
+  if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') {
+    return 'image/webp';
+  }
+  if (ascii.slice(4, 8) === 'ftyp') {
+    const brand = ascii.slice(8, 12);
+    if (['heic', 'heix', 'hevc', 'hevx'].includes(brand)) return 'image/heic';
+    if (['mif1', 'msf1'].includes(brand)) return 'image/heif';
+  }
+  return undefined;
+}
+
+function rawMimeType(contentType: string | undefined, buffer: Buffer): string {
+  const headerMimeType = contentType?.split(';', 1)[0]?.trim().toLowerCase();
+  if (headerMimeType && headerMimeType !== 'application/octet-stream') {
+    return headerMimeType;
+  }
+  return sniffImageMimeType(buffer) ?? headerMimeType ?? 'application/octet-stream';
+}
+
+function defaultRawFileName(mimetype: string): string {
+  switch (mimetype) {
+    case 'image/jpeg':
+      return 'shared-image.jpg';
+    case 'image/gif':
+      return 'shared-image.gif';
+    case 'image/webp':
+      return 'shared-image.webp';
+    case 'image/heic':
+      return 'shared-image.heic';
+    case 'image/heif':
+      return 'shared-image.heif';
+    case 'image/png':
+      return 'shared-image.png';
+    default:
+      return 'shared-file.bin';
+  }
+}
+
+function rawShareFileName(body: Record<string, unknown>, mimetype: string): string {
+  return queryValue(body.filename) ?? queryValue(body.shared_title) ?? defaultRawFileName(mimetype);
+}
+
 function shareMissingPayloadMessage(contentType: string | undefined): string {
   if (contentType?.toLowerCase().startsWith('application/x-www-form-urlencoded')) {
-    return 'no shareable input captured; rebuild the Shortcut so images/screenshots are sent as multipart file uploads';
+    return 'no shareable input captured; rebuild the Shortcut so images/screenshots are sent as raw file uploads';
   }
   return 'shared_text, shared_url, message, or file is required';
 }
@@ -146,6 +212,54 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         res.status(400).json({ ok: false, error: message, spoken: `Not sent: ${message}` });
       }
     });
+  });
+
+  app.post('/shortcuts/share-file', express.raw({ type: '*/*', limit: config.shareMaxUploadBytes }), async (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized', spoken: 'Not sent: unauthorized' });
+      return;
+    }
+
+    try {
+      const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
+      if (!buffer.length) {
+        throw new Error('file body is required');
+      }
+      const body = queryBody(req.query as Record<string, unknown>);
+      const mimetype = rawMimeType(req.header('content-type'), buffer);
+      const originalname = rawShareFileName(body, mimetype);
+      const filePath = `${config.shareUploadDir}/${safeUploadName(originalname)}`;
+      writeFileSync(filePath, buffer, { mode: 0o600 });
+      const file: UploadedShareFile = {
+        path: filePath,
+        originalname,
+        mimetype,
+        size: buffer.length
+      };
+      const transcript = isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
+      const event = normalizeShareSheetRequest(config, body, file, transcript);
+      const result = await acceptEvent(event);
+      logger.info(
+        {
+          requestId: event.request_id,
+          source: event.source,
+          assistant: event.assistant,
+          sharedKind: event.shared_item?.kind
+        },
+        'share file accepted'
+      );
+      afterAccepted?.(event);
+      res.status(202).json({
+        ok: true,
+        queued: Boolean(result.queued),
+        id: result.id ?? event.request_id,
+        spoken: `Shared with ${event.assistant}`
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'share file rejected';
+      logger.warn({ error: message, queryKeys: Object.keys(req.query ?? {}) }, 'share file rejected');
+      res.status(400).json({ ok: false, error: message, spoken: `Not sent: ${message}` });
+    }
   });
 
   app.use((_req, res) => {

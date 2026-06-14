@@ -41,7 +41,8 @@ Over time, the assistant has more of your actual context: the links you saved, t
 ## Features
 
 - `POST /shortcuts/message` for Apple Shortcuts.
-- `POST /shortcuts/share` for iOS/iPadOS share-sheet text, URLs, files, images, PDFs, and audio.
+- `POST /shortcuts/share` for iOS/iPadOS share-sheet files, PDFs, audio, and Voice Memos as multipart form data.
+- `POST /shortcuts/share-file` for screenshots/images as a raw Shortcuts `Request Body: File` upload.
 - Bearer-token authentication.
 - Source allowlist for `siri_watch`, `siri_iphone`, and custom Shortcut clients.
 - Message length limits and payload validation.
@@ -133,7 +134,7 @@ Content-Type: multipart/form-data
 
 Form fields:
 
-- `file`: optional shared file/audio/image/PDF.
+- `file`: optional shared file/audio/PDF.
 - `shared_text`: optional text extracted from the share-sheet input.
 - `shared_url`: optional shared URL.
 - `shared_title`: optional shared title.
@@ -141,7 +142,35 @@ Form fields:
 - `latitude`, `longitude`, `altitude`, `maps_url`: optional plain form-field alternative to `location_json`.
 - `source`: defaults to `ios_share_sheet`.
 
-When `AUDIO_TRANSCRIBE_ENABLED=true`, audio uploads are transcribed server-side before the event is queued for OpenClaw. The generated share-sheet Shortcut sends screenshots/images as multipart `file` uploads so the assistant can inspect the image server-side.
+When `AUDIO_TRANSCRIBE_ENABLED=true`, audio uploads are transcribed server-side before the event is queued for OpenClaw.
+
+### `POST /shortcuts/share-file`
+
+Headers:
+
+```text
+Authorization: Bearer <token>
+Content-Type: image/png
+```
+
+Body:
+
+```text
+<raw image bytes>
+```
+
+Query parameters:
+
+- `source`: defaults to `ios_share_sheet`.
+- `device_name`: optional device label.
+- `shortcut_name`: optional Shortcut label.
+- `latitude`, `longitude`, `altitude`: optional location fields.
+
+The generated share-sheet Shortcut uses this endpoint for screenshots/images
+with Shortcuts `Get Contents of URL` set to `Request Body: File`. The image is
+not base64-encoded, resized, or compressed by the bridge. If iOS sends
+`application/octet-stream`, the bridge sniffs common image signatures so the
+assistant still receives the upload as an image.
 
 For voice memo workflows, send a transcript as either the main `message` or as `voice_memo.transcript`:
 

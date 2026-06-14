@@ -96,8 +96,8 @@ export SIRI_BRIDGE_TOKEN='your-long-random-token'
 ./scripts/build-shortcut.sh
 ```
 
-The build script derives `/shortcuts/share` from that URL for the share-sheet
-Shortcut.
+The build script derives `/shortcuts/share` and `/shortcuts/share-file` from
+that URL for the share-sheet Shortcut.
 
 ## Verification
 

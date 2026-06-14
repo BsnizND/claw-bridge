@@ -1,6 +1,6 @@
 {
   "name": "openclaw-siri-bridge",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Authenticated Apple Shortcuts/Siri webhook bridge for sending dictated messages into OpenClaw.",
   "type": "module",
   "main": "dist/src/index.js",

@@ -82,6 +82,7 @@ function compactPrefix(config: BridgeConfig, event: NormalizedSiriEvent): string
 function compactText(event: NormalizedSiriEvent): string {
   if (event.source !== 'ios_share_sheet') return event.raw_text;
   return event.raw_text
+    .replace(/^Shared (?:from|via) (?:iOS|iPhone) share sheet:\s*/i, '')
     .replace(/^Shared from iOS share sheet:\s*/i, '')
     .replace(/^Shared URL from iOS share sheet:\s*/i, '')
     .replace(/^Shared file from iOS share sheet:\s*/i, '')

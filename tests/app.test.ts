@@ -131,6 +131,64 @@ describe('app routes', () => {
     );
   });
 
+  it('accepts raw share sheet file body uploads', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'raw-file-share-id' });
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/shortcuts/share-file')
+      .query({
+        source: 'ios_share_sheet',
+        shared_title: 'monarch-screenshot.png',
+        shared_text: 'OCR text from screenshot',
+        latitude: '33.6',
+        longitude: '-111.9'
+      })
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .set('Content-Type', 'image/png')
+      .send(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ ok: true, queued: true, id: 'raw-file-share-id' });
+    expect(acceptEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        raw_text: 'Shared from iOS share sheet: OCR text from screenshot',
+        location: expect.objectContaining({ latitude: 33.6, longitude: -111.9 }),
+        shared_item: expect.objectContaining({
+          kind: 'image',
+          text: 'OCR text from screenshot',
+          title: 'monarch-screenshot.png',
+          filename: 'monarch-screenshot.png',
+          mime_type: 'image/png',
+          size_bytes: 4,
+          file_path: expect.stringContaining('monarch-screenshot.png')
+        })
+      })
+    );
+  });
+
+  it('sniffs raw image uploads when iOS sends an octet-stream content type', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'sniffed-image-id' });
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/shortcuts/share-file')
+      .query({ source: 'ios_share_sheet', latitude: '33.6', longitude: '-111.9' })
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .set('Content-Type', 'application/octet-stream')
+      .send(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+
+    expect(res.status).toBe(202);
+    expect(acceptEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        raw_text: 'Shared file from iOS share sheet: shared-image.png',
+        shared_item: expect.objectContaining({
+          kind: 'image',
+          filename: 'shared-image.png',
+          mime_type: 'image/png',
+          size_bytes: 8,
+          file_path: expect.stringContaining('shared-image.png')
+        })
+      })
+    );
+  });
+
   it('returns a diagnostic error when a form-encoded share has no payload', async () => {
     const acceptEvent = vi.fn();
     const res = await request(createApp(config(), { acceptEvent }))

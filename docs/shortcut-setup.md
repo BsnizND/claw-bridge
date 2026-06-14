@@ -52,13 +52,14 @@ SOURCE_TEMPLATE="$PWD/examples/share-with-openclaw.cherri.template" \
 ./scripts/build-shortcut.sh
 ```
 
-`Share with OpenClaw` handles both common share-sheet paths. For screenshots
-and images, it sends the image as multipart form data to `/shortcuts/share`.
-Files, audio, PDFs, and Voice Memos also use multipart form data. For links,
-tweets, webpages, and plain text, it sends JSON to `/shortcuts/message` and
-does not include a multipart `file` field. These separate paths avoid iOS
-trying to turn webpages or social posts into uploads, while keeping binary
-payloads on the multipart path instead of inflating them into JSON.
+`Share with OpenClaw` handles the common share-sheet paths separately. For
+screenshots and images, it sends the image itself to `/shortcuts/share-file`
+using Shortcuts `Get Contents of URL` with `Request Body` set to `File`. It does
+not base64-encode, resize, or compress the image. Files, audio, PDFs, and Voice
+Memos use multipart form data to `/shortcuts/share`. For links, tweets,
+webpages, and plain text, it sends JSON to `/shortcuts/message` and does not
+include a multipart `file` field. These separate paths avoid iOS trying to turn
+webpages or social posts into uploads, while keeping binary payloads out of JSON.
 
 `SHORTCUT_SIGN_MODE=contacts` maps to Cherri's contacts signing mode. Use `SHORTCUT_SIGN_MODE=anyone` only if you are comfortable sharing the Shortcut more broadly. Apple notes that signing validates the Shortcut for sharing.
 

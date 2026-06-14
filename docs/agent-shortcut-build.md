@@ -72,17 +72,28 @@ files are useful for debugging but contain secrets.
 `Share with OpenClaw` should:
 
 - appear in the iOS/iPadOS share sheet;
-- upload files, images, PDFs, audio, and Voice Memos to `/shortcuts/share`;
-- include extracted image text as `shared_text` for screenshot/image shares so
-  the bridge can still deliver useful context if iOS downgrades the request to
-  form-encoded fields;
+- upload screenshots/images to `/shortcuts/share-file` with `Request Body: File`;
+- upload files, PDFs, audio, and Voice Memos to `/shortcuts/share` as multipart form data;
 - send links, webpages, tweets, and selected text as JSON to `/shortcuts/message`;
 - include current location;
 - stay silent on success;
 - show a notification only on error.
 
-For image and file uploads, inspect the compiled Shortcut before handoff. In the
-generated plist, each Form request to `/shortcuts/share` should have
+For screenshot/image uploads, inspect the compiled unsigned Shortcut before
+handoff. The generated `.shortcut` file is signed, but the build script keeps an
+unsigned plist next to it for inspection. In that plist, the image branch's
+`Get Contents of URL` action pointing at `/shortcuts/share-file` must have:
+
+- `WFHTTPBodyType` set to `File`;
+- `WFRequestVariable` set to the `firstImage` Shortcuts variable;
+- no `WFFormValues`;
+- no `WFJSONValues`;
+- an `Authorization` header.
+
+Do not base64-encode images. Do not resize or compress them in the Shortcut.
+The bridge accepts the image bytes directly.
+
+For non-image file uploads, the Form request to `/shortcuts/share` should have
 `WFHTTPBodyType` set to `Form`, no explicit `Content-Type` header, and a `file`
 field whose value is only the Shortcuts variable token, not a text value with a
 literal `$` prefix. A bad compiled value usually means the template used

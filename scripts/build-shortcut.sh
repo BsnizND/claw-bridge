@@ -36,7 +36,7 @@ if [[ -z "$CHERRI_BIN" ]]; then
   if [[ ! -x "$CHERRI_BIN" ]]; then
     mkdir -p "$cherri_dir"
     zip_path="$cherri_dir/cherri.zip"
-    curl -fL \
+    curl -fsSL \
       "https://github.com/electrikmilk/cherri/releases/download/$CHERRI_VERSION/$cherri_asset" \
       -o "$zip_path"
     unzip -q -o "$zip_path" -d "$cherri_dir"
@@ -63,21 +63,61 @@ if not url.endswith("/shortcuts/message"):
     raise SystemExit("ERROR: SIRI_BRIDGE_URL should end with /shortcuts/message")
 
 share_url = url.removesuffix("/shortcuts/message") + "/shortcuts/share"
+share_file_url = url.removesuffix("/shortcuts/message") + "/shortcuts/share-file"
 
 rendered = (
     template
     .replace("__SIRI_BRIDGE_URL__", url.replace("\\", "\\\\").replace('"', '\\"'))
     .replace("__SIRI_BRIDGE_SHARE_URL__", share_url.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__SIRI_BRIDGE_SHARE_FILE_URL__", share_file_url.replace("\\", "\\\\").replace('"', '\\"'))
     .replace("__SIRI_BRIDGE_TOKEN__", token.replace("\\", "\\\\").replace('"', '\\"'))
 )
 
 Path(os.environ["SOURCE_OUTPUT"]).write_text(rendered, encoding="utf-8")
 PY
 
-"$CHERRI_BIN" "$source_path" \
-  --output="$shortcut_path" \
-  --share="$SIGN_MODE" \
-  --derive-uuids
+if grep -q "/shortcuts/share-file" "$source_path"; then
+  cherri_log="$OUTPUT_DIR/$SHORTCUT_NAME.cherri-build.log"
+  if ! "$CHERRI_BIN" "$source_path" \
+    --output="$shortcut_path" \
+    --skip-sign \
+    --debug \
+    --derive-uuids >"$cherri_log" 2>&1; then
+    cat "$cherri_log" >&2
+    exit 1
+  fi
+
+  unsigned_path="$OUTPUT_DIR/${SHORTCUT_NAME}_unsigned.shortcut"
+  if [[ ! -f "$unsigned_path" ]]; then
+    echo "ERROR: Cherri did not write expected unsigned Shortcut: $unsigned_path" >&2
+    exit 1
+  fi
+
+  node "$ROOT_DIR/scripts/patch-share-file-shortcut.mjs" "$unsigned_path"
+
+  case "$SIGN_MODE" in
+    contacts) apple_sign_mode="people-who-know-me" ;;
+    anyone) apple_sign_mode="anyone" ;;
+    *)
+      echo "ERROR: SHORTCUT_SIGN_MODE must be contacts or anyone" >&2
+      exit 1
+      ;;
+  esac
+
+  sign_log="$OUTPUT_DIR/$SHORTCUT_NAME.sign.log"
+  if ! shortcuts sign \
+    --mode "$apple_sign_mode" \
+    --input "$unsigned_path" \
+    --output "$shortcut_path" >"$sign_log" 2>&1; then
+    cat "$sign_log" >&2
+    exit 1
+  fi
+else
+  "$CHERRI_BIN" "$source_path" \
+    --output="$shortcut_path" \
+    --share="$SIGN_MODE" \
+    --derive-uuids
+fi
 
 echo "Wrote signed Shortcut: $shortcut_path"
 echo "Wrote token-bearing Cherri source: $source_path"

@@ -24,13 +24,11 @@
 if @imageCount {
     @firstImage = getFirstItem(@imageInputs)
     @imageName = getImageDetail(@firstImage, 'Name')
-    @imageText = extractImageText(@firstImage)
     @response = formRequest(
-        "__SIRI_BRIDGE_SHARE_URL__",
+        "__SIRI_BRIDGE_SHARE_FILE_URL__?source=ios_share_sheet&device_name=iPhone&shortcut_name=Share%20with%20OpenClaw&latitude={@latitude}&longitude={@longitude}&altitude={@altitude}",
         "POST",
         {
             "file": "{@firstImage}",
-            "shared_text": "{@imageText}",
             "shared_title": "{@imageName}",
             "source": "ios_share_sheet",
             "device_name": "iPhone",

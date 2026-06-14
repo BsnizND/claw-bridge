@@ -31,6 +31,7 @@ Expose:
 ```text
 POST /shortcuts/message
 POST /shortcuts/share
+POST /shortcuts/share-file
 GET /healthz
 ```
 
@@ -62,7 +63,7 @@ OpenClaw's response to the configured Telegram target.
 
 ## Share Sheet uploads
 
-`POST /shortcuts/share` accepts multipart form data from an iOS/iPadOS share-sheet Shortcut. It can receive text, URLs, and a single uploaded file. Keep `SHARE_MAX_UPLOAD_BYTES` bounded and store uploads outside public web roots.
+`POST /shortcuts/share` accepts multipart form data from an iOS/iPadOS share-sheet Shortcut. It can receive text, URLs, and a single uploaded file. `POST /shortcuts/share-file` accepts a raw file body for screenshots/images from Shortcuts `Request Body: File`. Keep `SHARE_MAX_UPLOAD_BYTES` bounded and store uploads outside public web roots.
 
 For server-side Voice Memo transcription, enable:
 
