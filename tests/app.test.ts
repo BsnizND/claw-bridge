@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import type { BridgeConfig } from '../src/types.js';
@@ -129,6 +130,51 @@ describe('app routes', () => {
         })
       })
     );
+  });
+
+  it('accepts share sheet images sent as base64 JSON', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'image-share-id' });
+    const imageBytes = Buffer.from('png-ish');
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/shortcuts/share')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        image_base64: imageBytes.toString('base64'),
+        filename: 'Breakfast Screenshot.PNG',
+        mime_type: 'image/png',
+        shared_text: 'Fried rice and iced coffee',
+        source: 'ios_share_sheet'
+      });
+
+    expect(res.status).toBe(202);
+    const event = acceptEvent.mock.calls[0]?.[0];
+    expect(event).toEqual(
+      expect.objectContaining({
+        raw_text: 'Shared from iOS share sheet: Fried rice and iced coffee',
+        shared_item: expect.objectContaining({
+          kind: 'image',
+          text: 'Fried rice and iced coffee',
+          filename: 'Breakfast Screenshot.PNG',
+          mime_type: 'image/png',
+          size_bytes: imageBytes.length,
+          file_path: expect.stringContaining('Breakfast_Screenshot.PNG')
+        })
+      })
+    );
+    expect(readFileSync(event.shared_item.file_path)).toEqual(imageBytes);
+  });
+
+  it('returns a diagnostic error when a form-encoded share has no payload', async () => {
+    const acceptEvent = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/shortcuts/share')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .type('form')
+      .send({ source: 'ios_share_sheet' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('rebuild the Shortcut');
+    expect(acceptEvent).not.toHaveBeenCalled();
   });
 
   it('does not expose unknown routes', async () => {

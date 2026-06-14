@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import express from 'express';
@@ -23,6 +23,47 @@ function safeUploadName(originalName: string): string {
   const base = originalName.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 120) || 'shared-file';
   const suffix = extname(base) ? '' : '.bin';
   return `${Date.now()}-${randomUUID()}-${base}${suffix}`;
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  if (Array.isArray(value)) return asOptionalString(value[0]);
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function decodeBase64File(body: Record<string, unknown>): Buffer | undefined {
+  const encoded = asOptionalString(body.file_base64) ?? asOptionalString(body.image_base64);
+  if (!encoded) return undefined;
+  const payload = encoded.includes(',') ? encoded.split(',').pop() : encoded;
+  if (!payload) return undefined;
+  return Buffer.from(payload, 'base64');
+}
+
+function materializeEncodedShareFile(config: BridgeConfig, body: Record<string, unknown>): UploadedShareFile | undefined {
+  const bytes = decodeBase64File(body);
+  if (!bytes) return undefined;
+  if (bytes.length > config.shareMaxUploadBytes) {
+    throw new Error(`encoded file exceeds SHARE_MAX_UPLOAD_BYTES (${config.shareMaxUploadBytes})`);
+  }
+
+  const originalname =
+    asOptionalString(body.filename) ??
+    (asOptionalString(body.image_base64) ? 'shared-image.png' : 'shared-file.bin');
+  const mimetype = asOptionalString(body.mime_type) ?? (asOptionalString(body.image_base64) ? 'image/png' : 'application/octet-stream');
+  const path = `${config.shareUploadDir}/${safeUploadName(originalname)}`;
+  writeFileSync(path, bytes);
+  return {
+    path,
+    originalname,
+    mimetype,
+    size: bytes.length
+  };
+}
+
+function shareMissingPayloadMessage(contentType: string | undefined): string {
+  if (contentType?.toLowerCase().startsWith('application/x-www-form-urlencoded')) {
+    return 'no shareable input captured; rebuild the Shortcut so images/screenshots are sent as JSON image_base64 or multipart file uploads';
+  }
+  return 'shared_text, shared_url, message, file_base64, image_base64, or file is required';
 }
 
 export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
@@ -61,7 +102,8 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     }
     next();
   });
-  app.use(express.json({ limit: '32kb' }));
+  app.use(express.json({ limit: config.shareMaxUploadBytes }));
+  app.use(express.urlencoded({ extended: true, limit: config.shareMaxUploadBytes }));
 
   app.get('/healthz', (_req, res) => {
     res.json({ ok: true });
@@ -106,10 +148,11 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       }
 
       try {
-        const file = req.file as UploadedShareFile | undefined;
+        const body = req.body as Record<string, unknown>;
+        const file = (req.file as UploadedShareFile | undefined) ?? materializeEncodedShareFile(config, body);
         const transcript =
           file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
-        const event = normalizeShareSheetRequest(config, req.body as Record<string, unknown>, file, transcript);
+        const event = normalizeShareSheetRequest(config, body, file, transcript);
         const result = await acceptEvent(event);
         logger.info(
           {
@@ -128,8 +171,12 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
           spoken: `Shared with ${event.assistant}`
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'share rejected';
-        logger.warn({ error: message }, 'share rejected');
+        const rawMessage = error instanceof Error ? error.message : 'share rejected';
+        const message =
+          rawMessage === 'shared_text, shared_url, message, or file is required'
+            ? shareMissingPayloadMessage(req.header('content-type'))
+            : rawMessage;
+        logger.warn({ error: message, bodyKeys: Object.keys(req.body ?? {}) }, 'share rejected');
         res.status(400).json({ ok: false, error: message, spoken: `Not sent: ${message}` });
       }
     });

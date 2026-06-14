@@ -99,12 +99,15 @@ Headers:
 
 ```text
 Authorization: Bearer <token>
-Content-Type: multipart/form-data
+Content-Type: multipart/form-data or application/json
 ```
 
 Form fields:
 
 - `file`: optional shared file/audio/image/PDF.
+- `image_base64` or `file_base64`: optional JSON fallback for image/file shares that iOS does not materialize as multipart uploads.
+- `filename`: optional filename for Base64 uploads.
+- `mime_type`: optional MIME type for Base64 uploads.
 - `shared_text`: optional text extracted from the share-sheet input.
 - `shared_url`: optional shared URL.
 - `shared_title`: optional shared title.
@@ -112,7 +115,7 @@ Form fields:
 - `latitude`, `longitude`, `altitude`, `maps_url`: optional plain form-field alternative to `location_json`.
 - `source`: defaults to `ios_share_sheet`.
 
-When `AUDIO_TRANSCRIBE_ENABLED=true`, audio uploads are transcribed server-side before the event is queued for OpenClaw.
+When `AUDIO_TRANSCRIBE_ENABLED=true`, audio uploads are transcribed server-side before the event is queued for OpenClaw. The generated share-sheet Shortcut sends screenshots/images through the JSON Base64 path and includes on-device OCR text when Shortcuts can extract it.
 
 For voice memo workflows, send a transcript as either the main `message` or as `voice_memo.transcript`:
 

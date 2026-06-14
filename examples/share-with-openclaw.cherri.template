@@ -1,6 +1,8 @@
 #include 'actions/text'
 #include 'actions/web'
 #include 'actions/location'
+#include 'actions/images'
+#include 'actions/crypto'
 
 #define name Share with OpenClaw
 #define glyph sendMessage
@@ -11,14 +13,53 @@
 
 @sharedInput = ShortcutInput
 @inputType = typeOf(@sharedInput)
-@shouldUpload = containsText(@inputType, "File|Media|Image|PDF|Audio", false)
+@imageInputs = getImages(@sharedInput)
+@imageCount = count(@imageInputs)
+@shouldUpload = containsText(@inputType, "File|Media|PDF|Audio", false)
 @currentLocation = getCurrentLocation()
 @latitude = getLocationDetail(@currentLocation, 'Latitude')
 @longitude = getLocationDetail(@currentLocation, 'Longitude')
 @altitude = getLocationDetail(@currentLocation, 'Altitude')
 @mapsUrl = getMapsLink(@currentLocation)
 
-if @shouldUpload {
+if @imageCount {
+    @firstImage = getFirstItem(@imageInputs)
+    @imageName = getImageDetail(@firstImage, 'Name')
+    @imageText = getTextFromImage(@firstImage)
+    @pngImage = convertImage(@firstImage, "PNG")
+    @imageBase64 = base64Encode(@pngImage)
+    @response = jsonRequest(
+        "__SIRI_BRIDGE_SHARE_URL__",
+        "POST",
+        {
+            "image_base64": "{@imageBase64}",
+            "filename": "{@imageName}",
+            "mime_type": "image/png",
+            "shared_text": "{@imageText}",
+            "source": "ios_share_sheet",
+            "device_name": "iPhone",
+            "shortcut_name": "Share with OpenClaw",
+            "location": {
+                "latitude": "{@latitude}",
+                "longitude": "{@longitude}",
+                "altitude": "{@altitude}",
+                "maps_url": "{@mapsUrl}"
+            }
+        },
+        {
+            "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+            "Content-Type": "application/json"
+        }
+    )
+    @responseDict = getDictionary(@response)
+    @ok = getValue(@responseDict, "ok")
+    @spoken = getValue(@responseDict, "spoken")
+    if @ok {
+        nothing()
+    } else {
+        showNotification("{@spoken}", "OpenClaw", false)
+    }
+} else if @shouldUpload {
     @response = formRequest(
         "__SIRI_BRIDGE_SHARE_URL__",
         "POST",
