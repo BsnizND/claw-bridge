@@ -25,6 +25,19 @@ This project is an independent integration. It is not affiliated with Apple, Tel
 - **One durable conversation loop:** Shortcuts stays quiet on success; the assistant response in Telegram or your configured channel is the confirmation.
 - **Agent-buildable setup:** token-free Cherri templates and docs are designed so Codex or another coding agent can generate the local `.shortcut` files for you.
 
+## Why this compounds
+
+The share sheet is the underrated part. Pair this bridge with a second-brain system, LLM wiki, personal knowledge base, or OpenClaw memory pipeline, and every useful thing you send can become new context for the assistant.
+
+That means the loop is bigger than "ask a question, get an answer":
+
+1. Notice something that matters in the real world.
+2. Send it from the app you are already using.
+3. Let OpenClaw reason over it now.
+4. Let your memory layer keep it available for later.
+
+Over time, your assistant can get better at the topics, people, places, projects, and preferences you actually care about. Not because the base model is changing, but because the working context around it is getting richer.
+
 ## Features
 
 - `POST /shortcuts/message` for Apple Shortcuts.
