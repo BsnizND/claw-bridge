@@ -24,11 +24,13 @@
 if @imageCount {
     @firstImage = getFirstItem(@imageInputs)
     @imageName = getImageDetail(@firstImage, 'Name')
+    @imageText = getText(@firstImage)
     @response = formRequest(
         "__SIRI_BRIDGE_SHARE_URL__",
         "POST",
         {
             "file": "{@firstImage}",
+            "shared_text": "{@imageText}",
             "shared_title": "{@imageName}",
             "source": "ios_share_sheet",
             "device_name": "iPhone",

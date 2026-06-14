@@ -73,6 +73,9 @@ files are useful for debugging but contain secrets.
 
 - appear in the iOS/iPadOS share sheet;
 - upload files, images, PDFs, audio, and Voice Memos to `/shortcuts/share`;
+- include extracted image text as `shared_text` for screenshot/image shares so
+  the bridge can still deliver useful context if iOS downgrades the request to
+  form-encoded fields;
 - send links, webpages, tweets, and selected text as JSON to `/shortcuts/message`;
 - include current location;
 - stay silent on success;
