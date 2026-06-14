@@ -32,6 +32,7 @@ Expose:
 POST /shortcuts/message
 POST /shortcuts/share
 POST /shortcuts/share-file
+POST /watch/voice
 GET /healthz
 ```
 
@@ -78,6 +79,39 @@ The default transcription command is:
 ```bash
 openclaw infer audio transcribe --file <uploaded-audio> --json
 ```
+
+## Native Apple Watch voice uploads
+
+`POST /watch/voice` accepts multipart form data from the native watchOS app.
+Use the same bearer token as the Shortcut routes.
+
+Headers:
+
+```text
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+Form fields:
+
+- `audio`: required audio file field.
+- `source`: optional; defaults to `watch_app`.
+- `device_name`: optional device label, such as `Apple Watch`.
+- `app_name`: optional app label.
+- `captured_at`: optional ISO-compatible capture timestamp.
+- `location_json`: optional JSON object with latitude, longitude, altitude,
+  accuracy fields, and map URL.
+- `latitude`, `longitude`, `altitude`, `horizontal_accuracy`,
+  `vertical_accuracy`, `maps_url`: optional plain form fields when
+  `location_json` is not used.
+
+The endpoint queues immediately and returns `202 Accepted` when the upload is
+valid. When `AUDIO_TRANSCRIBE_ENABLED=true`, audio is transcribed before the
+event is queued so OpenClaw receives the transcript plus audio metadata. If
+transcription is disabled, OpenClaw receives an attached audio item with the
+stored file path and metadata.
+
+Include `watch_app` in `ALLOWED_SOURCES` when using the native Watch app.
 
 ## Systemd example
 

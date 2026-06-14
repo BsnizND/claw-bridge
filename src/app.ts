@@ -9,6 +9,7 @@ import { acceptForOpenClaw } from './openclaw.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
 import { isAudioMimeType, transcribeAudioFile } from './transcribe.js';
+import { normalizeWatchVoiceRequest } from './watch.js';
 
 export interface AppDependencies {
   acceptEvent?: (event: NormalizedSiriEvent) => Promise<DeliveryResult>;
@@ -117,7 +118,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
   app.disable('x-powered-by');
   app.use((req, res, next) => {
-    if (req.path.startsWith('/shortcuts/')) {
+    if (req.path.startsWith('/shortcuts/') || req.path.startsWith('/watch/')) {
       const startedAt = Date.now();
       res.on('finish', () => {
         logger.info(
@@ -260,6 +261,50 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       logger.warn({ error: message, queryKeys: Object.keys(req.query ?? {}) }, 'share file rejected');
       res.status(400).json({ ok: false, error: message, spoken: `Not sent: ${message}` });
     }
+  });
+
+  app.post('/watch/voice', (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized' });
+      return;
+    }
+
+    upload.single('audio')(req, res, async (uploadError) => {
+      if (uploadError) {
+        const message = uploadError instanceof Error ? uploadError.message : 'upload rejected';
+        logger.warn({ error: message }, 'watch voice upload rejected');
+        res.status(400).json({ ok: false, error: message });
+        return;
+      }
+
+      try {
+        const body = req.body as Record<string, unknown>;
+        const file = req.file as UploadedShareFile | undefined;
+        const transcript =
+          file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
+        const event = normalizeWatchVoiceRequest(config, body, file, transcript);
+        const result = await acceptEvent(event);
+        logger.info(
+          {
+            requestId: event.request_id,
+            source: event.source,
+            assistant: event.assistant,
+            deviceName: event.device_name
+          },
+          'watch voice accepted'
+        );
+        afterAccepted?.(event);
+        res.status(202).json({
+          ok: true,
+          queued: Boolean(result.queued),
+          id: result.id ?? event.request_id
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'watch voice rejected';
+        logger.warn({ error: message, bodyKeys: Object.keys(req.body ?? {}) }, 'watch voice rejected');
+        res.status(400).json({ ok: false, error: message });
+      }
+    });
   });
 
   app.use((_req, res) => {

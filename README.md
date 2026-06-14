@@ -10,7 +10,7 @@ The phone or watch is just the capture device. The assistant thread stays the pl
 
 This repo is built around two user stories:
 
-1. **Talk to OpenClaw from your watch or phone via Siri.** Say `Hey Siri, Talk to OpenClaw`, dictate a message, and get OpenClaw's response back in your Telegram chat.
+1. **Talk to OpenClaw from your watch or phone.** Use Siri Shortcuts where they work, or use the native Watch push-to-talk app when Apple Watch Shortcuts are unreliable. OpenClaw's response comes back in your configured chat.
 2. **Share anything from your phone to OpenClaw.** Share a voice memo, link, tweet, photo, PDF, file, selected text, or webpage to OpenClaw and receive the response in Telegram.
 
 The bridge is assistant-agnostic. Configure the OpenClaw session and Telegram reply route for your own deployment.
@@ -21,6 +21,7 @@ This project is an independent integration. It is not affiliated with Apple, Tel
 
 - **Hands-free capture:** invoke Siri through AirPods, dictate the request, and let OpenClaw reply in the chat thread where the assistant already lives.
 - **Apple Watch capture:** send quick thoughts, errands, reminders, and location-aware questions without taking out your phone.
+- **Native Watch push-to-talk:** use the watchOS app as a one-button wrist microphone when Siri/Shortcuts invocation gets in the way.
 - **Share sheet capture:** send links, tweets, screenshots, photos, PDFs, files, selected text, webpages, and voice memos to OpenClaw from almost any iOS app.
 - **One conversation loop:** Shortcuts stays quiet on success. The assistant response in Telegram or your configured channel is the confirmation.
 - **Agent-buildable setup:** token-free Cherri templates and docs let Codex or another coding agent generate the local `.shortcut` files for you.
@@ -43,6 +44,7 @@ Over time, the assistant has more of your actual context: the links you saved, t
 - `POST /shortcuts/message` for Apple Shortcuts.
 - `POST /shortcuts/share` for iOS/iPadOS share-sheet files, PDFs, audio, and Voice Memos as multipart form data.
 - `POST /shortcuts/share-file` for screenshots/images as a raw Shortcuts `Request Body: File` upload.
+- `POST /watch/voice` for native Apple Watch app audio uploads.
 - Bearer-token authentication.
 - Source allowlist for `siri_watch`, `siri_iphone`, and custom Shortcut clients.
 - Message length limits and payload validation.
@@ -72,6 +74,8 @@ cp examples/env.example .env
 npm run build
 npm start
 ```
+
+For the native Watch app, see [Native Apple Watch App](docs/native-watch-app.md).
 
 Generate a token:
 
@@ -171,6 +175,32 @@ with Shortcuts `Get Contents of URL` set to `Request Body: File`. The image is
 not base64-encoded, resized, or compressed by the bridge. If iOS sends
 `application/octet-stream`, the bridge sniffs common image signatures so the
 assistant still receives the upload as an image.
+
+### `POST /watch/voice`
+
+Headers:
+
+```text
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+Form fields:
+
+- `audio`: required audio file.
+- `source`: optional; defaults to `watch_app`.
+- `device_name`: optional device label.
+- `app_name`: optional app label.
+- `captured_at`: optional ISO-compatible timestamp.
+- `location_json`: optional JSON object with latitude, longitude, altitude,
+  accuracy fields, and map URL.
+- `latitude`, `longitude`, `altitude`, `horizontal_accuracy`,
+  `vertical_accuracy`, `maps_url`: optional plain form fields.
+
+This endpoint is for the native Watch app lane. It accepts the recording,
+attaches location when available, optionally transcribes the audio server-side,
+and queues the event for OpenClaw through the same delivery path as the
+Shortcut routes.
 
 For voice memo workflows, send a transcript as either the main `message` or as `voice_memo.transcript`:
 

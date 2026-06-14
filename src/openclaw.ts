@@ -24,6 +24,9 @@ function formatVoiceMemo(event: NormalizedSiriEvent): string[] {
   const parts = [
     'Voice memo attached:',
     event.voice_memo.filename ? `Filename: ${event.voice_memo.filename}` : undefined,
+    event.voice_memo.mime_type ? `MIME type: ${event.voice_memo.mime_type}` : undefined,
+    event.voice_memo.size_bytes !== undefined ? `Size: ${event.voice_memo.size_bytes} bytes` : undefined,
+    event.voice_memo.file_path ? `File path: ${event.voice_memo.file_path}` : undefined,
     event.voice_memo.duration_seconds !== undefined ? `Duration: ${event.voice_memo.duration_seconds}s` : undefined,
     event.voice_memo.recorded_at ? `Recorded at: ${event.voice_memo.recorded_at}` : undefined,
     event.voice_memo.transcript ? `Transcript: ${event.voice_memo.transcript}` : undefined
@@ -52,6 +55,8 @@ function formatSharedItem(event: NormalizedSiriEvent): string[] {
 function buildAssistantMessage(event: NormalizedSiriEvent): string {
   const heading = event.source === 'ios_share_sheet'
     ? `iOS share sheet item for ${event.assistant}:`
+    : event.source === 'watch_app'
+      ? `Apple Watch voice message for ${event.assistant}:`
     : `Siri voice message for ${event.assistant}:`;
   return [
     heading,
@@ -76,10 +81,14 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 
 function compactPrefix(config: BridgeConfig, event: NormalizedSiriEvent): string | undefined {
   if (event.source === 'ios_share_sheet') return 'Sent via iOS share sheet:';
+  if (event.source === 'watch_app') return 'Sent via Apple Watch voice message:';
   return config.siriMessagePrefix?.trim() || 'Sent via Siri voice message:';
 }
 
 function compactText(event: NormalizedSiriEvent): string {
+  if (event.source === 'watch_app') {
+    return event.raw_text.replace(/^Apple Watch voice message:\s*/i, '');
+  }
   if (event.source !== 'ios_share_sheet') return event.raw_text;
   return event.raw_text
     .replace(/^Shared (?:from|via) (?:iOS|iPhone) share sheet:\s*/i, '')

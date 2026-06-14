@@ -9,7 +9,7 @@ const envSchema = z.object({
   SIRI_BRIDGE_TOKEN: z.string().min(24),
   OPENCLAW_ASSISTANT_ID: z.string().min(1).default('openclaw'),
   MAX_MESSAGE_CHARS: z.coerce.number().int().positive().max(10000).default(1200),
-  ALLOWED_SOURCES: z.string().default('siri_watch,siri_iphone,shortcuts,ios_share_sheet'),
+  ALLOWED_SOURCES: z.string().default('siri_watch,siri_iphone,shortcuts,ios_share_sheet,watch_app'),
   OPENCLAW_ADAPTER: z.enum(['cli', 'http']).default('cli'),
   OPENCLAW_CLI_BIN: z.string().min(1).default('openclaw'),
   OPENCLAW_CLI_DRAIN_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),

@@ -11,7 +11,7 @@ function config(): BridgeConfig {
     siriBridgeToken: '0123456789abcdef01234567',
     assistantId: 'openclaw',
     maxMessageChars: 1200,
-    allowedSources: new Set(['siri_watch', 'siri_iphone', 'shortcuts', 'ios_share_sheet']),
+    allowedSources: new Set(['siri_watch', 'siri_iphone', 'shortcuts', 'ios_share_sheet', 'watch_app']),
     shareUploadDir: join(tmpdir(), `openclaw-siri-share-test-${Date.now()}`),
     shareMaxUploadBytes: 1024 * 1024,
     audioTranscribeEnabled: false
@@ -199,6 +199,114 @@ describe('app routes', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('rebuild the Shortcut');
+    expect(acceptEvent).not.toHaveBeenCalled();
+  });
+
+  it('accepts native Watch voice uploads with location metadata', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'watch-voice-id' });
+    const afterAccepted = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent, afterAccepted }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('device_name', 'Apple Watch Ultra')
+      .field('app_name', 'OpenClaw Watch')
+      .field('captured_at', '2026-06-14T20:12:00.000Z')
+      .field('latitude', '33.6001')
+      .field('longitude', '-111.9002')
+      .field('horizontal_accuracy', '8')
+      .field('maps_url', 'https://maps.apple.com/?ll=33.6001,-111.9002')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ ok: true, queued: true, id: 'watch-voice-id' });
+    expect(acceptEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'watch_app',
+        raw_text: 'Apple Watch voice message attached.',
+        captured_at: '2026-06-14T20:12:00.000Z',
+        device_name: 'Apple Watch Ultra',
+        shortcut_name: 'OpenClaw Watch',
+        location: expect.objectContaining({
+          latitude: 33.6001,
+          longitude: -111.9002,
+          horizontal_accuracy: 8,
+          maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+        }),
+        shared_item: expect.objectContaining({
+          kind: 'audio',
+          filename: 'watch-message.m4a',
+          mime_type: 'audio/mp4',
+          size_bytes: 9,
+          file_path: expect.stringContaining('watch-message.m4a')
+        }),
+        voice_memo: expect.objectContaining({
+          filename: 'watch-message.m4a',
+          mime_type: 'audio/mp4',
+          size_bytes: 9,
+          file_path: expect.stringContaining('watch-message.m4a')
+        })
+      })
+    );
+    expect(afterAccepted).toHaveBeenCalledWith(expect.objectContaining({ source: 'watch_app' }));
+  });
+
+  it('rejects unauthorized native Watch voice uploads', async () => {
+    const res = await request(createApp(config()))
+      .post('/watch/voice')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ ok: false, error: 'unauthorized' });
+  });
+
+  it('rejects native Watch voice uploads without audio', async () => {
+    const acceptEvent = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('latitude', '33.6001')
+      .field('longitude', '-111.9002');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('audio file is required');
+    expect(acceptEvent).not.toHaveBeenCalled();
+  });
+
+  it('rejects native Watch voice uploads with invalid location', async () => {
+    const acceptEvent = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('latitude', '133')
+      .field('longitude', '-111.9002')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('location.latitude must be between -90 and 90');
+    expect(acceptEvent).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-audio native Watch uploads', async () => {
+    const acceptEvent = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .attach('audio', Buffer.from('not audio'), {
+        filename: 'watch-message.txt',
+        contentType: 'text/plain'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('audio upload must use an audio MIME type');
     expect(acceptEvent).not.toHaveBeenCalled();
   });
 

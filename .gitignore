@@ -10,3 +10,5 @@ data/
 *.log
 .DS_Store
 artifacts/shortcuts/
+.codex-runs/
+apps/OpenClawWatch/Sources/Watch/Resources/AssistantPortrait.*
