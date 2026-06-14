@@ -1,6 +1,12 @@
 # openclaw-siri-bridge
 
-Authenticated Apple Shortcuts/Siri webhook bridge for talking to OpenClaw from your iPhone or Apple Watch.
+Authenticated Apple Shortcuts/Siri webhook bridge for turning your iPhone, Apple Watch, and iOS share sheet into always-available OpenClaw inputs.
+
+![OpenClaw Siri Bridge hero showing voice, watch, and share-sheet inputs flowing through a secure bridge into an assistant chat](docs/assets/openclaw-siri-bridge-hero.png)
+
+Most Siri/LLM shortcuts stop at a spoken reply, a clipboard result, or a one-off app interaction. `openclaw-siri-bridge` is built for a different loop: capture something from the device already in your hand or on your wrist, hand it to your self-hosted OpenClaw assistant, and keep the conversation going in your normal assistant chat channel, such as Telegram.
+
+That makes your phone and watch feel less like separate apps and more like ambient controls for your agent.
 
 This repo is built around two user stories:
 
@@ -8,6 +14,16 @@ This repo is built around two user stories:
 2. **Share anything from your phone to OpenClaw.** Share a voice memo, link, tweet, photo, PDF, file, selected text, or webpage to OpenClaw and receive the response in Telegram.
 
 The bridge is assistant-agnostic. Configure the OpenClaw session and Telegram reply route for your own deployment.
+
+This project is an independent integration. It is not affiliated with Apple, Telegram, or OpenClaw maintainers unless stated otherwise.
+
+## What makes it different
+
+- **AirPods to assistant chat:** invoke Siri hands-free, dictate the request, and let OpenClaw reply in the chat thread where the assistant already lives.
+- **Apple Watch to OpenClaw:** capture quick thoughts, errands, reminders, and location-aware questions without taking out your phone.
+- **Share sheet as a universal inbox:** send links, tweets, screenshots, photos, PDFs, files, selected text, webpages, and voice memos to OpenClaw from almost any iOS app.
+- **One durable conversation loop:** Shortcuts stays quiet on success; the assistant response in Telegram or your configured channel is the confirmation.
+- **Agent-buildable setup:** token-free Cherri templates and docs are designed so Codex or another coding agent can generate the local `.shortcut` files for you.
 
 ## Features
 
