@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		125F4B4C30930A0C3367D42A /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
+		18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */; };
 		6446235538259D4A357EB732 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
@@ -22,6 +23,30 @@
 		C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */; };
 		E66EE11ACD383F65A4C8F1F9 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6E0D71317D4C93FB03C34601 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 780B2BAD3CC982CA5198A707;
+			remoteInfo = OpenClawWatchApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		D35B00560FD7E58AC66996A1 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		01ED1B3A17547DD342460148 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
@@ -126,10 +151,12 @@
 			buildConfigurationList = 0CD8CFB8AFCC36B418301248 /* Build configuration list for PBXNativeTarget "OpenClawCompanion" */;
 			buildPhases = (
 				9D0D04837AF82767D99CC3E0 /* Sources */,
+				D35B00560FD7E58AC66996A1 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				60BAA5BAD71C32752D0D1E0F /* PBXTargetDependency */,
 			);
 			name = OpenClawCompanion;
 			packageProductDependencies = (
@@ -222,6 +249,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		60BAA5BAD71C32752D0D1E0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */;
+			targetProxy = 6E0D71317D4C93FB03C34601 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		18E2AAFCFEFD3B829E4CC0D9 /* Release */ = {

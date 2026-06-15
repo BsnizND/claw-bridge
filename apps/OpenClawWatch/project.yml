@@ -27,6 +27,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.OpenClawCompanion
+    dependencies:
+      - target: OpenClawWatchApp
+        embed: true
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
