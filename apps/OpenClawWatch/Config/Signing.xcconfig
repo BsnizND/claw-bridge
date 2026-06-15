@@ -6,3 +6,4 @@
 // gitignored so private team identifiers do not enter the public repo.
 
 #include? "Signing.local.xcconfig"
+#include? "Bridge.local.xcconfig"

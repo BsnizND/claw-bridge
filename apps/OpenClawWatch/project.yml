@@ -24,6 +24,8 @@ targets:
       path: Sources/iOS/Info.plist
       properties:
         CFBundleDisplayName: Jay Bridge
+        JayBridgeDefaultBaseURL: $(JAY_BRIDGE_DEFAULT_BASE_URL)
+        JayBridgeDefaultBearerToken: $(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)
         UILaunchScreen: {}
         NSLocalNetworkUsageDescription: Jay Bridge can relay Watch voice messages to your configured OpenClaw bridge.
     settings:
@@ -49,6 +51,8 @@ targets:
       path: Sources/Watch/Info.plist
       properties:
         CFBundleDisplayName: Jay
+        JayBridgeDefaultBaseURL: $(JAY_BRIDGE_DEFAULT_BASE_URL)
+        JayBridgeDefaultBearerToken: $(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.briansnyder.JayBridge
         NSMicrophoneUsageDescription: Jay Bridge records audio only when you press the Watch push-to-talk control.

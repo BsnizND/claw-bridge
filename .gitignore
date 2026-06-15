@@ -14,5 +14,6 @@ artifacts/shortcuts/
 apps/OpenClawWatch/Sources/Watch/Resources/AssistantPortrait.*
 apps/OpenClawWatch/Sources/Shared/PrivateAssets.xcassets/
 apps/OpenClawWatch/Config/Signing.local.xcconfig
+apps/OpenClawWatch/Config/Bridge.local.xcconfig
 apps/OpenClawWatch/OpenClawWatch.xcodeproj/project.xcworkspace/xcuserdata/
 apps/OpenClawWatch/OpenClawWatch.xcodeproj/xcuserdata/

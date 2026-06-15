@@ -10,6 +10,10 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>JayBridgeDefaultBaseURL</key>
+	<string>$(JAY_BRIDGE_DEFAULT_BASE_URL)</string>
+	<key>JayBridgeDefaultBearerToken</key>
+	<string>$(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

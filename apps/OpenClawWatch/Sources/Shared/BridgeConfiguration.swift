@@ -26,14 +26,34 @@ public final class BridgeConfigurationStore: ObservableObject {
         self.defaults = defaults
         if let data = defaults.data(forKey: key),
            let decoded = try? JSONDecoder().decode(BridgeConfiguration.self, from: data) {
-            configuration = decoded
+            configuration = decoded.isComplete ? decoded : Self.bundleDefaultConfiguration()
         } else {
-            configuration = BridgeConfiguration()
+            configuration = Self.bundleDefaultConfiguration()
         }
     }
 
     private func save() {
         guard let data = try? JSONEncoder().encode(configuration) else { return }
         defaults.set(data, forKey: key)
+    }
+
+    private static func bundleDefaultConfiguration() -> BridgeConfiguration {
+        let baseURLText = sanitizedBundleString("JayBridgeDefaultBaseURL")
+        let token = sanitizedBundleString("JayBridgeDefaultBearerToken")
+        return BridgeConfiguration(
+            bridgeURL: baseURLText.flatMap(URL.init(string:)),
+            bearerToken: token ?? ""
+        )
+    }
+
+    private static func sanitizedBundleString(_ key: String) -> String? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
+            return nil
+        }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !trimmed.contains("$(") else {
+            return nil
+        }
+        return trimmed
     }
 }

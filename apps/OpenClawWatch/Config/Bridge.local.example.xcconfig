@@ -1,0 +1,5 @@
+// Copy this file to Bridge.local.xcconfig and replace the placeholders with
+// your private bridge defaults. Do not commit Bridge.local.xcconfig.
+
+// JAY_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
+// JAY_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token

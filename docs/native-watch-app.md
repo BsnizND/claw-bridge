@@ -85,6 +85,27 @@ xcodegen --spec apps/OpenClawWatch/project.yml --project apps/OpenClawWatch
 `Signing.local.xcconfig` is ignored by git. Do not commit team identifiers to
 the public repo.
 
+## Optional private bridge defaults
+
+Personal builds can prefill the companion and Watch apps with a private bridge
+base URL and bearer token:
+
+```bash
+cp apps/OpenClawWatch/Config/Bridge.local.example.xcconfig \
+  apps/OpenClawWatch/Config/Bridge.local.xcconfig
+```
+
+Then edit `Bridge.local.xcconfig`:
+
+```text
+JAY_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
+JAY_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token
+```
+
+Use the bridge base URL, not `/watch/voice`; the app appends `/watch/voice`
+internally. `Bridge.local.xcconfig` is ignored by git. Do not commit private
+hostnames or tokens.
+
 ## Server configuration
 
 Include `watch_app` in `ALLOWED_SOURCES`:
