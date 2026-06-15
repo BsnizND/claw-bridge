@@ -38,8 +38,8 @@ xcodegen --spec apps/OpenClawWatch/project.yml --project apps/OpenClawWatch
 
 Schemes:
 
-- `OpenClawCompanion`: iOS companion app.
-- `OpenClawWatchApp`: watchOS app.
+- `OpenClawCompanion`: iOS companion target. The installed app is named `Jay Bridge`.
+- `OpenClawWatchApp`: watchOS target. The installed Watch app is named `Jay`.
 
 ## Local setup
 
@@ -47,7 +47,8 @@ Schemes:
 2. Select a Development Team for both app targets.
 3. Connect or pair the iPhone and Apple Watch.
 4. Enable Developer Mode and trust prompts if Xcode asks.
-5. Run `OpenClawCompanion` on the iPhone. Xcode should install the Watch app on
+5. Run `OpenClawCompanion` on the iPhone. Xcode should install `Jay Bridge` on
+   the phone and `Jay` on
    the paired Watch.
 6. Enter the bridge base URL and bearer token in the companion app.
 
@@ -127,15 +128,17 @@ claim success.
 ## Assistant portrait
 
 The public repo ships a generic placeholder avatar. Local builds can add a
-private portrait without committing it:
+private portrait and app icon without committing them:
 
 ```text
 apps/OpenClawWatch/Sources/Watch/Resources/AssistantPortrait.jpg
+apps/OpenClawWatch/Sources/Shared/PrivateAssets.xcassets/
 ```
 
-`AssistantPortrait.*` is ignored by git. The Watch UI uses a focus crop centered
-around `x=0.50, y=0.25`, which works well for portrait images where the face is
-higher than the square center.
+`AssistantPortrait.*` and `PrivateAssets.xcassets` are ignored by git. The Watch
+UI uses `AssistantPortrait.*` at runtime, and local XcodeGen builds can include a
+private `AppIcon` set from `PrivateAssets.xcassets`. Keep generated portrait or
+icon files out of commits.
 
 ## Troubleshooting
 

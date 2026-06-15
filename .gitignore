@@ -12,4 +12,7 @@ data/
 artifacts/shortcuts/
 .codex-runs/
 apps/OpenClawWatch/Sources/Watch/Resources/AssistantPortrait.*
+apps/OpenClawWatch/Sources/Shared/PrivateAssets.xcassets/
 apps/OpenClawWatch/Config/Signing.local.xcconfig
+apps/OpenClawWatch/OpenClawWatch.xcodeproj/project.xcworkspace/xcuserdata/
+apps/OpenClawWatch/OpenClawWatch.xcodeproj/xcuserdata/

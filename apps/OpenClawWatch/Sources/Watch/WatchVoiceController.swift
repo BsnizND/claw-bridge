@@ -36,7 +36,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
         do {
             try await requestMicrophonePermission()
             requestLocation()
-            let url = FileManager.default.temporaryDirectory.appending(path: "openclaw-watch-\(UUID().uuidString).m4a")
+            let url = FileManager.default.temporaryDirectory.appending(path: "jay-bridge-watch-\(UUID().uuidString).m4a")
             let settings: [String: Any] = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
                 AVSampleRateKey: 44_100,
@@ -71,7 +71,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
             let request = WatchVoiceUploadRequest(
                 audioFileURL: currentAudioURL,
                 deviceName: "Apple Watch",
-                appName: "OpenClaw Watch",
+                appName: "Jay Bridge",
                 location: location
             )
             _ = try await uploader.upload(request, configuration: configuration)
@@ -84,7 +84,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 try WatchRelayController.shared.relayAudioFile(
                     currentAudioURL,
                     deviceName: "Apple Watch",
-                    appName: "OpenClaw Watch",
+                    appName: "Jay Bridge",
                     location: latestLocation.map(WatchVoiceLocation.init(location:))
                 )
                 status = .sent

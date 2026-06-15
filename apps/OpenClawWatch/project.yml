@@ -17,16 +17,18 @@ targets:
     platform: iOS
     sources:
       - path: Sources/Shared
+        excludes:
+          - PrivateAssets.xcassets
       - path: Sources/iOS
     info:
       path: Sources/iOS/Info.plist
       properties:
-        CFBundleDisplayName: OpenClaw
+        CFBundleDisplayName: Jay Bridge
         UILaunchScreen: {}
-        NSLocalNetworkUsageDescription: The companion can relay Watch voice messages to your configured OpenClaw bridge.
+        NSLocalNetworkUsageDescription: Jay Bridge can relay Watch voice messages to your configured OpenClaw bridge.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.OpenClawCompanion
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge
     dependencies:
       - target: OpenClawWatchApp
         embed: true
@@ -38,20 +40,24 @@ targets:
     platform: watchOS
     sources:
       - path: Sources/Shared
+        excludes:
+          - PrivateAssets.xcassets
       - path: Sources/Watch
+        excludes:
+          - Resources/AssistantPortrait.*
     info:
       path: Sources/Watch/Info.plist
       properties:
-        CFBundleDisplayName: OpenClaw
+        CFBundleDisplayName: Jay
         WKApplication: true
-        WKCompanionAppBundleIdentifier: ai.openclaw.OpenClawCompanion
-        NSMicrophoneUsageDescription: OpenClaw records audio only when you press the Watch push-to-talk control.
-        NSLocationWhenInUseUsageDescription: OpenClaw can attach your current location to Watch voice messages when you allow it.
+        WKCompanionAppBundleIdentifier: com.briansnyder.JayBridge
+        NSMicrophoneUsageDescription: Jay Bridge records audio only when you press the Watch push-to-talk control.
+        NSLocationWhenInUseUsageDescription: Jay Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:
-          PreciseWatchVoiceMessage: OpenClaw can attach precise location to a voice message when you ask location-aware questions.
+          PreciseWatchVoiceMessage: Jay Bridge can attach precise location to a voice message when you ask location-aware questions.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: ai.openclaw.OpenClawCompanion.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig

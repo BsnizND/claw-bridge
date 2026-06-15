@@ -36,7 +36,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
         let request = WatchVoiceUploadRequest(
             audioFileURL: fileURL,
             deviceName: metadata["device_name"] ?? "Apple Watch",
-            appName: metadata["app_name"] ?? "OpenClaw Watch",
+            appName: metadata["app_name"] ?? "Jay Bridge",
             capturedAt: Date(),
             location: location
         )
@@ -45,7 +45,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
         } catch {
             // Relay failures stay local to the companion; the Watch shows the
             // original direct-upload failure and can retry.
-            NSLog("OpenClaw Watch relay failed: \(error.localizedDescription)")
+            NSLog("Jay Bridge relay failed: \(error.localizedDescription)")
         }
     }
 }

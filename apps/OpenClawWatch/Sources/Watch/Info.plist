@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>OpenClaw</string>
+	<string>Jay</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -23,15 +23,15 @@
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>PreciseWatchVoiceMessage</key>
-		<string>OpenClaw can attach precise location to a voice message when you ask location-aware questions.</string>
+		<string>Jay Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>OpenClaw can attach your current location to Watch voice messages when you allow it.</string>
+	<string>Jay Bridge can attach your current location to Watch voice messages when you allow it.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>OpenClaw records audio only when you press the Watch push-to-talk control.</string>
+	<string>Jay Bridge records audio only when you press the Watch push-to-talk control.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>ai.openclaw.OpenClawCompanion</string>
+	<string>com.briansnyder.JayBridge</string>
 </dict>
 </plist>

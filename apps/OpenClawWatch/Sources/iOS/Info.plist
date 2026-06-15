@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>OpenClaw</string>
+	<string>Jay Bridge</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>The companion can relay Watch voice messages to your configured OpenClaw bridge.</string>
+	<string>Jay Bridge can relay Watch voice messages to your configured OpenClaw bridge.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

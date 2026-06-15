@@ -325,7 +325,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.OpenClawCompanion.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -343,7 +343,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.OpenClawCompanion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -422,7 +422,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.OpenClawCompanion.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -440,7 +440,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.OpenClawCompanion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
