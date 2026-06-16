@@ -10,10 +10,6 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>JayBridgeDefaultBaseURL</key>
-	<string>$(JAY_BRIDGE_DEFAULT_BASE_URL)</string>
-	<key>JayBridgeDefaultBearerToken</key>
-	<string>$(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -24,18 +20,9 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
-	<dict>
-		<key>PreciseWatchVoiceMessage</key>
-		<string>Jay Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
-	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Jay Bridge can attach your current location to Watch voice messages when you allow it.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Jay Bridge records audio only when you press the Watch push-to-talk control.</string>
-	<key>WKApplication</key>
-	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.briansnyder.JayBridge</string>
+	<key>WKWatchKitApp</key>
+	<true/>
 </dict>
 </plist>

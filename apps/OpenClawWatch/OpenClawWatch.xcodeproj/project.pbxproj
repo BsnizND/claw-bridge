@@ -7,24 +7,32 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		125F4B4C30930A0C3367D42A /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
+		2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */; };
-		6446235538259D4A357EB732 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
-		6AE1C776C15C53434F6327F7 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
+		60BC889382931DA830BD1560 /* AssistantPortraitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */; };
+		7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */; };
+		7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
+		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		7C52094C6F9DC3C6691E0395 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
-		7FACCF6E1C80CFCE9EDB3BC0 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
-		A11946AA5DF2A74C7F3135CF /* AssistantPortraitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */; };
+		909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
-		AB8227E7ED342F9C22243EA4 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
-		AC3F305E2F14732EE923EA53 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
-		C08F27BE13A312339FD229CF /* OpenClawWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */; };
 		C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */; };
+		DD737C5436275ACBD686C371 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
 		E66EE11ACD383F65A4C8F1F9 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4F1238660FC6F948613562FE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3854F89796153526B83EE7AA;
+			remoteInfo = OpenClawWatchExtension;
+		};
 		6E0D71317D4C93FB03C34601 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
@@ -35,6 +43,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		8DBCF1075E8E757D54AC1D0C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D35B00560FD7E58AC66996A1 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -60,8 +79,8 @@
 		55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenClawWatchApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantPortraitView.swift; sourceTree = "<group>"; };
 		5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchVoiceModels.swift; sourceTree = "<group>"; };
+		6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OpenClawWatchExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionContentView.swift; sourceTree = "<group>"; };
-		8A0E7C7271329D2DC1AB3B41 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B0474A2011A611051F38C899 /* OpenClawCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenClawCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawCompanionApp.swift; sourceTree = "<group>"; };
 		C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawWatchApp.swift; sourceTree = "<group>"; };
@@ -74,6 +93,7 @@
 			children = (
 				B0474A2011A611051F38C899 /* OpenClawCompanion.app */,
 				55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */,
+				6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -90,7 +110,6 @@
 			isa = PBXGroup;
 			children = (
 				57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */,
-				8A0E7C7271329D2DC1AB3B41 /* Info.plist */,
 				C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */,
 				4028A3C1D185247A4002C3C5 /* WatchContentView.swift */,
 				0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */,
@@ -165,22 +184,40 @@
 			productReference = B0474A2011A611051F38C899 /* OpenClawCompanion.app */;
 			productType = "com.apple.product-type.application";
 		};
-		780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */ = {
+		3854F89796153526B83EE7AA /* OpenClawWatchExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 15B25A2A5BB13EC8AC8DA015 /* Build configuration list for PBXNativeTarget "OpenClawWatchApp" */;
+			buildConfigurationList = 8E3579D6CAD69DE47DC55334 /* Build configuration list for PBXNativeTarget "OpenClawWatchExtension" */;
 			buildPhases = (
-				165359F4B7BEDB0CEC273731 /* Sources */,
+				E51E17A91FAAA2E366996933 /* Sources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+			);
+			name = OpenClawWatchExtension;
+			packageProductDependencies = (
+			);
+			productName = OpenClawWatchExtension;
+			productReference = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */;
+			productType = "com.apple.product-type.watchkit2-extension";
+		};
+		780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15B25A2A5BB13EC8AC8DA015 /* Build configuration list for PBXNativeTarget "OpenClawWatchApp" */;
+			buildPhases = (
+				8DBCF1075E8E757D54AC1D0C /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				22600296D41308E836F3F225 /* PBXTargetDependency */,
 			);
 			name = OpenClawWatchApp;
 			packageProductDependencies = (
 			);
 			productName = OpenClawWatchApp;
 			productReference = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */;
-			productType = "com.apple.product-type.application";
+			productType = "com.apple.product-type.application.watchapp2";
 		};
 /* End PBXNativeTarget section */
 
@@ -192,6 +229,9 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2E9ECAE42C555973C83C2305 = {
+						ProvisioningStyle = Automatic;
+					};
+					3854F89796153526B83EE7AA = {
 						ProvisioningStyle = Automatic;
 					};
 					780B2BAD3CC982CA5198A707 = {
@@ -215,26 +255,12 @@
 			targets = (
 				2E9ECAE42C555973C83C2305 /* OpenClawCompanion */,
 				780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */,
+				3854F89796153526B83EE7AA /* OpenClawWatchExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		165359F4B7BEDB0CEC273731 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A11946AA5DF2A74C7F3135CF /* AssistantPortraitView.swift in Sources */,
-				6AE1C776C15C53434F6327F7 /* BridgeConfiguration.swift in Sources */,
-				C08F27BE13A312339FD229CF /* OpenClawWatchApp.swift in Sources */,
-				AB8227E7ED342F9C22243EA4 /* WatchContentView.swift in Sources */,
-				125F4B4C30930A0C3367D42A /* WatchRelayController.swift in Sources */,
-				6446235538259D4A357EB732 /* WatchVoiceController.swift in Sources */,
-				7FACCF6E1C80CFCE9EDB3BC0 /* WatchVoiceModels.swift in Sources */,
-				AC3F305E2F14732EE923EA53 /* WatchVoiceUploadClient.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9D0D04837AF82767D99CC3E0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -248,9 +274,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E51E17A91FAAA2E366996933 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				60BC889382931DA830BD1560 /* AssistantPortraitView.swift in Sources */,
+				535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */,
+				7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */,
+				7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */,
+				7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */,
+				909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */,
+				20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */,
+				DD737C5436275ACBD686C371 /* WatchVoiceUploadClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		22600296D41308E836F3F225 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3854F89796153526B83EE7AA /* OpenClawWatchExtension */;
+			targetProxy = 4F1238660FC6F948613562FE /* PBXContainerItemProxy */;
+		};
 		60BAA5BAD71C32752D0D1E0F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */;
@@ -295,7 +341,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -308,7 +354,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -386,7 +432,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -405,7 +451,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -425,6 +471,44 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		D5773DE2428463274B486350 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				ARCHS = arm64_32;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				INFOPLIST_FILE = Sources/WatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp.watchkitextension;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		ED8A7AF07B4C6CEA759DB050 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				ARCHS = arm64_32;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				INFOPLIST_FILE = Sources/WatchExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp.watchkitextension;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -474,6 +558,15 @@
 			buildConfigurations = (
 				A3F16741856A3364615090BC /* Debug */,
 				18E2AAFCFEFD3B829E4CC0D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8E3579D6CAD69DE47DC55334 /* Build configuration list for PBXNativeTarget "OpenClawWatchExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ED8A7AF07B4C6CEA759DB050 /* Debug */,
+				D5773DE2428463274B486350 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

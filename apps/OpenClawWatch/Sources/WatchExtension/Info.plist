@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Jay</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>JayBridgeDefaultBaseURL</key>
+	<string>$(JAY_BRIDGE_DEFAULT_BASE_URL)</string>
+	<key>JayBridgeDefaultBearerToken</key>
+	<string>$(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>WKAppBundleIdentifier</key>
+			<string>com.briansnyder.JayBridge.watchkitapp</string>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.watchkit</string>
+	</dict>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>PreciseWatchVoiceMessage</key>
+		<string>Jay Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
+	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Jay Bridge can attach your current location to Watch voice messages when you allow it.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Jay Bridge records audio only when you press the Watch push-to-talk control.</string>
+</dict>
+</plist>

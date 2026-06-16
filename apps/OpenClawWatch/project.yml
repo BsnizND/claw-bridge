@@ -7,8 +7,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "2"
-    MARKETING_VERSION: "0.1.1"
+    CURRENT_PROJECT_VERSION: "3"
+    MARKETING_VERSION: "0.1.2"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 targets:
@@ -41,7 +41,28 @@ targets:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
   OpenClawWatchApp:
-    type: application
+    type: application.watchapp2
+    platform: watchOS
+    dependencies:
+      - target: OpenClawWatchExtension
+    info:
+      path: Sources/Watch/Info.plist
+      properties:
+        CFBundleDisplayName: Jay
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKCompanionAppBundleIdentifier: com.briansnyder.JayBridge
+        WKWatchKitApp: true
+    settings:
+      base:
+        ARCHS: arm64_32
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+  OpenClawWatchExtension:
+    type: watchkit2-extension
     platform: watchOS
     sources:
       - path: Sources/Shared
@@ -49,25 +70,28 @@ targets:
           - PrivateAssets.xcassets
       - path: Sources/Watch
         excludes:
+          - Info.plist
           - Resources/AssistantPortrait.*
     info:
-      path: Sources/Watch/Info.plist
+      path: Sources/WatchExtension/Info.plist
       properties:
         CFBundleDisplayName: Jay
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         JayBridgeDefaultBaseURL: $(JAY_BRIDGE_DEFAULT_BASE_URL)
         JayBridgeDefaultBearerToken: $(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)
-        WKApplication: true
-        WKCompanionAppBundleIdentifier: com.briansnyder.JayBridge
         NSMicrophoneUsageDescription: Jay Bridge records audio only when you press the Watch push-to-talk control.
         NSLocationWhenInUseUsageDescription: Jay Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:
           PreciseWatchVoiceMessage: Jay Bridge can attach precise location to a voice message when you ask location-aware questions.
+        NSExtension:
+          NSExtensionAttributes:
+            WKAppBundleIdentifier: com.briansnyder.JayBridge.watchkitapp
+          NSExtensionPointIdentifier: com.apple.watchkit
     settings:
       base:
         ARCHS: arm64_32
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp.watchkitextension
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
