@@ -323,6 +323,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
+				ARCHS = arm64_32;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
@@ -420,6 +421,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
+				ARCHS = arm64_32;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;

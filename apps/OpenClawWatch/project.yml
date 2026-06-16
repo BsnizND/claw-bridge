@@ -66,6 +66,7 @@ targets:
           PreciseWatchVoiceMessage: Jay Bridge can attach precise location to a voice message when you ask location-aware questions.
     settings:
       base:
+        ARCHS: arm64_32
         PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
     configFiles:
       Debug: Config/Signing.xcconfig
