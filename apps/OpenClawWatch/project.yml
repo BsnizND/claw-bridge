@@ -7,8 +7,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "3"
-    MARKETING_VERSION: "0.1.2"
+    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "0.1.3"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 targets:
@@ -55,7 +55,6 @@ targets:
         WKWatchKitApp: true
     settings:
       base:
-        ARCHS: arm64_32
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
     configFiles:
@@ -90,7 +89,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.watchkit
     settings:
       base:
-        ARCHS: arm64_32
         PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp.watchkitextension
     configFiles:
       Debug: Config/Signing.xcconfig
