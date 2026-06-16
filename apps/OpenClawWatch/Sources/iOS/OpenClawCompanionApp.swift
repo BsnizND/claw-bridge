@@ -4,6 +4,10 @@ import SwiftUI
 struct OpenClawCompanionApp: App {
     @StateObject private var store = BridgeConfigurationStore()
 
+    init() {
+        CompanionRelayController.shared.start(store: store)
+    }
+
     var body: some Scene {
         WindowGroup {
             CompanionContentView()

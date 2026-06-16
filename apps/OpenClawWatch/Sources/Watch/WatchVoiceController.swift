@@ -87,8 +87,8 @@ final class WatchVoiceController: NSObject, ObservableObject {
                     appName: "Jay Bridge",
                     location: latestLocation.map(WatchVoiceLocation.init(location:))
                 )
-                status = .sent
-                detailText = "Relayed through iPhone"
+                status = .queued
+                detailText = "Queued for iPhone upload"
             } catch {
                 status = .failed(error.localizedDescription)
                 detailText = error.localizedDescription
