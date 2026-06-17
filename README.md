@@ -2,7 +2,7 @@
 
 Authenticated Apple capture bridge for sending Siri, Shortcuts, share-sheet, and Apple Watch voice input to OpenClaw.
 
-![Claw Bridge hero showing voice, watch, and share-sheet inputs flowing through a secure bridge into an assistant chat](docs/assets/claw-bridge-hero.png)
+![Claw Bridge lobster mascot looking at a watch with a voice waveform](docs/assets/claw-bridge-hero.png)
 
 `claw-bridge` is the capture layer between Apple devices and a self-hosted
 OpenClaw assistant. It accepts dictated messages from Siri/Shortcuts, rich
