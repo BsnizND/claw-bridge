@@ -69,22 +69,12 @@ struct ClawBridgeComplicationEntryView: View {
         }
     }
 
-    @ViewBuilder
     private var complicationIcon: some View {
-        if #available(watchOS 11.0, *) {
-            Image("ComplicationIcon")
-                .renderingMode(.original)
-                .resizable()
-                .widgetAccentedRenderingMode(.fullColor)
-                .scaledToFit()
-                .accessibilityLabel("Claw Bridge")
-        } else {
-            Image("ComplicationIcon")
-                .renderingMode(.original)
-                .resizable()
-                .scaledToFit()
-                .accessibilityLabel("Claw Bridge")
-        }
+        Image("ComplicationIcon")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .accessibilityLabel("Claw Bridge")
     }
 }
 
