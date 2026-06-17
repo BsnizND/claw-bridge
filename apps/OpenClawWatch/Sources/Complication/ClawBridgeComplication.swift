@@ -33,6 +33,9 @@ struct ClawBridgeComplicationEntryView: View {
 
     var body: some View {
         content
+            .containerBackground(for: .widget) {
+                Color.clear
+            }
             .widgetURL(URL(string: "clawbridge://record"))
     }
 
