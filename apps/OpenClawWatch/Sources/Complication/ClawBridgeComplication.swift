@@ -40,11 +40,11 @@ struct ClawBridgeComplicationEntryView: View {
     private var content: some View {
         switch family {
         case .accessoryInline:
-            Label("Record", systemImage: "mic.fill")
+            Label("Claw Bridge", image: "ComplicationIcon")
         case .accessoryRectangular:
             HStack(spacing: 6) {
-                Image(systemName: "mic.fill")
-                    .font(.headline)
+                complicationIcon
+                    .frame(width: 24, height: 24)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Claw Bridge")
                         .font(.headline)
@@ -53,18 +53,25 @@ struct ClawBridgeComplicationEntryView: View {
                 }
             }
         case .accessoryCorner:
-            Image(systemName: "mic.fill")
-                .font(.title3.weight(.semibold))
+            complicationIcon
+                .widgetAccentable()
                 .widgetLabel {
                     Text("Record")
                 }
         default:
             ZStack {
                 AccessoryWidgetBackground()
-                Image(systemName: "mic.fill")
-                    .font(.title2.weight(.semibold))
+                complicationIcon
+                    .padding(4)
             }
         }
+    }
+
+    private var complicationIcon: some View {
+        Image("ComplicationIcon")
+            .resizable()
+            .scaledToFit()
+            .accessibilityLabel("Claw Bridge")
     }
 }
 
