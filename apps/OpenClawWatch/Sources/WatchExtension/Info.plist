@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Jay</string>
+	<string>Claw Bridge</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -18,16 +18,16 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>JayBridgeDefaultBaseURL</key>
-	<string>$(JAY_BRIDGE_DEFAULT_BASE_URL)</string>
-	<key>JayBridgeDefaultBearerToken</key>
-	<string>$(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
+	<key>ClawBridgeDefaultBaseURL</key>
+	<string>$(CLAW_BRIDGE_DEFAULT_BASE_URL)</string>
+	<key>ClawBridgeDefaultBearerToken</key>
+	<string>$(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>WKAppBundleIdentifier</key>
-			<string>com.briansnyder.JayBridge.watchkitapp</string>
+			<string>com.briansnyder.ClawBridge.watchkitapp</string>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.watchkit</string>
@@ -35,11 +35,11 @@
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>PreciseWatchVoiceMessage</key>
-		<string>Jay Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
+		<string>Claw Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Jay Bridge can attach your current location to Watch voice messages when you allow it.</string>
+	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Jay Bridge records audio only when you press the Watch push-to-talk control.</string>
+	<string>Claw Bridge records audio only when you press the Watch push-to-talk control.</string>
 </dict>
 </plist>

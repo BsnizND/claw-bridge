@@ -38,8 +38,8 @@ xcodegen --spec apps/OpenClawWatch/project.yml --project apps/OpenClawWatch
 
 Schemes:
 
-- `OpenClawCompanion`: iOS companion target. The installed app is named `Jay Bridge`.
-- `OpenClawWatchApp`: watchOS target. The installed Watch app is named `Jay`.
+- `OpenClawCompanion`: iOS companion target. The installed app is named `Claw Bridge`.
+- `OpenClawWatchApp`: watchOS target. The installed Watch app is named `Claw Bridge`.
 
 ## Local setup
 
@@ -47,9 +47,8 @@ Schemes:
 2. Select a Development Team for both app targets.
 3. Connect or pair the iPhone and Apple Watch.
 4. Enable Developer Mode and trust prompts if Xcode asks.
-5. Run `OpenClawCompanion` on the iPhone. Xcode should install `Jay Bridge` on
-   the phone and `Jay` on
-   the paired Watch.
+5. Run `OpenClawCompanion` on the iPhone. Xcode should install `Claw Bridge` on
+   the phone and the paired Watch.
 6. Enter the bridge base URL and bearer token in the companion app.
 
 Use the bridge base URL, not the endpoint URL. For example:
@@ -98,8 +97,8 @@ cp apps/OpenClawWatch/Config/Bridge.local.example.xcconfig \
 Then edit `Bridge.local.xcconfig`:
 
 ```text
-JAY_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
-JAY_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token
+CLAW_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
+CLAW_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token
 ```
 
 Use the bridge base URL, not `/watch/voice`; the app appends `/watch/voice`
@@ -146,20 +145,21 @@ contract using the bridge URL and token saved on the phone.
 If both direct upload and relay fail, the Watch app shows an error and does not
 claim success.
 
-## Assistant portrait
+## Private local branding
 
-The public repo ships a generic placeholder avatar. Local builds can add a
-private portrait and app icon without committing them:
+The public repo ships the Claw Bridge icon and a generic waveform fallback in
+the Watch UI. Local builds can still add a private portrait or alternate app
+icon without committing them:
 
 ```text
 apps/OpenClawWatch/Sources/Watch/Resources/AssistantPortrait.jpg
 apps/OpenClawWatch/Sources/Shared/PrivateAssets.xcassets/
 ```
 
-`AssistantPortrait.*` and `PrivateAssets.xcassets` are ignored by git. The Watch
-UI uses `AssistantPortrait.*` at runtime, and local XcodeGen builds can include a
-private `AppIcon` set from `PrivateAssets.xcassets`. Keep generated portrait or
-icon files out of commits.
+`AssistantPortrait.*` and `PrivateAssets.xcassets` are ignored by git. If an
+`AssistantPortrait.*` file is present at runtime, the Watch UI uses it;
+otherwise it shows the generic waveform. Keep generated portrait or private icon
+files out of commits.
 
 ## Troubleshooting
 

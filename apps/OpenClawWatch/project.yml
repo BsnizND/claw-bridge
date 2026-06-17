@@ -23,16 +23,16 @@ targets:
     info:
       path: Sources/iOS/Info.plist
       properties:
-        CFBundleDisplayName: Jay Bridge
+        CFBundleDisplayName: Claw Bridge
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        JayBridgeDefaultBaseURL: $(JAY_BRIDGE_DEFAULT_BASE_URL)
-        JayBridgeDefaultBearerToken: $(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)
+        ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
+        ClawBridgeDefaultBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         UILaunchScreen: {}
-        NSLocalNetworkUsageDescription: Jay Bridge can relay Watch voice messages to your configured OpenClaw bridge.
+        NSLocalNetworkUsageDescription: Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge
         TARGETED_DEVICE_FAMILY: 1
     dependencies:
       - target: OpenClawWatchApp
@@ -48,15 +48,15 @@ targets:
     info:
       path: Sources/Watch/Info.plist
       properties:
-        CFBundleDisplayName: Jay
+        CFBundleDisplayName: Claw Bridge
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        WKCompanionAppBundleIdentifier: com.briansnyder.JayBridge
+        WKCompanionAppBundleIdentifier: com.briansnyder.ClawBridge
         WKWatchKitApp: true
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -74,22 +74,22 @@ targets:
     info:
       path: Sources/WatchExtension/Info.plist
       properties:
-        CFBundleDisplayName: Jay
+        CFBundleDisplayName: Claw Bridge
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        JayBridgeDefaultBaseURL: $(JAY_BRIDGE_DEFAULT_BASE_URL)
-        JayBridgeDefaultBearerToken: $(JAY_BRIDGE_DEFAULT_BEARER_TOKEN)
-        NSMicrophoneUsageDescription: Jay Bridge records audio only when you press the Watch push-to-talk control.
-        NSLocationWhenInUseUsageDescription: Jay Bridge can attach your current location to Watch voice messages when you allow it.
+        ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
+        ClawBridgeDefaultBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
+        NSMicrophoneUsageDescription: Claw Bridge records audio only when you press the Watch push-to-talk control.
+        NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:
-          PreciseWatchVoiceMessage: Jay Bridge can attach precise location to a voice message when you ask location-aware questions.
+          PreciseWatchVoiceMessage: Claw Bridge can attach precise location to a voice message when you ask location-aware questions.
         NSExtension:
           NSExtensionAttributes:
-            WKAppBundleIdentifier: com.briansnyder.JayBridge.watchkitapp
+            WKAppBundleIdentifier: com.briansnyder.ClawBridge.watchkitapp
           NSExtensionPointIdentifier: com.apple.watchkit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.JayBridge.watchkitapp.watchkitextension
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp.watchkitextension
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig

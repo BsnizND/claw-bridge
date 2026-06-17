@@ -10,6 +10,7 @@
 		18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
 		2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2B3F74B662069F061546E96B /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */; };
@@ -18,6 +19,7 @@
 		7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
 		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		7C52094C6F9DC3C6691E0395 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
+		7C859158C567E41BB54782E4 /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
 		C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */; };
@@ -84,6 +86,7 @@
 		B0474A2011A611051F38C899 /* OpenClawCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenClawCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawCompanionApp.swift; sourceTree = "<group>"; };
 		C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawWatchApp.swift; sourceTree = "<group>"; };
+		EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = PublicAssets.xcassets; sourceTree = "<group>"; };
 		F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeConfiguration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -155,6 +158,7 @@
 			isa = PBXGroup;
 			children = (
 				F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */,
+				EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */,
 				5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */,
 				0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */,
 			);
@@ -170,6 +174,7 @@
 			buildConfigurationList = 0CD8CFB8AFCC36B418301248 /* Build configuration list for PBXNativeTarget "OpenClawCompanion" */;
 			buildPhases = (
 				9D0D04837AF82767D99CC3E0 /* Sources */,
+				17554AA6697BDDDA17A4B300 /* Resources */,
 				D35B00560FD7E58AC66996A1 /* Embed Watch Content */,
 			);
 			buildRules = (
@@ -189,6 +194,7 @@
 			buildConfigurationList = 8E3579D6CAD69DE47DC55334 /* Build configuration list for PBXNativeTarget "OpenClawWatchExtension" */;
 			buildPhases = (
 				E51E17A91FAAA2E366996933 /* Sources */,
+				052810136C507230A783F952 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -259,6 +265,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		052810136C507230A783F952 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C859158C567E41BB54782E4 /* PublicAssets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		17554AA6697BDDDA17A4B300 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B3F74B662069F061546E96B /* PublicAssets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9D0D04837AF82767D99CC3E0 /* Sources */ = {
@@ -371,7 +396,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -389,7 +414,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -468,7 +493,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = Sources/Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -486,7 +511,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp.watchkitextension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.watchkitextension;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -504,7 +529,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge.watchkitapp.watchkitextension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.watchkitextension;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -522,7 +547,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.JayBridge;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

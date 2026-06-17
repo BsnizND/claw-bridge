@@ -33,7 +33,7 @@ struct CompanionContentView: View {
                           systemImage: store.configuration.isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 }
             }
-            .navigationTitle("Jay Bridge")
+            .navigationTitle("Claw Bridge")
             .onAppear {
                 bridgeURLText = store.configuration.bridgeURL?.absoluteString ?? ""
                 tokenText = store.configuration.bearerToken

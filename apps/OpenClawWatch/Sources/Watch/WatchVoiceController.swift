@@ -36,7 +36,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
         do {
             try await requestMicrophonePermission()
             requestLocation()
-            let url = FileManager.default.temporaryDirectory.appending(path: "jay-bridge-watch-\(UUID().uuidString).m4a")
+            let url = FileManager.default.temporaryDirectory.appending(path: "claw-bridge-watch-\(UUID().uuidString).m4a")
             let settings: [String: Any] = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
                 AVSampleRateKey: 44_100,
@@ -71,7 +71,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
             let request = WatchVoiceUploadRequest(
                 audioFileURL: currentAudioURL,
                 deviceName: "Apple Watch",
-                appName: "Jay Bridge",
+                appName: "Claw Bridge",
                 location: location
             )
             _ = try await uploader.upload(request, configuration: configuration)
@@ -80,12 +80,12 @@ final class WatchVoiceController: NSObject, ObservableObject {
             try? FileManager.default.removeItem(at: currentAudioURL)
             self.currentAudioURL = nil
         } catch {
-            NSLog("Jay Watch direct upload failed: \(error.localizedDescription)")
+            NSLog("Claw Bridge Watch direct upload failed: \(error.localizedDescription)")
             do {
                 try WatchRelayController.shared.relayAudioFile(
                     currentAudioURL,
                     deviceName: "Apple Watch",
-                    appName: "Jay Bridge",
+                    appName: "Claw Bridge",
                     location: latestLocation.map(WatchVoiceLocation.init(location:))
                 )
                 status = .queued

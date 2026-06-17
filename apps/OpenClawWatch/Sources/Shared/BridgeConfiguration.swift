@@ -43,8 +43,8 @@ public final class BridgeConfigurationStore: ObservableObject {
     }
 
     private static func bundleDefaultConfiguration() -> BridgeConfiguration {
-        let baseURLText = sanitizedBundleString("JayBridgeDefaultBaseURL")
-        let token = sanitizedBundleString("JayBridgeDefaultBearerToken")
+        let baseURLText = sanitizedBundleString("ClawBridgeDefaultBaseURL")
+        let token = sanitizedBundleString("ClawBridgeDefaultBearerToken")
         return BridgeConfiguration(
             bridgeURL: baseURLText.flatMap(URL.init(string:)),
             bearerToken: token ?? ""
