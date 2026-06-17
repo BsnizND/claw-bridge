@@ -490,7 +490,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.complication;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.ClawBridgeComplicationExtension;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -605,7 +605,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.complication;
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.ClawBridgeComplicationExtension;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
