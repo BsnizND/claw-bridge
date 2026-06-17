@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0AD2DC0613E92DE1E90F357D /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
 		2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -236,6 +237,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 15B25A2A5BB13EC8AC8DA015 /* Build configuration list for PBXNativeTarget "OpenClawWatchApp" */;
 			buildPhases = (
+				5D63309990AC8FD67CB6A762 /* Resources */,
 				8DBCF1075E8E757D54AC1D0C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -327,6 +329,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B3F74B662069F061546E96B /* PublicAssets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D63309990AC8FD67CB6A762 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0AD2DC0613E92DE1E90F357D /* PublicAssets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,7 +436,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -533,7 +543,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
