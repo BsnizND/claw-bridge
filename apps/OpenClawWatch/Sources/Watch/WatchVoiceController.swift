@@ -9,6 +9,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
 
     private let uploader = WatchVoiceUploadClient()
     private let locationManager = CLLocationManager()
+    private let minimumRecordingByteCount: UInt64 = 1_024
     private var recorder: AVAudioRecorder?
     private var currentAudioURL: URL?
     private var latestLocation: CLLocation?
@@ -40,6 +41,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
     private func startRecording() async {
         do {
             try await requestMicrophonePermission()
+            try configureAudioSessionForRecording()
             requestLocation()
             let url = FileManager.default.temporaryDirectory.appending(path: "claw-bridge-watch-\(UUID().uuidString).m4a")
             let settings: [String: Any] = [
@@ -50,7 +52,11 @@ final class WatchVoiceController: NSObject, ObservableObject {
             ]
             let recorder = try AVAudioRecorder(url: url, settings: settings)
             recorder.prepareToRecord()
-            recorder.record()
+            guard recorder.record() else {
+                recorder.deleteRecording()
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                throw WatchVoiceRecordingError.failedToStart
+            }
             self.recorder = recorder
             currentAudioURL = url
             status = .recording
@@ -64,9 +70,19 @@ final class WatchVoiceController: NSObject, ObservableObject {
     private func stopAndSend(configuration: BridgeConfiguration) async {
         recorder?.stop()
         recorder = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         guard let currentAudioURL else {
             status = .failed("No recording found.")
             detailText = "No recording found."
+            return
+        }
+        do {
+            try validateRecording(at: currentAudioURL)
+        } catch {
+            status = .failed(error.localizedDescription)
+            detailText = error.localizedDescription
+            try? FileManager.default.removeItem(at: currentAudioURL)
+            self.currentAudioURL = nil
             return
         }
         status = .sending
@@ -99,6 +115,20 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 status = .failed(error.localizedDescription)
                 detailText = error.localizedDescription
             }
+        }
+    }
+
+    private func configureAudioSessionForRecording() throws {
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playAndRecord, mode: .spokenAudio)
+        try session.setActive(true)
+    }
+
+    private func validateRecording(at url: URL) throws {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        let byteCount = attributes[.size] as? UInt64 ?? 0
+        guard byteCount >= minimumRecordingByteCount else {
+            throw WatchVoiceRecordingError.emptyRecording
         }
     }
 
@@ -162,6 +192,18 @@ enum WatchVoicePermissionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .microphoneDenied: "Microphone permission is required."
+        }
+    }
+}
+
+enum WatchVoiceRecordingError: LocalizedError {
+    case failedToStart
+    case emptyRecording
+
+    var errorDescription: String? {
+        switch self {
+        case .failedToStart: "Recording could not start."
+        case .emptyRecording: "Recording was empty. Try again."
         }
     }
 }
