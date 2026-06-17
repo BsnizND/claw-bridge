@@ -12,11 +12,11 @@ you already use, such as Telegram.
 
 The phone or watch is just the capture device. The assistant thread stays the place where the work happens.
 
-This repo is built around three capture lanes:
+Claw Bridge gives OpenClaw three Apple-native capture lanes:
 
-1. **Talk to OpenClaw from your watch or phone.** Use Siri Shortcuts where they work.
-2. **Record from the native Watch app.** Use the Claw Bridge watchOS app and complication when Apple Watch Shortcuts are unreliable or too slow.
-3. **Share anything from your phone to OpenClaw.** Share a voice memo, link, tweet, photo, PDF, file, selected text, or webpage and receive the response in your configured chat.
+1. **Voice Shortcut:** dictate a thought from iPhone, AirPods, or Apple Watch and send it straight into your OpenClaw thread.
+2. **Watch push-to-talk:** tap the Claw Bridge watchOS app or complication, record a message, and upload it with optional location context.
+3. **Share sheet:** send a voice memo, link, tweet, photo, PDF, file, selected text, or webpage from iPhone or iPad and receive the response in your configured chat.
 
 The bridge is assistant-agnostic. Configure the OpenClaw session and Telegram reply route for your own deployment.
 
@@ -26,7 +26,7 @@ This project is an independent integration. It is not affiliated with Apple, Tel
 
 - **Hands-free capture:** invoke Siri through AirPods, dictate the request, and let OpenClaw reply in the chat thread where the assistant already lives.
 - **Apple Watch capture:** send quick thoughts, errands, reminders, and location-aware questions without taking out your phone.
-- **Native Watch push-to-talk:** use the watchOS app as a one-button wrist microphone when Siri/Shortcuts invocation gets in the way.
+- **Native Watch push-to-talk:** use the watchOS app and complication as a one-button wrist microphone for fast capture.
 - **Share sheet capture:** send links, tweets, screenshots, photos, PDFs, files, selected text, webpages, and voice memos to OpenClaw from almost any iOS app.
 - **One conversation loop:** Shortcuts stays quiet on success. The assistant response in Telegram or your configured channel is the confirmation.
 - **Agent-buildable setup:** token-free Cherri templates and docs let Codex or another coding agent generate the local `.shortcut` files for you.
@@ -69,7 +69,7 @@ Over time, the assistant has more of your actual context: the links you saved, t
 - Creating or changing OpenClaw worker-agent topology.
 - One-shot Siri phrases like `Hey Siri, Talk to OpenClaw remember dog food`.
 
-For arbitrary text, Siri/Shortcuts is most reliable as a two-step interaction: invoke the shortcut, then dictate.
+Voice capture uses a simple two-step flow: invoke the shortcut, then dictate.
 
 ## Quick start
 
