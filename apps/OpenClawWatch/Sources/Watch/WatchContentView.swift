@@ -37,6 +37,15 @@ struct WatchContentView: View {
             }
         }
         .padding(.horizontal, 10)
+        .onOpenURL { url in
+            guard url.scheme == "clawbridge",
+                  url.host == "record" || url.path == "/record" else {
+                return
+            }
+            Task {
+                await controller.startRecordingFromComplication()
+            }
+        }
     }
 }
 

@@ -32,6 +32,11 @@ final class WatchVoiceController: NSObject, ObservableObject {
         }
     }
 
+    func startRecordingFromComplication() async {
+        guard !status.isListening, !isBusy else { return }
+        await startRecording()
+    }
+
     private func startRecording() async {
         do {
             try await requestMicrophonePermission()

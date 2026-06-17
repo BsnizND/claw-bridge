@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "7"
+    CURRENT_PROJECT_VERSION: "8"
     MARKETING_VERSION: "0.1.3"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -45,12 +45,18 @@ targets:
     platform: watchOS
     dependencies:
       - target: OpenClawWatchExtension
+      - target: ClawBridgeComplicationExtension
+        embed: true
     info:
       path: Sources/Watch/Info.plist
       properties:
         CFBundleDisplayName: Claw Bridge
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: com.briansnyder.ClawBridge.watchkitapp
+            CFBundleURLSchemes:
+              - clawbridge
         WKCompanionAppBundleIdentifier: com.briansnyder.ClawBridge
         WKWatchKitApp: true
     settings:
@@ -90,6 +96,25 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp.watchkitextension
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+  ClawBridgeComplicationExtension:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: Sources/Complication
+    info:
+      path: Sources/Complication/Info.plist
+      properties:
+        CFBundleDisplayName: Claw Bridge
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp.complication
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig

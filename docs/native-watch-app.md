@@ -18,6 +18,14 @@ configured chat channel.
 
 The Watch app is intentionally not a chat UI. It is a capture control.
 
+## Watch face complication
+
+The watchOS app includes a WidgetKit complication named `Record Message`.
+Add it to a watch face to open Claw Bridge directly into recording. The
+complication uses the deep link `clawbridge://record`; when the Watch app
+receives that URL, it starts the same push-to-talk recording flow as tapping the
+microphone button in the app.
+
 ## Project layout
 
 ```text
@@ -40,6 +48,7 @@ Schemes:
 
 - `OpenClawCompanion`: iOS companion target. The installed app is named `Claw Bridge`.
 - `OpenClawWatchApp`: watchOS target. The installed Watch app is named `Claw Bridge`.
+- `ClawBridgeComplicationExtension`: watchOS WidgetKit complication target.
 
 ## Local setup
 

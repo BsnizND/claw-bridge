@@ -15,6 +15,7 @@
 		59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */; };
 		60BC889382931DA830BD1560 /* AssistantPortraitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */; };
+		6827AA670EEAA5EC82582E4D /* ClawBridgeComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */; };
 		7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */; };
 		7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
 		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
@@ -22,6 +23,7 @@
 		7C859158C567E41BB54782E4 /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
+		A4135BBB6B29256A7F754B70 /* ClawBridgeComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */; };
 		DD737C5436275ACBD686C371 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
 		E66EE11ACD383F65A4C8F1F9 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
@@ -34,6 +36,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 3854F89796153526B83EE7AA;
 			remoteInfo = OpenClawWatchExtension;
+		};
+		60A7D1FEE83809745B17A205 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E2C134C7EA2F1687801D073E;
+			remoteInfo = ClawBridgeComplicationExtension;
 		};
 		6E0D71317D4C93FB03C34601 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +61,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */,
+				A4135BBB6B29256A7F754B70 /* ClawBridgeComplicationExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -73,7 +83,9 @@
 		01ED1B3A17547DD342460148 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRelayController.swift; sourceTree = "<group>"; };
 		0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchVoiceUploadClient.swift; sourceTree = "<group>"; };
+		19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawBridgeComplication.swift; sourceTree = "<group>"; };
 		1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchVoiceController.swift; sourceTree = "<group>"; };
+		1ED7E8B5B525A071F1186287 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionRelayController.swift; sourceTree = "<group>"; };
 		33D2F98CC9106F5DE7F213C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3CB66DEE7BAB2FFBE123831A /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
@@ -86,6 +98,7 @@
 		B0474A2011A611051F38C899 /* OpenClawCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenClawCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawCompanionApp.swift; sourceTree = "<group>"; };
 		C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawWatchApp.swift; sourceTree = "<group>"; };
+		E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ClawBridgeComplicationExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = PublicAssets.xcassets; sourceTree = "<group>"; };
 		F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeConfiguration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -94,6 +107,7 @@
 		1297B0AD46B6EF332A37C444 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */,
 				B0474A2011A611051F38C899 /* OpenClawCompanion.app */,
 				55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */,
 				6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */,
@@ -123,6 +137,16 @@
 			path = Sources/Watch;
 			sourceTree = "<group>";
 		};
+		A8BD5BC5419A3D545E045EB7 /* Complication */ = {
+			isa = PBXGroup;
+			children = (
+				19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */,
+				1ED7E8B5B525A071F1186287 /* Info.plist */,
+			);
+			name = Complication;
+			path = Sources/Complication;
+			sourceTree = "<group>";
+		};
 		B45FDC9BD3808AE6182CDDEF /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -138,6 +162,7 @@
 		BCA197AD8EA9972400AA8647 = {
 			isa = PBXGroup;
 			children = (
+				A8BD5BC5419A3D545E045EB7 /* Complication */,
 				F010BD58C75E502533C9BC0E /* Config */,
 				B45FDC9BD3808AE6182CDDEF /* iOS */,
 				FA9E0E99F7CB48F03E55A960 /* Shared */,
@@ -217,6 +242,7 @@
 			);
 			dependencies = (
 				22600296D41308E836F3F225 /* PBXTargetDependency */,
+				286C449F99CCBA4A1E7A4A99 /* PBXTargetDependency */,
 			);
 			name = OpenClawWatchApp;
 			packageProductDependencies = (
@@ -224,6 +250,23 @@
 			productName = OpenClawWatchApp;
 			productReference = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */;
 			productType = "com.apple.product-type.application.watchapp2";
+		};
+		E2C134C7EA2F1687801D073E /* ClawBridgeComplicationExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 98E6973F8109C6E41E8B6982 /* Build configuration list for PBXNativeTarget "ClawBridgeComplicationExtension" */;
+			buildPhases = (
+				C281F10C1ADCD0D9682931F9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ClawBridgeComplicationExtension;
+			packageProductDependencies = (
+			);
+			productName = ClawBridgeComplicationExtension;
+			productReference = E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -243,6 +286,9 @@
 					780B2BAD3CC982CA5198A707 = {
 						ProvisioningStyle = Automatic;
 					};
+					E2C134C7EA2F1687801D073E = {
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 4FAFEED7A3CFAF3BDA61E04E /* Build configuration list for PBXProject "OpenClawWatch" */;
@@ -259,6 +305,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				E2C134C7EA2F1687801D073E /* ClawBridgeComplicationExtension */,
 				2E9ECAE42C555973C83C2305 /* OpenClawCompanion */,
 				780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */,
 				3854F89796153526B83EE7AA /* OpenClawWatchExtension */,
@@ -299,6 +346,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C281F10C1ADCD0D9682931F9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6827AA670EEAA5EC82582E4D /* ClawBridgeComplication.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E51E17A91FAAA2E366996933 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -321,6 +376,11 @@
 			isa = PBXTargetDependency;
 			target = 3854F89796153526B83EE7AA /* OpenClawWatchExtension */;
 			targetProxy = 4F1238660FC6F948613562FE /* PBXContainerItemProxy */;
+		};
+		286C449F99CCBA4A1E7A4A99 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E2C134C7EA2F1687801D073E /* ClawBridgeComplicationExtension */;
+			targetProxy = 60A7D1FEE83809745B17A205 /* PBXContainerItemProxy */;
 		};
 		60BAA5BAD71C32752D0D1E0F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -366,7 +426,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -420,6 +480,23 @@
 			};
 			name = Debug;
 		};
+		7AB148685E07B7C5ED21B07E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				INFOPLIST_FILE = Sources/Complication/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.complication;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
 		A3F16741856A3364615090BC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -456,7 +533,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -512,6 +589,23 @@
 					"@executable_path/../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.watchkitextension;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		E1B5FE720265CF3DA51506DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				INFOPLIST_FILE = Sources/Complication/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.briansnyder.ClawBridge.watchkitapp.complication;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -588,6 +682,15 @@
 			buildConfigurations = (
 				ED8A7AF07B4C6CEA759DB050 /* Debug */,
 				D5773DE2428463274B486350 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		98E6973F8109C6E41E8B6982 /* Build configuration list for PBXNativeTarget "ClawBridgeComplicationExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7AB148685E07B7C5ED21B07E /* Debug */,
+				E1B5FE720265CF3DA51506DD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
