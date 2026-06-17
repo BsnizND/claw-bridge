@@ -1,4 +1,5 @@
-// Copy this file to Signing.local.xcconfig and replace the placeholder with
-// your Apple Developer Team ID. Do not commit Signing.local.xcconfig.
+// Copy this file to Signing.local.xcconfig and replace the placeholders with
+// values for your Apple Developer account. Do not commit Signing.local.xcconfig.
 
 // DEVELOPMENT_TEAM = ABCDE12345
+// CLAW_BRIDGE_BUNDLE_ID_PREFIX = com.example.yourname

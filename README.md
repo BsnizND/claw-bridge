@@ -77,6 +77,16 @@ npm start
 
 For the native Watch app, see [Native Apple Watch App](docs/native-watch-app.md).
 
+## Release artifacts
+
+This repo releases the bridge server source/package, token-free Shortcut
+templates, and the native Claw Bridge Watch/iPhone source project. It does not
+publish pre-signed iOS or watchOS binaries. Apple device builds must be signed
+locally with the user's Apple Developer team and unique bundle identifier prefix
+through Xcode or Codex-driven Xcode commands. See
+[Native Apple Watch App](docs/native-watch-app.md) and
+[Shortcut Setup](docs/shortcut-setup.md).
+
 Generate a token:
 
 ```bash

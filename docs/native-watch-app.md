@@ -53,7 +53,8 @@ Schemes:
 ## Local setup
 
 1. Open `apps/OpenClawWatch/OpenClawWatch.xcodeproj` in Xcode.
-2. Select a Development Team for both app targets.
+2. Select a Development Team for both app targets, or create the ignored local
+   signing config described below.
 3. Connect or pair the iPhone and Apple Watch.
 4. Enable Developer Mode and trust prompts if Xcode asks.
 5. Run `OpenClawCompanion` on the iPhone. Xcode should install `Claw Bridge` on
@@ -82,7 +83,12 @@ Then edit `Signing.local.xcconfig`:
 
 ```text
 DEVELOPMENT_TEAM = ABCDE12345
+CLAW_BRIDGE_BUNDLE_ID_PREFIX = com.example.yourname
 ```
+
+The bundle ID prefix must be unique to your Apple Developer account. The public
+project defaults to `com.example` so no private team or personal bundle IDs are
+committed.
 
 Regenerate the Xcode project after changing the local signing file:
 

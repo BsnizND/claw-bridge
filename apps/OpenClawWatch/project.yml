@@ -7,8 +7,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "16"
-    MARKETING_VERSION: "0.1.3"
+    CURRENT_PROJECT_VERSION: "17"
+    MARKETING_VERSION: "0.1.8"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 targets:
@@ -32,7 +32,7 @@ targets:
         NSLocalNetworkUsageDescription: Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge
+        PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge
         TARGETED_DEVICE_FAMILY: 1
     dependencies:
       - target: OpenClawWatchApp
@@ -56,18 +56,18 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleURLTypes:
-          - CFBundleURLName: com.briansnyder.ClawBridge.watchkitapp
+          - CFBundleURLName: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp
             CFBundleURLSchemes:
               - clawbridge
         NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:
           PreciseWatchVoiceMessage: Claw Bridge can attach precise location to a voice message when you ask location-aware questions.
-        WKCompanionAppBundleIdentifier: com.briansnyder.ClawBridge
+        WKCompanionAppBundleIdentifier: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge
         WKWatchKitApp: true
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -96,11 +96,11 @@ targets:
           PreciseWatchVoiceMessage: Claw Bridge can attach precise location to a voice message when you ask location-aware questions.
         NSExtension:
           NSExtensionAttributes:
-            WKAppBundleIdentifier: com.briansnyder.ClawBridge.watchkitapp
+            WKAppBundleIdentifier: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp
           NSExtensionPointIdentifier: com.apple.watchkit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp.watchkitextension
+        PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp.watchkitextension
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
@@ -119,7 +119,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.briansnyder.ClawBridge.watchkitapp.ClawBridgeComplicationExtension
+        PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp.ClawBridgeComplicationExtension
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig

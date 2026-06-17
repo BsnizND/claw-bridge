@@ -22,7 +22,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.briansnyder.ClawBridge.watchkitapp</string>
+			<string>$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>clawbridge</string>
@@ -39,7 +39,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.briansnyder.ClawBridge</string>
+	<string>$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge</string>
 	<key>WKWatchKitApp</key>
 	<true/>
 </dict>

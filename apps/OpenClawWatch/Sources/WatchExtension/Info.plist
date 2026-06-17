@@ -27,7 +27,7 @@
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>WKAppBundleIdentifier</key>
-			<string>com.briansnyder.ClawBridge.watchkitapp</string>
+			<string>$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp</string>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.watchkit</string>
