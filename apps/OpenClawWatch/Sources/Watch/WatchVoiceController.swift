@@ -80,6 +80,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
             try? FileManager.default.removeItem(at: currentAudioURL)
             self.currentAudioURL = nil
         } catch {
+            NSLog("Jay Watch direct upload failed: \(error.localizedDescription)")
             do {
                 try WatchRelayController.shared.relayAudioFile(
                     currentAudioURL,

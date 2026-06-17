@@ -16,22 +16,34 @@ final class CompanionRelayController: NSObject, ObservableObject {
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        NSLog("Jay Bridge companion WCSession activating; configComplete=\(store.configuration.isComplete)")
         sendConfiguration(store.configuration)
     }
 
     func sendConfiguration(_ configuration: BridgeConfiguration) {
-        guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated else {
+            NSLog("Jay Bridge companion configuration send skipped; activationState=\(WCSession.default.activationState.rawValue)")
+            return
+        }
         var context: [String: Any] = [
             "bearerToken": configuration.bearerToken
         ]
         if let bridgeURL = configuration.bridgeURL?.absoluteString {
             context["bridgeURL"] = bridgeURL
         }
-        try? WCSession.default.updateApplicationContext(context)
+        do {
+            try WCSession.default.updateApplicationContext(context)
+            NSLog("Jay Bridge companion configuration sent to Watch; configComplete=\(configuration.isComplete)")
+        } catch {
+            NSLog("Jay Bridge companion configuration send failed: \(error.localizedDescription)")
+        }
     }
 
     private func relay(fileURL: URL, metadata: [String: String]) async {
-        guard let store else { return }
+        guard let store else {
+            NSLog("Jay Bridge relay skipped: configuration store unavailable")
+            return
+        }
         defer { try? FileManager.default.removeItem(at: fileURL) }
         let location = WatchVoiceLocation(metadata: metadata)
         let request = WatchVoiceUploadRequest(
@@ -42,7 +54,9 @@ final class CompanionRelayController: NSObject, ObservableObject {
             location: location
         )
         do {
+            NSLog("Jay Bridge relay upload starting; configComplete=\(store.configuration.isComplete)")
             _ = try await uploader.upload(request, configuration: store.configuration)
+            NSLog("Jay Bridge relay upload succeeded")
         } catch {
             // Relay failures stay local to the companion; the Watch shows the
             // original direct-upload failure and can retry.
@@ -56,7 +70,13 @@ extension CompanionRelayController: WCSessionDelegate {
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
-    ) {}
+    ) {
+        NSLog("Jay Bridge companion WCSession activation completed; state=\(activationState.rawValue); error=\(error?.localizedDescription ?? "none")")
+        Task { @MainActor in
+            guard let store else { return }
+            sendConfiguration(store.configuration)
+        }
+    }
 
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
 
@@ -67,10 +87,12 @@ extension CompanionRelayController: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
         let fileURL = file.fileURL
         let metadata = (file.metadata ?? [:]).compactMapValues { $0 as? String }
+        NSLog("Jay Bridge relay received Watch file; metadataKeys=\(metadata.keys.sorted().joined(separator: ","))")
         let relayURL = FileManager.default.temporaryDirectory
             .appending(path: "jay-bridge-relay-\(UUID().uuidString).m4a")
         do {
             try FileManager.default.copyItem(at: fileURL, to: relayURL)
+            NSLog("Jay Bridge relay copied Watch file")
         } catch {
             NSLog("Jay Bridge relay copy failed: \(error.localizedDescription)")
             return

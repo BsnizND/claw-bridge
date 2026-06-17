@@ -24,11 +24,16 @@ public final class BridgeConfigurationStore: ObservableObject {
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        let bundled = Self.bundleDefaultConfiguration()
+        if bundled.isComplete {
+            configuration = bundled
+            return
+        }
         if let data = defaults.data(forKey: key),
            let decoded = try? JSONDecoder().decode(BridgeConfiguration.self, from: data) {
-            configuration = decoded.isComplete ? decoded : Self.bundleDefaultConfiguration()
+            configuration = decoded.isComplete ? decoded : bundled
         } else {
-            configuration = Self.bundleDefaultConfiguration()
+            configuration = bundled
         }
     }
 

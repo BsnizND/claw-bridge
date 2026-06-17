@@ -17,6 +17,7 @@ final class WatchRelayController: NSObject, ObservableObject {
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        NSLog("Jay Watch relay WCSession activating; configComplete=\(store.configuration.isComplete)")
     }
 
     func relayAudioFile(
@@ -42,6 +43,7 @@ final class WatchRelayController: NSObject, ObservableObject {
             metadata["maps_url"] = location.mapsURL
         }
         WCSession.default.transferFile(fileURL, metadata: metadata)
+        NSLog("Jay Watch queued audio file for iPhone relay")
     }
 }
 
@@ -50,7 +52,9 @@ extension WatchRelayController: WCSessionDelegate {
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
-    ) {}
+    ) {
+        NSLog("Jay Watch relay WCSession activation completed; state=\(activationState.rawValue); error=\(error?.localizedDescription ?? "none")")
+    }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         let bridgeURLText = applicationContext["bridgeURL"] as? String
@@ -59,6 +63,7 @@ extension WatchRelayController: WCSessionDelegate {
             guard let store else { return }
             let bridgeURL = bridgeURLText.flatMap(URL.init(string:))
             store.configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: bearerToken)
+            NSLog("Jay Watch received bridge configuration; configComplete=\(store.configuration.isComplete)")
         }
     }
 }
