@@ -54,7 +54,7 @@ struct ClawBridgeComplicationEntryView: View {
                     Text("Record")
                         .font(.caption2)
                 }
-        }
+            }
         case .accessoryCorner:
             complicationIcon
                 .widgetLabel {
@@ -69,12 +69,22 @@ struct ClawBridgeComplicationEntryView: View {
         }
     }
 
+    @ViewBuilder
     private var complicationIcon: some View {
-        Image("ComplicationIcon")
-            .renderingMode(.original)
-            .resizable()
-            .scaledToFit()
-            .accessibilityLabel("Claw Bridge")
+        if #available(watchOS 11.0, *) {
+            Image("ComplicationIcon")
+                .renderingMode(.original)
+                .resizable()
+                .widgetAccentedRenderingMode(.fullColor)
+                .scaledToFit()
+                .accessibilityLabel("Claw Bridge")
+        } else {
+            Image("ComplicationIcon")
+                .renderingMode(.original)
+                .resizable()
+                .scaledToFit()
+                .accessibilityLabel("Claw Bridge")
+        }
     }
 }
 
