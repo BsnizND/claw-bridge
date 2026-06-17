@@ -8,11 +8,11 @@ import type { BridgeConfig } from '../src/types.js';
 function config(): BridgeConfig {
   return {
     logLevel: 'silent',
-    siriBridgeToken: '0123456789abcdef01234567',
+    bridgeToken: '0123456789abcdef01234567',
     assistantId: 'openclaw',
     maxMessageChars: 1200,
     allowedSources: new Set(['siri_watch', 'siri_iphone', 'shortcuts', 'ios_share_sheet', 'watch_app']),
-    shareUploadDir: join(tmpdir(), `openclaw-siri-share-test-${Date.now()}`),
+    shareUploadDir: join(tmpdir(), `claw-bridge-share-test-${Date.now()}`),
     shareMaxUploadBytes: 1024 * 1024,
     audioTranscribeEnabled: false
   } as BridgeConfig;

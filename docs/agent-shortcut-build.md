@@ -18,8 +18,8 @@ contain the user's bearer token.
 Ask the user for these values, or read them from their private deployment
 environment if they explicitly authorize that:
 
-- `SIRI_BRIDGE_URL`: public HTTPS URL ending in `/shortcuts/message`.
-- `SIRI_BRIDGE_TOKEN`: bearer token for the bridge.
+- `CLAW_BRIDGE_URL`: public HTTPS URL ending in `/shortcuts/message`.
+- `CLAW_BRIDGE_TOKEN`: bearer token for the bridge.
 - Optional `OUTPUT_DIR`: where generated local artifacts should be written.
 - Optional `CHERRI_BIN`: path to an already-installed Cherri binary.
 
@@ -31,16 +31,16 @@ suffix for confirmation is enough.
 From the repo root:
 
 ```bash
-export SIRI_BRIDGE_URL='https://example.com/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='replace-with-private-token'
+export CLAW_BRIDGE_URL='https://example.com/shortcuts/message'
+export CLAW_BRIDGE_TOKEN='replace-with-private-token'
 ./scripts/build-shortcut.sh
 ```
 
 Then build the share-sheet shortcut:
 
 ```bash
-export SIRI_BRIDGE_URL='https://example.com/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='replace-with-private-token'
+export CLAW_BRIDGE_URL='https://example.com/shortcuts/message'
+export CLAW_BRIDGE_TOKEN='replace-with-private-token'
 SHORTCUT_NAME='Share with OpenClaw' \
 SOURCE_TEMPLATE="$PWD/examples/share-with-openclaw.cherri.template" \
 ./scripts/build-shortcut.sh

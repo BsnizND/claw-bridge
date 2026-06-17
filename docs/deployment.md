@@ -55,7 +55,7 @@ OPENCLAW_DELIVER_REPLY=true
 OPENCLAW_REPLY_CHANNEL=telegram
 OPENCLAW_REPLY_TO=telegram:1234567890
 OPENCLAW_MESSAGE_STYLE=compact
-SIRI_MESSAGE_PREFIX=Sent via Siri voice message:
+VOICE_MESSAGE_PREFIX=Sent via voice message:
 ```
 
 That mode does not send a Telegram message as the human user. It injects the
@@ -117,12 +117,12 @@ Include `watch_app` in `ALLOWED_SOURCES` when using the native Watch app.
 
 ```ini
 [Unit]
-Description=OpenClaw Siri Bridge
+Description=Claw Bridge
 After=network-online.target
 
 [Service]
-WorkingDirectory=/opt/openclaw-siri-bridge
-EnvironmentFile=/opt/openclaw-siri-bridge/.env
+WorkingDirectory=/opt/claw-bridge
+EnvironmentFile=/opt/claw-bridge/.env
 ExecStart=/usr/bin/node dist/src/index.js
 Restart=always
 RestartSec=5

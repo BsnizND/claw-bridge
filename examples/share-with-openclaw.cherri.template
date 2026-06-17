@@ -25,7 +25,7 @@ if @isImage {
     @firstImage = getFirstItem(@imageInputs)
     @imageName = getImageDetail(@firstImage, 'Name')
     @response = formRequest(
-        "__SIRI_BRIDGE_SHARE_FILE_URL__?source=ios_share_sheet&device_name=iPhone&shortcut_name=Share%20with%20OpenClaw&latitude={@latitude}&longitude={@longitude}&altitude={@altitude}",
+        "__CLAW_BRIDGE_SHARE_FILE_URL__?source=ios_share_sheet&device_name=iPhone&shortcut_name=Share%20with%20OpenClaw&latitude={@latitude}&longitude={@longitude}&altitude={@altitude}",
         "POST",
         {
             "file": "{@firstImage}",
@@ -39,7 +39,7 @@ if @isImage {
             "maps_url": "{@mapsUrl}"
         },
         {
-            "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__"
+            "Authorization": "Bearer __CLAW_BRIDGE_TOKEN__"
         }
     )
     @responseDict = getDictionary(@response)
@@ -52,7 +52,7 @@ if @isImage {
     }
 } else if @shouldUpload {
     @response = formRequest(
-        "__SIRI_BRIDGE_SHARE_URL__",
+        "__CLAW_BRIDGE_SHARE_URL__",
         "POST",
         {
             "file": "{@sharedInput}",
@@ -65,7 +65,7 @@ if @isImage {
             "maps_url": "{@mapsUrl}"
         },
         {
-            "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__"
+            "Authorization": "Bearer __CLAW_BRIDGE_TOKEN__"
         }
     )
     @responseDict = getDictionary(@response)
@@ -82,7 +82,7 @@ if @isImage {
     if @urlCount {
         @firstUrl = getFirstItem(@sharedUrls)
         @response = jsonRequest(
-            "__SIRI_BRIDGE_URL__",
+            "__CLAW_BRIDGE_URL__",
             "POST",
             {
                 "message": "Shared via iPhone share sheet: {@firstUrl}",
@@ -97,7 +97,7 @@ if @isImage {
                 }
             },
             {
-                "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+                "Authorization": "Bearer __CLAW_BRIDGE_TOKEN__",
                 "Content-Type": "application/json"
             }
         )
@@ -113,7 +113,7 @@ if @isImage {
         @sharedText = getText(@sharedInput)
         if @sharedText {
             @response = jsonRequest(
-                "__SIRI_BRIDGE_URL__",
+                "__CLAW_BRIDGE_URL__",
                 "POST",
                 {
                     "message": "Shared via iPhone share sheet: {@sharedText}",
@@ -128,7 +128,7 @@ if @isImage {
                     }
                 },
                 {
-                    "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+                    "Authorization": "Bearer __CLAW_BRIDGE_TOKEN__",
                     "Content-Type": "application/json"
                 }
             )

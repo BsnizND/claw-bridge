@@ -57,7 +57,7 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
     ? `iOS share sheet item for ${event.assistant}:`
     : event.source === 'watch_app'
       ? `Apple Watch voice message for ${event.assistant}:`
-    : `Siri voice message for ${event.assistant}:`;
+    : `Shortcut voice message for ${event.assistant}:`;
   return [
     heading,
     '',
@@ -82,7 +82,7 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 function compactPrefix(config: BridgeConfig, event: NormalizedSiriEvent): string | undefined {
   if (event.source === 'ios_share_sheet') return 'Sent via iOS share sheet:';
   if (event.source === 'watch_app') return 'Sent via Apple Watch voice message:';
-  return config.siriMessagePrefix?.trim() || 'Sent via Siri voice message:';
+  return config.voiceMessagePrefix?.trim() || 'Sent via voice message:';
 }
 
 function compactText(event: NormalizedSiriEvent): string {

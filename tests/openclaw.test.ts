@@ -61,7 +61,7 @@ function shareEvent(text = 'Shared from iOS share sheet: screenshot OCR text'): 
 
 describe('OpenClaw delivery', () => {
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
@@ -89,7 +89,7 @@ describe('OpenClaw delivery', () => {
   });
 
   it('drains queued events through the OpenClaw CLI and marks them delivered', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-drain-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
@@ -124,7 +124,7 @@ describe('OpenClaw delivery', () => {
     const args = await readFile(argsPath, 'utf8');
     const cwd = await readFile(cwdPath, 'utf8');
     expect(args).toContain('--message');
-    expect(args).toContain('Siri voice message for openclaw');
+    expect(args).toContain('voice message for openclaw');
     expect(args).toContain('drain this message');
     expect(args).toContain('--thinking');
     expect(args).toContain('minimal');
@@ -133,7 +133,7 @@ describe('OpenClaw delivery', () => {
   });
 
   it('can deliver queued events through the Telegram direct session', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-telegram-drain-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-telegram-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
@@ -166,7 +166,7 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('--session-key');
     expect(args).toContain('agent:openclaw:telegram:default:direct:user');
     expect(args).toContain('--message');
-    expect(args).toContain('Sent via Siri voice message: please find a burrito place nearby');
+    expect(args).toContain('Sent via voice message: please find a burrito place nearby');
     expect(args).toContain('Shared item:');
     expect(args).toContain('Kind: audio');
     expect(args).toContain('File path: /tmp/Latest memo.m4a');
@@ -184,7 +184,7 @@ describe('OpenClaw delivery', () => {
   });
 
   it('uses the iOS share sheet prefix for compact shared items', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-share-prefix-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-share-prefix-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
@@ -198,7 +198,7 @@ describe('OpenClaw delivery', () => {
       openclawCliBin: binPath,
       openclawCliDrainTimeoutMs: 1000,
       openclawMessageStyle: 'compact',
-      siriMessagePrefix: 'Wrong voice prefix:',
+      voiceMessagePrefix: 'Wrong voice prefix:',
       assistantId: 'openclaw',
       openclawSessionKey: 'agent:openclaw:telegram:default:direct:user',
       queuePath,
@@ -220,7 +220,7 @@ describe('OpenClaw delivery', () => {
   });
 
   it('strips generated iPhone share sheet prose in compact shared messages', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-share-prose-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-share-prose-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
@@ -234,7 +234,7 @@ describe('OpenClaw delivery', () => {
       openclawCliBin: binPath,
       openclawCliDrainTimeoutMs: 1000,
       openclawMessageStyle: 'compact',
-      siriMessagePrefix: 'Wrong voice prefix:',
+      voiceMessagePrefix: 'Wrong voice prefix:',
       assistantId: 'openclaw',
       openclawSessionKey: 'agent:openclaw:telegram:default:direct:user',
       queuePath,
@@ -254,7 +254,7 @@ describe('OpenClaw delivery', () => {
   });
 
   it('marks queued events failed after the configured attempt limit', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-failed-drain-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-failed-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');

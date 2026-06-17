@@ -7,7 +7,7 @@ import type { BridgeConfig } from '../src/types.js';
 
 describe('audio transcription', () => {
   it('extracts OpenClaw nested transcription output text', async () => {
-    const dir = join(tmpdir(), `openclaw-siri-transcribe-test-${Date.now()}`);
+    const dir = join(tmpdir(), `claw-bridge-transcribe-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const binPath = join(dir, 'fake-openclaw');
     await writeFile(

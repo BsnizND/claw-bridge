@@ -6,7 +6,7 @@ export interface BridgeConfig {
   host: string;
   logLevel: string;
   nodeEnv: string;
-  siriBridgeToken: string;
+  bridgeToken: string;
   assistantId: string;
   maxMessageChars: number;
   allowedSources: Set<string>;
@@ -20,7 +20,7 @@ export interface BridgeConfig {
   openclawWorkdir?: string;
   openclawSessionKey: string;
   openclawMessageStyle: OpenClawMessageStyle;
-  siriMessagePrefix?: string;
+  voiceMessagePrefix?: string;
   openclawIngestUrl?: string;
   openclawIngestToken?: string;
   queuePath: string;

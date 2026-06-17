@@ -15,7 +15,7 @@
 
 if @message {
     @response = jsonRequest(
-        "__SIRI_BRIDGE_URL__",
+        "__CLAW_BRIDGE_URL__",
         "POST",
         {
             "message": "{@message}",
@@ -30,7 +30,7 @@ if @message {
             }
         },
         {
-            "Authorization": "Bearer __SIRI_BRIDGE_TOKEN__",
+            "Authorization": "Bearer __CLAW_BRIDGE_TOKEN__",
             "Content-Type": "application/json"
         }
     )

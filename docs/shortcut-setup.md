@@ -11,8 +11,8 @@ The repo includes token-free Cherri templates and a helper script that generates
 On macOS:
 
 ```bash
-export SIRI_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='your-long-random-token'
+export CLAW_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
+export CLAW_BRIDGE_TOKEN='your-long-random-token'
 ./scripts/build-shortcut.sh
 ```
 
@@ -45,8 +45,8 @@ OUTPUT_DIR="$PWD/artifacts/shortcuts" \
 To generate the share-sheet Shortcut:
 
 ```bash
-export SIRI_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='your-long-random-token'
+export CLAW_BRIDGE_URL='https://your-public-bridge.example.com/shortcuts/message'
+export CLAW_BRIDGE_TOKEN='your-long-random-token'
 SHORTCUT_NAME='Share with OpenClaw' \
 SOURCE_TEMPLATE="$PWD/examples/share-with-openclaw.cherri.template" \
 ./scripts/build-shortcut.sh
@@ -71,7 +71,7 @@ The generated Shortcut:
 2. Gets the current location and extracts latitude, longitude, altitude, and an Apple Maps URL.
 3. Checks that a message was captured.
 4. Sends a JSON `POST` to `/shortcuts/message`.
-5. Adds `Authorization: Bearer <SIRI_BRIDGE_TOKEN>`.
+5. Adds `Authorization: Bearer <CLAW_BRIDGE_TOKEN>`.
 6. Stays silent on success.
 7. Shows a notification only when the bridge returns an error.
 

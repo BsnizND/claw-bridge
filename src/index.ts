@@ -50,7 +50,7 @@ const app = createApp(config, {
 });
 
 app.listen(config.port, config.host, () => {
-  console.log(`openclaw-siri-bridge listening on http://${config.host}:${config.port}`);
+  console.log(`claw-bridge listening on http://${config.host}:${config.port}`);
   if (config.queueDrainIntervalMs > 0) {
     scheduleDrain('startup');
     setInterval(() => {

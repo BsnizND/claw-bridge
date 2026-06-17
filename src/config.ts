@@ -6,7 +6,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8788),
   HOST: z.string().default('127.0.0.1'),
   LOG_LEVEL: z.string().default('info'),
-  SIRI_BRIDGE_TOKEN: z.string().min(24),
+  CLAW_BRIDGE_TOKEN: z.string().optional(),
+  SIRI_BRIDGE_TOKEN: z.string().optional(),
   OPENCLAW_ASSISTANT_ID: z.string().min(1).default('openclaw'),
   MAX_MESSAGE_CHARS: z.coerce.number().int().positive().max(10000).default(1200),
   ALLOWED_SOURCES: z.string().default('siri_watch,siri_iphone,shortcuts,ios_share_sheet,watch_app'),
@@ -20,10 +21,11 @@ const envSchema = z.object({
   OPENCLAW_WORKDIR: z.string().min(1).optional(),
   OPENCLAW_SESSION_KEY: z.string().min(1).default('agent:openclaw:main'),
   OPENCLAW_MESSAGE_STYLE: z.enum(['detailed', 'compact']).default('detailed'),
+  VOICE_MESSAGE_PREFIX: z.string().min(1).optional(),
   SIRI_MESSAGE_PREFIX: z.string().min(1).optional(),
   OPENCLAW_INGEST_URL: z.string().url().optional(),
   OPENCLAW_INGEST_TOKEN: z.string().optional(),
-  QUEUE_PATH: z.string().min(1).default('./data/siri-queue.jsonl'),
+  QUEUE_PATH: z.string().min(1).default('./data/claw-bridge-queue.jsonl'),
   QUEUE_ARCHIVE_PATH: z.string().min(1).optional(),
   QUEUE_DRAIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(30000),
   QUEUE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
@@ -53,6 +55,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
   }
 
   const raw = parsed.data;
+  const bridgeToken = raw.CLAW_BRIDGE_TOKEN ?? raw.SIRI_BRIDGE_TOKEN;
+  if (!bridgeToken || bridgeToken.length < 24) {
+    throw new Error(
+      'Invalid bridge configuration: CLAW_BRIDGE_TOKEN must contain at least 24 characters; legacy SIRI_BRIDGE_TOKEN is also supported'
+    );
+  }
+
   if (raw.OPENCLAW_ADAPTER === 'http' && (!raw.OPENCLAW_INGEST_URL || !raw.OPENCLAW_INGEST_TOKEN)) {
     throw new Error('OPENCLAW_INGEST_URL and OPENCLAW_INGEST_TOKEN are required for OPENCLAW_ADAPTER=http');
   }
@@ -70,7 +79,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
     host: raw.HOST,
     logLevel: raw.LOG_LEVEL,
     nodeEnv: raw.NODE_ENV,
-    siriBridgeToken: raw.SIRI_BRIDGE_TOKEN,
+    bridgeToken,
     assistantId: raw.OPENCLAW_ASSISTANT_ID,
     maxMessageChars: raw.MAX_MESSAGE_CHARS,
     allowedSources,
@@ -84,7 +93,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
     openclawWorkdir: raw.OPENCLAW_WORKDIR,
     openclawSessionKey: raw.OPENCLAW_SESSION_KEY,
     openclawMessageStyle: raw.OPENCLAW_MESSAGE_STYLE,
-    siriMessagePrefix: raw.SIRI_MESSAGE_PREFIX,
+    voiceMessagePrefix: raw.VOICE_MESSAGE_PREFIX ?? raw.SIRI_MESSAGE_PREFIX,
     openclawIngestUrl: raw.OPENCLAW_INGEST_URL,
     openclawIngestToken: raw.OPENCLAW_INGEST_TOKEN,
     queuePath: raw.QUEUE_PATH,

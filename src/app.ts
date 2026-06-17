@@ -17,7 +17,7 @@ export interface AppDependencies {
 }
 
 function isAuthorized(config: BridgeConfig, header: string | undefined): boolean {
-  return header === `Bearer ${config.siriBridgeToken}`;
+  return header === `Bearer ${config.bridgeToken}`;
 }
 
 function safeUploadName(originalName: string): string {

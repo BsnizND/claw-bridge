@@ -1,17 +1,22 @@
-# openclaw-siri-bridge
+# claw-bridge
 
-Authenticated Apple Shortcuts/Siri webhook bridge for sending voice notes and shared iOS content to OpenClaw.
+Authenticated Apple capture bridge for sending Siri, Shortcuts, share-sheet, and Apple Watch voice input to OpenClaw.
 
-![OpenClaw Siri Bridge hero showing voice, watch, and share-sheet inputs flowing through a secure bridge into an assistant chat](docs/assets/openclaw-siri-bridge-hero.png)
+![Claw Bridge hero showing voice, watch, and share-sheet inputs flowing through a secure bridge into an assistant chat](docs/assets/claw-bridge-hero.png)
 
-Most Siri/LLM shortcuts end with a spoken answer, a copied snippet, or another app popping open. `openclaw-siri-bridge` does something more practical: it lets you send a thought, file, screenshot, link, or voice memo to your self-hosted OpenClaw assistant and get the reply back in the chat you already use, such as Telegram.
+`claw-bridge` is the capture layer between Apple devices and a self-hosted
+OpenClaw assistant. It accepts dictated messages from Siri/Shortcuts, rich
+content from the iOS share sheet, and push-to-talk audio from a native watchOS
+app, then queues the work for OpenClaw and lets the assistant reply in the chat
+you already use, such as Telegram.
 
 The phone or watch is just the capture device. The assistant thread stays the place where the work happens.
 
-This repo is built around two user stories:
+This repo is built around three capture lanes:
 
-1. **Talk to OpenClaw from your watch or phone.** Use Siri Shortcuts where they work, or use the native Watch push-to-talk app when Apple Watch Shortcuts are unreliable. OpenClaw's response comes back in your configured chat.
-2. **Share anything from your phone to OpenClaw.** Share a voice memo, link, tweet, photo, PDF, file, selected text, or webpage to OpenClaw and receive the response in Telegram.
+1. **Talk to OpenClaw from your watch or phone.** Use Siri Shortcuts where they work.
+2. **Record from the native Watch app.** Use the Claw Bridge watchOS app and complication when Apple Watch Shortcuts are unreliable or too slow.
+3. **Share anything from your phone to OpenClaw.** Share a voice memo, link, tweet, photo, PDF, file, selected text, or webpage and receive the response in your configured chat.
 
 The bridge is assistant-agnostic. Configure the OpenClaw session and Telegram reply route for your own deployment.
 
@@ -93,7 +98,7 @@ Generate a token:
 openssl rand -base64 32
 ```
 
-Set that value as `SIRI_BRIDGE_TOKEN` in `.env` and in the Apple Shortcut `Authorization` header:
+Set that value as `CLAW_BRIDGE_TOKEN` in `.env` and in the Apple Shortcut `Authorization` header:
 
 ```text
 Authorization: Bearer <token>
@@ -248,7 +253,7 @@ See [examples/env.example](examples/env.example).
 
 Important settings:
 
-- `SIRI_BRIDGE_TOKEN`: long random shared secret used by the Shortcut.
+- `CLAW_BRIDGE_TOKEN`: long random shared secret used by the Shortcut.
 - `OPENCLAW_ASSISTANT_ID`: assistant id to receive messages.
 - `OPENCLAW_SESSION_KEY`: OpenClaw session key for CLI delivery.
 - `OPENCLAW_WORKDIR`: optional directory to use when spawning the OpenClaw CLI.
@@ -256,7 +261,7 @@ Important settings:
 - `OPENCLAW_DELIVER_REPLY`: set to `true` when OpenClaw should deliver the assistant reply back to a channel.
 - `OPENCLAW_REPLY_CHANNEL` / `OPENCLAW_REPLY_TO`: reply route for `OPENCLAW_DELIVER_REPLY`.
 - `OPENCLAW_MESSAGE_STYLE`: `detailed` metadata payload or `compact` user-facing transcript.
-- `SIRI_MESSAGE_PREFIX`: optional prefix for compact voice messages, for example `Sent via Siri voice message:`.
+- `VOICE_MESSAGE_PREFIX`: optional prefix for compact voice messages, for example `Sent via voice message:`.
 - `QUEUE_PATH`: JSONL queue path.
 - `QUEUE_ARCHIVE_PATH`: JSONL archive path for delivered/failed queue records. Defaults to `QUEUE_PATH + ".archive"`.
 - `MAX_MESSAGE_CHARS`: maximum accepted dictated text length.
@@ -266,6 +271,10 @@ Important settings:
 - `AUDIO_TRANSCRIBE_ENABLED`: when `true`, transcribe shared audio before delivery.
 - `AUDIO_TRANSCRIBE_CLI_BIN`: CLI used for transcription; defaults to `openclaw`.
 - `AUDIO_TRANSCRIBE_MODEL` / `AUDIO_TRANSCRIBE_LANGUAGE`: optional transcription hints.
+
+Legacy `SIRI_BRIDGE_TOKEN`, `SIRI_BRIDGE_URL`, and `SIRI_MESSAGE_PREFIX`
+names are still accepted where they existed before, but new installs should use
+the `CLAW_BRIDGE_*` and `VOICE_MESSAGE_PREFIX` names.
 
 ## Shortcut setup
 

@@ -87,12 +87,12 @@ the backend target that Tailscale proxies to.
 
 ## Shortcut URLs
 
-Set `SIRI_BRIDGE_URL` to the Tailscale HTTPS URL ending in
+Set `CLAW_BRIDGE_URL` to the Tailscale HTTPS URL ending in
 `/shortcuts/message`:
 
 ```bash
-export SIRI_BRIDGE_URL='https://your-node.your-tailnet.ts.net/shortcuts/message'
-export SIRI_BRIDGE_TOKEN='your-long-random-token'
+export CLAW_BRIDGE_URL='https://your-node.your-tailnet.ts.net/shortcuts/message'
+export CLAW_BRIDGE_TOKEN='your-long-random-token'
 ./scripts/build-shortcut.sh
 ```
 
@@ -127,9 +127,9 @@ Check an authenticated smoke only after confirming your token is private:
 
 ```bash
 curl -i -X POST https://your-node.your-tailnet.ts.net/shortcuts/message \
-  -H "Authorization: Bearer $SIRI_BRIDGE_TOKEN" \
+  -H "Authorization: Bearer $CLAW_BRIDGE_TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"message":"OpenClaw Siri bridge smoke test","source":"shortcuts"}'
+  -d '{"message":"Claw Bridge smoke test","source":"shortcuts"}'
 ```
 
 Expected result: `202 Accepted`.
@@ -137,7 +137,7 @@ Expected result: `202 Accepted`.
 ## Operational notes
 
 - Funnel exposes the bridge to the public internet, so keep
-  `SIRI_BRIDGE_TOKEN` long and private.
+  `CLAW_BRIDGE_TOKEN` long and private.
 - Keep `HOST=127.0.0.1`; Tailscale should be the HTTPS edge.
 - Keep only bridge routes exposed. Do not proxy OpenClaw admin routes, logs,
   queue files, shell access, or local dashboards.

@@ -194,7 +194,7 @@ for the physical iPhone.
 ### Upload returns unauthorized
 
 Re-enter the bearer token in the companion app and confirm it matches
-`SIRI_BRIDGE_TOKEN` on the bridge.
+`CLAW_BRIDGE_TOKEN` on the bridge.
 
 ### The app sends without location
 

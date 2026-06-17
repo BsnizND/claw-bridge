@@ -1,7 +1,7 @@
 {
-  "name": "openclaw-siri-bridge",
-  "version": "0.1.8",
-  "description": "Authenticated Apple Shortcuts/Siri webhook bridge for sending dictated messages into OpenClaw.",
+  "name": "claw-bridge",
+  "version": "0.1.9",
+  "description": "Authenticated Apple capture bridge for sending Siri, Shortcuts, share-sheet, and Watch voice input into OpenClaw.",
   "type": "module",
   "main": "dist/src/index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "voice",
     "webhook"
   ],
-  "author": "OpenClaw Siri Bridge contributors",
+  "author": "Claw Bridge contributors",
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2",

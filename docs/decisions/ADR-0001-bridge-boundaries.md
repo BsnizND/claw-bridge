@@ -10,10 +10,11 @@ Apple Shortcuts and Siri are good at capturing quick dictated text, especially f
 
 ## Decision
 
-`openclaw-siri-bridge` is a narrow authenticated ingress bridge:
+`claw-bridge` is a narrow authenticated ingress bridge:
 
-- it accepts JSON POSTs from Apple Shortcuts;
-- it validates and normalizes the dictated message;
+- it accepts JSON and file uploads from Apple Shortcuts and the iOS share sheet;
+- it accepts native watchOS push-to-talk audio uploads;
+- it validates and normalizes captured input;
 - it queues immediately for a fast Siri/Shortcuts response;
 - it drains to OpenClaw asynchronously through either CLI or HTTP ingest;
 - it does not create or manage OpenClaw agents.

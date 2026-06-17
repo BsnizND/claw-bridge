@@ -1,6 +1,6 @@
 # Security notes
 
-- Use a long random `SIRI_BRIDGE_TOKEN`.
+- Use a long random `CLAW_BRIDGE_TOKEN`.
 - Serve the bridge only over HTTPS.
 - Keep OpenClaw, queue files, logs, and admin surfaces private.
 - Keep `MAX_MESSAGE_CHARS` bounded.

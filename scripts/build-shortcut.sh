@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -z "${SIRI_BRIDGE_URL:-}" ]]; then
-  echo "ERROR: set SIRI_BRIDGE_URL, for example https://example.com/shortcuts/message" >&2
+bridge_url="${CLAW_BRIDGE_URL:-${SIRI_BRIDGE_URL:-}}"
+bridge_token="${CLAW_BRIDGE_TOKEN:-${SIRI_BRIDGE_TOKEN:-}}"
+
+if [[ -z "$bridge_url" ]]; then
+  echo "ERROR: set CLAW_BRIDGE_URL, for example https://example.com/shortcuts/message" >&2
   exit 1
 fi
 
-if [[ -z "${SIRI_BRIDGE_TOKEN:-}" ]]; then
-  echo "ERROR: set SIRI_BRIDGE_TOKEN to the bridge bearer token" >&2
+if [[ -z "$bridge_token" ]]; then
+  echo "ERROR: set CLAW_BRIDGE_TOKEN to the bridge bearer token" >&2
   exit 1
 fi
 
@@ -47,8 +50,8 @@ fi
 source_path="$OUTPUT_DIR/$SHORTCUT_NAME.cherri"
 shortcut_path="$OUTPUT_DIR/$SHORTCUT_NAME.shortcut"
 
-SIRI_BRIDGE_URL="$SIRI_BRIDGE_URL" \
-SIRI_BRIDGE_TOKEN="$SIRI_BRIDGE_TOKEN" \
+CLAW_BRIDGE_URL="$bridge_url" \
+CLAW_BRIDGE_TOKEN="$bridge_token" \
 SOURCE_TEMPLATE="$SOURCE_TEMPLATE" \
 SOURCE_OUTPUT="$source_path" \
 python3 - <<'PY'
@@ -56,21 +59,21 @@ import os
 from pathlib import Path
 
 template = Path(os.environ["SOURCE_TEMPLATE"]).read_text(encoding="utf-8")
-url = os.environ["SIRI_BRIDGE_URL"].strip()
-token = os.environ["SIRI_BRIDGE_TOKEN"].strip()
+url = os.environ["CLAW_BRIDGE_URL"].strip()
+token = os.environ["CLAW_BRIDGE_TOKEN"].strip()
 
 if not url.endswith("/shortcuts/message"):
-    raise SystemExit("ERROR: SIRI_BRIDGE_URL should end with /shortcuts/message")
+    raise SystemExit("ERROR: CLAW_BRIDGE_URL should end with /shortcuts/message")
 
 share_url = url.removesuffix("/shortcuts/message") + "/shortcuts/share"
 share_file_url = url.removesuffix("/shortcuts/message") + "/shortcuts/share-file"
 
 rendered = (
     template
-    .replace("__SIRI_BRIDGE_URL__", url.replace("\\", "\\\\").replace('"', '\\"'))
-    .replace("__SIRI_BRIDGE_SHARE_URL__", share_url.replace("\\", "\\\\").replace('"', '\\"'))
-    .replace("__SIRI_BRIDGE_SHARE_FILE_URL__", share_file_url.replace("\\", "\\\\").replace('"', '\\"'))
-    .replace("__SIRI_BRIDGE_TOKEN__", token.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__CLAW_BRIDGE_URL__", url.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__CLAW_BRIDGE_SHARE_URL__", share_url.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__CLAW_BRIDGE_SHARE_FILE_URL__", share_file_url.replace("\\", "\\\\").replace('"', '\\"'))
+    .replace("__CLAW_BRIDGE_TOKEN__", token.replace("\\", "\\\\").replace('"', '\\"'))
 )
 
 Path(os.environ["SOURCE_OUTPUT"]).write_text(rendered, encoding="utf-8")
