@@ -12,9 +12,11 @@ final class WatchVoiceController: NSObject, ObservableObject {
     private let responseClient = WalkieResponseClient()
     private let audioPlayer = WalkieAudioPlayer()
     private let locationManager = CLLocationManager()
-    private let minimumRecordingByteCount: UInt64 = 1_024
+    private let minimumRecordingByteCount: UInt64 = 4_096
+    private let minimumRecordingDuration: TimeInterval = 0.8
     private var recorder: AVAudioRecorder?
     private var currentAudioURL: URL?
+    private var recordingStartedAt: Date?
     private var latestLocation: CLLocation?
     private var locationContinuation: CheckedContinuation<CLLocation?, Never>?
     private var authorizationContinuation: CheckedContinuation<CLAuthorizationStatus, Never>?
@@ -34,6 +36,10 @@ final class WatchVoiceController: NSObject, ObservableObject {
 
     func toggleRecording(configuration: BridgeConfiguration, wantsVoiceReply: Bool = false) async {
         if status.isListening {
+            guard canStopCurrentRecording else {
+                detailText = "Keep talking"
+                return
+            }
             await stopAndSend(configuration: configuration, wantsVoiceReply: wantsVoiceReply)
         } else {
             await startRecording()
@@ -66,6 +72,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
             }
             self.recorder = recorder
             currentAudioURL = url
+            recordingStartedAt = Date()
             status = .recording
             detailText = "Tap again to send"
         } catch {
@@ -75,6 +82,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
     }
 
     private func stopAndSend(configuration: BridgeConfiguration, wantsVoiceReply: Bool) async {
+        let recordingDuration = recorder?.currentTime ?? recordingElapsedTime
         recorder?.stop()
         recorder = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -84,12 +92,13 @@ final class WatchVoiceController: NSObject, ObservableObject {
             return
         }
         do {
-            try validateRecording(at: currentAudioURL)
+            try validateRecording(at: currentAudioURL, duration: recordingDuration)
         } catch {
-            status = .failed(error.localizedDescription)
+            status = .idle
             detailText = error.localizedDescription
             try? FileManager.default.removeItem(at: currentAudioURL)
             self.currentAudioURL = nil
+            recordingStartedAt = nil
             return
         }
         status = .sending
@@ -107,6 +116,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
             let response = try await uploader.upload(request, configuration: configuration)
             try? FileManager.default.removeItem(at: currentAudioURL)
             self.currentAudioURL = nil
+            recordingStartedAt = nil
             if wantsVoiceReply, let responseID = response.response_id {
                 lastResponseID = responseID
                 status = .waitingForReply
@@ -161,7 +171,19 @@ final class WatchVoiceController: NSObject, ObservableObject {
         try session.setActive(true)
     }
 
-    private func validateRecording(at url: URL) throws {
+    private var recordingElapsedTime: TimeInterval {
+        guard let recordingStartedAt else { return 0 }
+        return Date().timeIntervalSince(recordingStartedAt)
+    }
+
+    private var canStopCurrentRecording: Bool {
+        recordingElapsedTime >= minimumRecordingDuration
+    }
+
+    private func validateRecording(at url: URL, duration: TimeInterval) throws {
+        guard duration >= minimumRecordingDuration else {
+            throw WatchVoiceRecordingError.tooShort
+        }
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         let byteCount = attributes[.size] as? UInt64 ?? 0
         guard byteCount >= minimumRecordingByteCount else {
@@ -290,11 +312,13 @@ enum WatchVoicePermissionError: LocalizedError {
 enum WatchVoiceRecordingError: LocalizedError {
     case failedToStart
     case emptyRecording
+    case tooShort
 
     var errorDescription: String? {
         switch self {
         case .failedToStart: "Recording could not start."
-        case .emptyRecording: "Recording was empty. Try again."
+        case .emptyRecording: "Nothing recorded. Try again."
+        case .tooShort: "Message was too short. Try again."
         }
     }
 }
