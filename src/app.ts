@@ -5,6 +5,7 @@ import express from 'express';
 import multer from 'multer';
 import pino from 'pino';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent, ShortcutMessageRequest } from './types.js';
+import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { acceptForOpenClaw } from './openclaw.js';
 import { normalizeShortcutMessage } from './siri.js';
@@ -15,6 +16,7 @@ import { normalizeWatchVoiceRequest } from './watch.js';
 export interface AppDependencies {
   acceptEvent?: (event: NormalizedSiriEvent) => Promise<DeliveryResult>;
   afterAccepted?: (event: NormalizedSiriEvent) => void;
+  appDeviceStore?: AppDeviceStore;
   appResponseStore?: AppResponseStore;
 }
 
@@ -117,14 +119,25 @@ function wantsVoiceResponse(body: Record<string, unknown>): boolean {
   );
 }
 
+function appPlatform(value: unknown) {
+  const platform = queryValue(value)?.toLowerCase();
+  return platform === 'ios' || platform === 'watchos' ? platform : undefined;
+}
+
 async function attachVoiceResponseIfRequested(
   store: AppResponseStore,
   body: Record<string, unknown>,
   event: NormalizedSiriEvent
 ) {
   if (!wantsVoiceResponse(body)) return undefined;
+  event.app_response = {
+    id: '',
+    mode: 'voice',
+    app_device_id: queryValue(body.app_device_id),
+    app_platform: appPlatform(body.app_platform)
+  };
   const response = await store.createPending(event);
-  event.app_response = { id: response.id, mode: 'voice' };
+  event.app_response.id = response.id;
   return response;
 }
 
@@ -141,6 +154,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
   const logger = pino({ level: config.logLevel });
   const acceptEvent = deps.acceptEvent ?? ((event) => acceptForOpenClaw(config, event));
   const afterAccepted = deps.afterAccepted;
+  const deviceStore = deps.appDeviceStore ?? new AppDeviceStore(config.appDeviceDir ?? `${config.shareUploadDir}/../app-devices`);
   const responseStore =
     deps.appResponseStore ??
     new AppResponseStore(config.appResponseDir ?? `${config.shareUploadDir}/../app-responses`, config.appResponseTtlMs ?? 86400000);
@@ -180,6 +194,28 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
   app.get('/healthz', (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.post('/app/devices/register', async (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized' });
+      return;
+    }
+    try {
+      const body = req.body as Record<string, unknown>;
+      const record = await deviceStore.upsert({
+        id: queryValue(body.id) ?? '',
+        platform: queryValue(body.platform) ?? '',
+        push_token: queryValue(body.push_token) ?? '',
+        app_version: queryValue(body.app_version),
+        device_name: queryValue(body.device_name)
+      });
+      res.status(202).json({ ok: true, device_id: record.id, platform: record.platform });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'device registration failed';
+      logger.warn({ error: message }, 'app device registration rejected');
+      res.status(400).json({ ok: false, error: message });
+    }
   });
 
   app.post('/shortcuts/message', async (req, res) => {
@@ -379,9 +415,13 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
           source: record.source,
           assistant: record.assistant,
           device_name: record.device_name,
+          app_device_id: record.app_device_id,
+          app_platform: record.app_platform,
           reply_text: record.reply_text,
           audio_mime_type: record.audio_mime_type,
           audio_size_bytes: record.audio_size_bytes,
+          notification_status: record.notification_status,
+          notification_error: record.notification_error,
           audio_url: record.status === 'ready' ? `${req.protocol}://${req.get('host')}/app/responses/${record.id}/audio` : undefined,
           error: record.error
         }

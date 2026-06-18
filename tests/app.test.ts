@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { AppResponseStore } from '../src/app-response-store.js';
+import { AppDeviceStore } from '../src/app-device-store.js';
 import { createApp } from '../src/app.js';
 import type { BridgeConfig } from '../src/types.js';
 
@@ -32,6 +33,33 @@ describe('app routes', () => {
     expect(res.status).toBe(401);
     expect(res.body.error).toBe('unauthorized');
     expect(res.body.spoken).toBe('Not sent: unauthorized');
+  });
+
+  it('registers app push devices with bearer auth', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-device-test-${Date.now()}`);
+    const app = createApp(config(), { appDeviceStore: new AppDeviceStore(deviceDir) });
+    const res = await request(app)
+      .post('/app/devices/register')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        id: 'ios-test-device',
+        platform: 'ios',
+        push_token: 'a'.repeat(64),
+        app_version: '1.0',
+        device_name: 'iPhone'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toEqual({ ok: true, device_id: 'ios-test-device', platform: 'ios' });
+
+    const stored = await new AppDeviceStore(deviceDir).get('ios-test-device');
+    expect(stored).toMatchObject({
+      id: 'ios-test-device',
+      platform: 'ios',
+      push_token: 'a'.repeat(64),
+      app_version: '1.0',
+      device_name: 'iPhone'
+    });
   });
 
   it('accepts and normalizes authorized shortcut messages', async () => {
@@ -266,6 +294,8 @@ describe('app routes', () => {
       .post('/watch/voice')
       .set('Authorization', 'Bearer 0123456789abcdef01234567')
       .field('walkie_mode', 'true')
+      .field('app_device_id', 'ios-test-device')
+      .field('app_platform', 'ios')
       .attach('audio', Buffer.from('audio-ish'), {
         filename: 'watch-message.m4a',
         contentType: 'audio/mp4'
@@ -276,7 +306,7 @@ describe('app routes', () => {
     expect(res.body.response_status_url).toContain(`/app/responses/${res.body.response_id}`);
     expect(acceptEvent).toHaveBeenCalledWith(
       expect.objectContaining({
-        app_response: { id: res.body.response_id, mode: 'voice' }
+        app_response: expect.objectContaining({ id: res.body.response_id, mode: 'voice', app_device_id: 'ios-test-device' })
       })
     );
 
@@ -287,7 +317,10 @@ describe('app routes', () => {
     expect(status.body.response).toMatchObject({
       id: res.body.response_id,
       status: 'pending',
-      mode: 'voice'
+      mode: 'voice',
+      app_device_id: 'ios-test-device',
+      app_platform: 'ios',
+      notification_status: 'not_requested'
     });
   });
 

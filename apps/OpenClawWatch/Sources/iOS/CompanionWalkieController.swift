@@ -1,6 +1,5 @@
 import AVFoundation
 import Foundation
-import UserNotifications
 
 @MainActor
 final class CompanionWalkieController: ObservableObject {
@@ -14,10 +13,9 @@ final class CompanionWalkieController: ObservableObject {
     private let responseClient = WalkieResponseClient()
     private let audioPlayer = WalkieAudioPlayer()
 
-    func requestNotificationPermission() async {
+    func requestNotificationPermission(configuration: BridgeConfiguration) async {
         do {
-            let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-            notificationStatus = granted ? "Allowed" : "Denied"
+            notificationStatus = try await CompanionPushController.shared.requestAuthorizationAndRegister(configuration: configuration)
         } catch {
             notificationStatus = error.localizedDescription
         }
@@ -54,7 +52,9 @@ final class CompanionWalkieController: ObservableObject {
                 "device_name": "iPhone",
                 "shortcut_name": "Claw Bridge Walkie",
                 "response_mode": "voice",
-                "walkie_mode": true
+                "walkie_mode": true,
+                "app_device_id": CompanionPushController.shared.deviceID,
+                "app_platform": "ios"
             ])
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
@@ -81,6 +81,13 @@ final class CompanionWalkieController: ObservableObject {
     func replay(configuration: BridgeConfiguration) async {
         guard let lastResponseID else { return }
         await play(responseID: lastResponseID, configuration: configuration)
+    }
+
+    func open(responseID: String, configuration: BridgeConfiguration) async {
+        lastResponseID = responseID
+        statusText = "Opening"
+        detailText = "Opening Jay reply"
+        await play(responseID: responseID, configuration: configuration)
     }
 
     private func play(responseID: String, configuration: BridgeConfiguration) async {

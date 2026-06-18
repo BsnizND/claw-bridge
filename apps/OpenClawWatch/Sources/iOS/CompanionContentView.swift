@@ -73,7 +73,7 @@ struct CompanionContentView: View {
                 Section("Notifications") {
                     Button {
                         Task {
-                            await walkie.requestNotificationPermission()
+                            await walkie.requestNotificationPermission(configuration: store.configuration)
                         }
                     } label: {
                         Label("Enable Tap to Play", systemImage: "bell.badge")
@@ -86,6 +86,12 @@ struct CompanionContentView: View {
             .onAppear {
                 bridgeURLText = store.configuration.bridgeURL?.absoluteString ?? ""
                 tokenText = store.configuration.bearerToken
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .clawBridgeOpenResponse)) { notification in
+                guard let responseID = notification.object as? String else { return }
+                Task {
+                    await walkie.open(responseID: responseID, configuration: store.configuration)
+                }
             }
         }
     }

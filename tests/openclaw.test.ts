@@ -75,6 +75,23 @@ describe('OpenClaw delivery', () => {
         })
       )
     ).toBe('hello from content array');
+    expect(
+      extractReplyTextFromOpenClawOutput(
+        JSON.stringify({
+          runId: 'test-run',
+          status: 'ok',
+          result: {
+            payloads: [
+              {
+                text: 'hello from OpenClaw payloads',
+                mediaUrl: null
+              }
+            ],
+            finalAssistantVisibleText: 'hello from visible text'
+          }
+        })
+      )
+    ).toBe('hello from OpenClaw payloads');
   });
 
   it('queues inbound Siri events immediately instead of blocking the request', async () => {

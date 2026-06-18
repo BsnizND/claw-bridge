@@ -154,6 +154,7 @@ For Walkie voice replies, also configure:
 
 ```text
 APP_RESPONSE_DIR=./data/app-responses
+APP_DEVICE_DIR=./data/app-devices
 ELEVENLABS_API_KEY=replace-with-elevenlabs-api-key
 ELEVENLABS_VOICE_ID=replace-with-elevenlabs-voice-id
 ```
@@ -186,9 +187,23 @@ claim success.
 ## Notifications
 
 The iOS companion can request notification permission so the app is ready for a
-tap-to-play notification flow. A real closed-app notification path still
-requires APNs/device-token plumbing and device evidence; simulator foreground
-polling is not proof that background notification delivery works.
+tap-to-play notification flow. It registers an APNs device token with
+`POST /app/devices/register` and includes a stable `app_device_id` when sending
+Walkie messages.
+
+To deliver tap-to-play notifications from the bridge, configure:
+
+```text
+APNS_TEAM_ID=replace-with-apple-team-id
+APNS_KEY_ID=replace-with-apple-key-id
+APNS_PRIVATE_KEY_PATH=/secure/local/path/AuthKey_KEYID.p8
+APNS_BUNDLE_ID=com.example.ClawBridge
+APNS_ENVIRONMENT=development
+```
+
+Simulator foreground polling is not proof that background notification delivery
+works. Closed-app tap-to-play still needs a signed physical device and APNs
+credential proof before it should be called production-ready.
 
 ## Private local branding
 

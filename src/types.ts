@@ -2,6 +2,8 @@ export type OpenClawAdapter = 'cli' | 'http';
 export type OpenClawMessageStyle = 'detailed' | 'compact';
 export type AppResponseMode = 'voice';
 export type AppResponseStatus = 'pending' | 'rendering' | 'ready' | 'failed' | 'expired';
+export type AppPlatform = 'ios' | 'watchos';
+export type AppNotificationStatus = 'not_requested' | 'not_configured' | 'sent' | 'failed';
 
 export interface BridgeConfig {
   port: number;
@@ -38,6 +40,12 @@ export interface BridgeConfig {
   elevenLabsModelId: string;
   elevenLabsOutputFormat: string;
   elevenLabsBaseUrl: string;
+  appDeviceDir: string;
+  apnsTeamId?: string;
+  apnsKeyId?: string;
+  apnsPrivateKeyPath?: string;
+  apnsBundleId?: string;
+  apnsEnvironment: 'development' | 'production';
   audioTranscribeEnabled: boolean;
   audioTranscribeCliBin: string;
   audioTranscribeTimeoutMs: number;
@@ -118,6 +126,18 @@ export interface DeliveryResult {
 export interface AppResponseRequest {
   id: string;
   mode: AppResponseMode;
+  app_device_id?: string;
+  app_platform?: AppPlatform;
+}
+
+export interface AppDeviceRegistration {
+  id: string;
+  platform: AppPlatform;
+  push_token: string;
+  created_at: string;
+  updated_at: string;
+  app_version?: string;
+  device_name?: string;
 }
 
 export interface AppResponseRecord {
@@ -131,10 +151,14 @@ export interface AppResponseRecord {
   source: string;
   assistant: string;
   device_name?: string;
+  app_device_id?: string;
+  app_platform?: AppPlatform;
   reply_text?: string;
   audio_path?: string;
   audio_mime_type?: string;
   audio_size_bytes?: number;
+  notification_status?: AppNotificationStatus;
+  notification_error?: string;
   error?: string;
 }
 

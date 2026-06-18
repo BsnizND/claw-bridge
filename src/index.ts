@@ -1,10 +1,12 @@
 import { createApp } from './app.js';
+import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { loadConfig } from './config.js';
 import { drainOpenClawQueue } from './openclaw.js';
 import { renderAppVoiceReply } from './voice-replies.js';
 
 const config = loadConfig();
+const appDeviceStore = new AppDeviceStore(config.appDeviceDir);
 const appResponseStore = new AppResponseStore(config.appResponseDir, config.appResponseTtlMs);
 let draining = false;
 let drainStartedAt = 0;
@@ -33,7 +35,7 @@ async function drainOnce(reason: string) {
   try {
     const result = await drainOpenClawQueue(config, {
       afterDelivered: async (event, delivery) => {
-        await renderAppVoiceReply(config, appResponseStore, event, delivery);
+        await renderAppVoiceReply(config, appResponseStore, event, delivery, appDeviceStore);
       }
     });
     if (result.delivered > 0 || result.failed > 0 || result.archived > 0) {
@@ -51,6 +53,7 @@ async function drainOnce(reason: string) {
 }
 
 const app = createApp(config, {
+  appDeviceStore,
   appResponseStore,
   afterAccepted: (event) => {
     scheduleDrain(`accepted:${event.request_id}`);

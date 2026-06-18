@@ -98,6 +98,35 @@ describe('ElevenLabs voice replies', () => {
     });
   });
 
+  it('keeps ready audio playable when APNs is not configured', async () => {
+    const dir = join(tmpdir(), `claw-bridge-render-notification-test-${Date.now()}`);
+    const store = new AppResponseStore(dir, 60000);
+    const pending = await store.createPending({
+      source: 'watch_app',
+      assistant: 'openclaw',
+      raw_text: 'hello',
+      captured_at: new Date().toISOString(),
+      request_id: 'voice-reply-request',
+      app_response: { id: 'pending', mode: 'voice', app_device_id: 'ios-test-device', app_platform: 'ios' }
+    });
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(Buffer.from('audio'), {
+        status: 200,
+        headers: { 'content-type': 'audio/mpeg' }
+      })
+    );
+
+    await renderAppVoiceReply(baseConfig(), store, event(pending.id), { ok: true, replyText: 'Jay reply' });
+
+    const ready = await store.get(pending.id);
+    expect(ready).toMatchObject({
+      status: 'ready',
+      notification_status: 'not_configured',
+      notification_error: 'APNs is not configured'
+    });
+  });
+
+
   it('marks app response records failed when reply text is missing', async () => {
     const dir = join(tmpdir(), `claw-bridge-render-fail-test-${Date.now()}`);
     const store = new AppResponseStore(dir, 60000);

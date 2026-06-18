@@ -305,6 +305,25 @@ Statuses are `pending`, `rendering`, `ready`, `failed`, and `expired`.
 `GET /app/responses/:id/audio` streams the generated audio only after the
 response is ready.
 
+### `POST /app/devices/register`
+
+The iOS companion app uses this authenticated endpoint after APNs registration:
+
+```json
+{
+  "id": "stable-app-device-id",
+  "platform": "ios",
+  "push_token": "hex-apns-device-token",
+  "app_version": "0.1.8",
+  "device_name": "iPhone"
+}
+```
+
+The bridge stores the device token locally. When a Walkie request includes
+`app_device_id` and response audio becomes ready, the bridge attempts APNs
+delivery with a `response_id` payload so tapping the notification can open the
+matching reply in the app.
+
 ## Configuration
 
 See [examples/env.example](examples/env.example).
@@ -333,6 +352,8 @@ Important settings:
 - `APP_RESPONSE_TTL_MS`: response lifetime before pending replies expire.
 - `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID`: required for real Walkie voice replies.
 - `ELEVENLABS_MODEL_ID`, `ELEVENLABS_OUTPUT_FORMAT`, `ELEVENLABS_BASE_URL`: optional ElevenLabs TTS tuning.
+- `APP_DEVICE_DIR`: directory for registered iOS/watchOS app device tokens.
+- `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY_PATH`, `APNS_BUNDLE_ID`, `APNS_ENVIRONMENT`: optional APNs provider settings for notification tap-to-play.
 
 Legacy `SIRI_BRIDGE_TOKEN`, `SIRI_BRIDGE_URL`, and `SIRI_MESSAGE_PREFIX`
 names are still accepted where they existed before, but new installs should use

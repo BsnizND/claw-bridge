@@ -19,6 +19,7 @@
 		60BC889382931DA830BD1560 /* AssistantPortraitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D15F14D1C16CB8BFBD8170 /* AssistantPortraitView.swift */; };
 		6827AA670EEAA5EC82582E4D /* ClawBridgeComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */; };
 		7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */; };
+		784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */; };
 		7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
 		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		7C52094C6F9DC3C6691E0395 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
@@ -102,7 +103,9 @@
 		78A33A0012AD2147E3D18A3D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionContentView.swift; sourceTree = "<group>"; };
 		992030626503F9F333EC8065 /* CompanionWalkieController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWalkieController.swift; sourceTree = "<group>"; };
+		A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionPushController.swift; sourceTree = "<group>"; };
 		B0474A2011A611051F38C899 /* OpenClawCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenClawCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B56351101E3C6ED506D781F4 /* OpenClawCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenClawCompanion.entitlements; sourceTree = "<group>"; };
 		BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkieResponseClient.swift; sourceTree = "<group>"; };
 		C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawCompanionApp.swift; sourceTree = "<group>"; };
 		C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawWatchApp.swift; sourceTree = "<group>"; };
@@ -160,9 +163,11 @@
 			isa = PBXGroup;
 			children = (
 				7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */,
+				A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */,
 				2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */,
 				992030626503F9F333EC8065 /* CompanionWalkieController.swift */,
 				33D2F98CC9106F5DE7F213C3 /* Info.plist */,
+				B56351101E3C6ED506D781F4 /* OpenClawCompanion.entitlements */,
 				C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */,
 			);
 			name = iOS;
@@ -368,6 +373,7 @@
 			files = (
 				59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */,
 				A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */,
+				784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */,
 				C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */,
 				FE82F2FB795AFA9A5F7867CE /* CompanionWalkieController.swift in Sources */,
 				596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */,
@@ -500,6 +506,7 @@
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/iOS/OpenClawCompanion.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/iOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -667,6 +674,7 @@
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/iOS/OpenClawCompanion.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/iOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

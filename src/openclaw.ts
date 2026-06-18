@@ -147,6 +147,16 @@ function extractReplyTextFromValue(value: unknown): string | undefined {
     textFromContent(obj.content);
   if (direct) return direct;
 
+  if (Array.isArray(obj.payloads)) {
+    const payloadText = obj.payloads
+      .map((item) => extractReplyTextFromValue(item))
+      .find((text): text is string => Boolean(text));
+    if (payloadText) return payloadText;
+  }
+
+  const finalText = stringValue(obj.finalAssistantVisibleText) ?? stringValue(obj.finalAssistantRawText);
+  if (finalText) return finalText;
+
   for (const key of ['result', 'data', 'output', 'assistant', 'replyMessage']) {
     const nested = extractReplyTextFromValue(obj[key]);
     if (nested) return nested;

@@ -29,7 +29,10 @@ export class AppResponseStore {
       expires_at: new Date(now.getTime() + this.ttlMs).toISOString(),
       source: event.source,
       assistant: event.assistant,
-      device_name: event.device_name
+      device_name: event.device_name,
+      app_device_id: event.app_response?.app_device_id,
+      app_platform: event.app_response?.app_platform,
+      notification_status: event.app_response?.app_device_id ? 'not_requested' : undefined
     };
     await this.writeRecord(record);
     return record;
@@ -69,6 +72,14 @@ export class AppResponseStore {
 
   async fail(id: string, error: string): Promise<AppResponseRecord> {
     return await this.update(id, { status: 'failed', error });
+  }
+
+  async markNotification(
+    id: string,
+    notification_status: AppResponseRecord['notification_status'],
+    notification_error?: string
+  ): Promise<AppResponseRecord> {
+    return await this.update(id, { notification_status, notification_error });
   }
 
   audioPath(id: string, extension = 'mp3'): string {

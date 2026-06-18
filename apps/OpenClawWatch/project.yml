@@ -34,6 +34,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge
         TARGETED_DEVICE_FAMILY: 1
+        CODE_SIGN_ENTITLEMENTS: Sources/iOS/OpenClawCompanion.entitlements
     dependencies:
       - target: OpenClawWatchApp
         embed: true
