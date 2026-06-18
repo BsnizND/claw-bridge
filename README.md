@@ -359,6 +359,21 @@ Legacy `SIRI_BRIDGE_TOKEN`, `SIRI_BRIDGE_URL`, and `SIRI_MESSAGE_PREFIX`
 names are still accepted where they existed before, but new installs should use
 the `CLAW_BRIDGE_*` and `VOICE_MESSAGE_PREFIX` names.
 
+### ElevenLabs Smoke Test
+
+After setting `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in the process
+environment, run:
+
+```bash
+npm run smoke:elevenlabs
+```
+
+The smoke test prints redacted JSON evidence with provider, MIME type, byte
+length, SHA-256, model, output format, and elapsed time. It does not print the
+API key or voice ID. By default it deletes the generated audio file; set
+`ELEVENLABS_SMOKE_KEEP_AUDIO=1` only when you intentionally want to keep the
+temporary MP3 path for manual listening.
+
 ## Shortcut setup
 
 See [docs/shortcut-setup.md](docs/shortcut-setup.md).

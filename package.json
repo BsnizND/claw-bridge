@@ -10,7 +10,8 @@
     "start": "node dist/src/index.js",
     "test": "vitest run",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke:elevenlabs": "tsx scripts/elevenlabs-smoke.ts"
   },
   "keywords": [
     "openclaw",
