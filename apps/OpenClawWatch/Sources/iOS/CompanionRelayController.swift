@@ -52,7 +52,9 @@ final class CompanionRelayController: NSObject, ObservableObject {
             appName: metadata["app_name"] ?? "Claw Bridge",
             capturedAt: Date(),
             location: location,
-            wantsVoiceReply: metadata["response_mode"] == "voice" || metadata["walkie_mode"] == "true"
+            wantsVoiceReply: metadata["response_mode"] == "voice" || metadata["walkie_mode"] == "true",
+            appDeviceID: CompanionPushController.shared.deviceID,
+            appPlatform: "ios"
         )
         do {
             NSLog("Claw Bridge relay upload starting; configComplete=\(store.configuration.isComplete)")

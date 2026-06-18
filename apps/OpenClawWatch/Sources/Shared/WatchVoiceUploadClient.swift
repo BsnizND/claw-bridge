@@ -7,6 +7,8 @@ public struct WatchVoiceUploadRequest: Sendable {
     public var capturedAt: Date
     public var location: WatchVoiceLocation?
     public var wantsVoiceReply: Bool
+    public var appDeviceID: String?
+    public var appPlatform: String?
 
     public init(
         audioFileURL: URL,
@@ -14,7 +16,9 @@ public struct WatchVoiceUploadRequest: Sendable {
         appName: String,
         capturedAt: Date = Date(),
         location: WatchVoiceLocation? = nil,
-        wantsVoiceReply: Bool = false
+        wantsVoiceReply: Bool = false,
+        appDeviceID: String? = nil,
+        appPlatform: String? = nil
     ) {
         self.audioFileURL = audioFileURL
         self.deviceName = deviceName
@@ -22,6 +26,8 @@ public struct WatchVoiceUploadRequest: Sendable {
         self.capturedAt = capturedAt
         self.location = location
         self.wantsVoiceReply = wantsVoiceReply
+        self.appDeviceID = appDeviceID
+        self.appPlatform = appPlatform
     }
 }
 
@@ -108,6 +114,12 @@ public final class WatchVoiceUploadClient: Sendable {
         if request.wantsVoiceReply {
             body.appendFormField("response_mode", value: "voice", boundary: boundary)
             body.appendFormField("walkie_mode", value: "true", boundary: boundary)
+            if let appDeviceID = request.appDeviceID, appDeviceID.isEmpty == false {
+                body.appendFormField("app_device_id", value: appDeviceID, boundary: boundary)
+            }
+            if let appPlatform = request.appPlatform, appPlatform.isEmpty == false {
+                body.appendFormField("app_platform", value: appPlatform, boundary: boundary)
+            }
         }
         if let location = request.location {
             body.appendFormField("latitude", value: String(location.latitude), boundary: boundary)

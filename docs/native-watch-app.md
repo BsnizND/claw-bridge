@@ -179,7 +179,10 @@ WatchConnectivity. The companion then uploads to the same `/watch/voice`
 contract using the bridge URL and token saved on the phone.
 
 Walkie mode metadata is included in the relay transfer, so a direct Watch
-network failure should not silently downgrade a requested voice reply.
+network failure should not silently downgrade a requested voice reply. For
+relayed Walkie uploads, the iPhone companion also attaches its stable
+`app_device_id` so the bridge can notify the phone when Jay's rendered voice
+reply is ready.
 
 If both direct upload and relay fail, the Watch app shows an error and does not
 claim success.
