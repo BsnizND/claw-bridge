@@ -6,6 +6,12 @@ Shortcuts/share-sheet lane. It adds a push-to-talk Watch interface that uploads
 audio and optional location to the bridge, then lets OpenClaw reply through the
 configured chat channel.
 
+It also includes an optional Walkie mode. In Walkie mode the Watch or iPhone
+still sends through the same bridge/OpenClaw path, but asks the bridge to return
+the assistant reply as ElevenLabs-rendered audio. The bridge must still deliver
+the text reply through the configured chat route; the app response is an
+additional playback surface, not a replacement for the chat thread.
+
 ## What it does
 
 1. Open the Watch app.
@@ -15,8 +21,11 @@ configured chat channel.
 5. The app uploads the audio to `POST /watch/voice`.
 6. The bridge transcribes when server-side transcription is enabled.
 7. OpenClaw responds through the configured delivery route.
+8. In Walkie mode, the app waits for the bridge response job and plays the
+   generated reply audio when it is ready.
 
-The Watch app is intentionally not a chat UI. It is a capture control.
+The Watch app is intentionally not a chat UI. It is a capture control plus a
+short-lived reply player.
 
 ## Watch face complication
 
@@ -141,6 +150,17 @@ The bridge must be reachable from the Watch or from the iPhone companion relay.
 For Tailscale deployments, expose only the bridge routes described in
 [Tailscale setup](tailscale.md).
 
+For Walkie voice replies, also configure:
+
+```text
+APP_RESPONSE_DIR=./data/app-responses
+ELEVENLABS_API_KEY=replace-with-elevenlabs-api-key
+ELEVENLABS_VOICE_ID=replace-with-elevenlabs-voice-id
+```
+
+The bridge fails closed if Walkie mode is requested and no final OpenClaw reply
+text or ElevenLabs configuration is available.
+
 ## Permissions
 
 The Watch app asks for microphone access when recording starts. It asks for
@@ -157,8 +177,18 @@ fails, it transfers the audio file and metadata to the iPhone companion through
 WatchConnectivity. The companion then uploads to the same `/watch/voice`
 contract using the bridge URL and token saved on the phone.
 
+Walkie mode metadata is included in the relay transfer, so a direct Watch
+network failure should not silently downgrade a requested voice reply.
+
 If both direct upload and relay fail, the Watch app shows an error and does not
 claim success.
+
+## Notifications
+
+The iOS companion can request notification permission so the app is ready for a
+tap-to-play notification flow. A real closed-app notification path still
+requires APNs/device-token plumbing and device evidence; simulator foreground
+polling is not proof that background notification delivery works.
 
 ## Private local branding
 

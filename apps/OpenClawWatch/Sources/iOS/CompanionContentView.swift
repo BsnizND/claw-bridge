@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CompanionContentView: View {
     @EnvironmentObject private var store: BridgeConfigurationStore
+    @StateObject private var walkie = CompanionWalkieController()
     @State private var bridgeURLText = ""
     @State private var tokenText = ""
 
@@ -31,6 +32,54 @@ struct CompanionContentView: View {
                 Section("Status") {
                     Label(store.configuration.isComplete ? "Ready for Watch uploads" : "Bridge configuration required",
                           systemImage: store.configuration.isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                }
+
+                Section("Walkie") {
+                    TextField("Message Jay", text: $walkie.messageText, axis: .vertical)
+                        .lineLimit(2...4)
+                        .disabled(walkie.isBusy)
+
+                    HStack {
+                        Button {
+                            Task {
+                                await walkie.send(configuration: store.configuration)
+                            }
+                        } label: {
+                            Label("Send", systemImage: "waveform.circle.fill")
+                        }
+                        .disabled(walkie.isBusy || walkie.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                        if walkie.lastResponseID != nil {
+                            Button {
+                                Task {
+                                    await walkie.replay(configuration: store.configuration)
+                                }
+                            } label: {
+                                Label("Replay", systemImage: "play.circle")
+                            }
+                            .disabled(walkie.isBusy)
+                        }
+                    }
+
+                    Label(walkie.statusText, systemImage: walkie.isBusy ? "clock" : "speaker.wave.2")
+
+                    if let detail = walkie.detailText {
+                        Text(detail)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Notifications") {
+                    Button {
+                        Task {
+                            await walkie.requestNotificationPermission()
+                        }
+                    } label: {
+                        Label("Enable Tap to Play", systemImage: "bell.badge")
+                    }
+
+                    Label(walkie.notificationStatus, systemImage: "bell")
                 }
             }
             .navigationTitle("Claw Bridge")

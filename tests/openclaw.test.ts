@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promise
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { acceptForOpenClaw, drainOpenClawQueue } from '../src/openclaw.js';
+import { acceptForOpenClaw, drainOpenClawQueue, extractReplyTextFromOpenClawOutput } from '../src/openclaw.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
 
 function event(text = 'remember dog food'): NormalizedSiriEvent {
@@ -60,6 +60,23 @@ function shareEvent(text = 'Shared from iOS share sheet: screenshot OCR text'): 
 }
 
 describe('OpenClaw delivery', () => {
+  it('extracts assistant reply text from common OpenClaw JSON shapes', () => {
+    expect(extractReplyTextFromOpenClawOutput(JSON.stringify({ reply: 'hello from reply' }))).toBe('hello from reply');
+    expect(extractReplyTextFromOpenClawOutput(JSON.stringify({ result: { text: 'hello from result text' } }))).toBe(
+      'hello from result text'
+    );
+    expect(
+      extractReplyTextFromOpenClawOutput(
+        JSON.stringify({
+          messages: [
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: [{ type: 'text', text: 'hello from content array' }] }
+          ]
+        })
+      )
+    ).toBe('hello from content array');
+  });
+
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
     const dir = join(tmpdir(), `claw-bridge-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
@@ -96,7 +113,11 @@ describe('OpenClaw delivery', () => {
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
     const cwdPath = join(dir, 'cwd.txt');
-    await writeFile(binPath, `#!/bin/sh\npwd > '${cwdPath}'\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await writeFile(
+      binPath,
+      `#!/bin/sh\npwd > '${cwdPath}'\nprintf '%s\\n' "$@" > '${argsPath}'\nprintf '{"reply":"delivered reply text"}\\n'\n`,
+      'utf8'
+    );
     await chmod(binPath, 0o755);
 
     const config = {
@@ -113,9 +134,15 @@ describe('OpenClaw delivery', () => {
     } as BridgeConfig;
 
     await acceptForOpenClaw(config, event('drain this message'));
-    const drain = await drainOpenClawQueue(config);
+    let capturedReplyText: string | undefined;
+    const drain = await drainOpenClawQueue(config, {
+      afterDelivered: async (_event, result) => {
+        capturedReplyText = result.replyText;
+      }
+    });
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    expect(capturedReplyText).toBe('delivered reply text');
     const queue = await readFile(queuePath, 'utf8');
     expect(queue).toBe('');
     const archive = await readFile(archivePath, 'utf8');

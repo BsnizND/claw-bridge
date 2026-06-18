@@ -24,7 +24,8 @@ final class WatchRelayController: NSObject, ObservableObject {
         _ fileURL: URL,
         deviceName: String,
         appName: String,
-        location: WatchVoiceLocation?
+        location: WatchVoiceLocation?,
+        wantsVoiceReply: Bool = false
     ) throws {
         guard canRelay else {
             throw WatchRelayError.unavailable
@@ -34,6 +35,10 @@ final class WatchRelayController: NSObject, ObservableObject {
             "device_name": deviceName,
             "app_name": appName
         ]
+        if wantsVoiceReply {
+            metadata["response_mode"] = "voice"
+            metadata["walkie_mode"] = "true"
+        }
         if let location {
             metadata["latitude"] = String(location.latitude)
             metadata["longitude"] = String(location.longitude)

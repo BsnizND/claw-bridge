@@ -1,10 +1,11 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { createReadStream, mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import express from 'express';
 import multer from 'multer';
 import pino from 'pino';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent, ShortcutMessageRequest } from './types.js';
+import { AppResponseStore } from './app-response-store.js';
 import { acceptForOpenClaw } from './openclaw.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
@@ -14,6 +15,7 @@ import { normalizeWatchVoiceRequest } from './watch.js';
 export interface AppDependencies {
   acceptEvent?: (event: NormalizedSiriEvent) => Promise<DeliveryResult>;
   afterAccepted?: (event: NormalizedSiriEvent) => void;
+  appResponseStore?: AppResponseStore;
 }
 
 function isAuthorized(config: BridgeConfig, header: string | undefined): boolean {
@@ -99,11 +101,49 @@ function shareMissingPayloadMessage(contentType: string | undefined): string {
   return 'shared_text, shared_url, message, or file is required';
 }
 
+function truthy(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value !== 'string') return false;
+  return ['1', 'true', 'yes', 'on', 'voice', 'walkie'].includes(value.trim().toLowerCase());
+}
+
+function wantsVoiceResponse(body: Record<string, unknown>): boolean {
+  return (
+    queryValue(body.response_mode)?.toLowerCase() === 'voice' ||
+    queryValue(body.reply_mode)?.toLowerCase() === 'voice' ||
+    truthy(body.walkie_mode) ||
+    truthy(body.walkie)
+  );
+}
+
+async function attachVoiceResponseIfRequested(
+  store: AppResponseStore,
+  body: Record<string, unknown>,
+  event: NormalizedSiriEvent
+) {
+  if (!wantsVoiceResponse(body)) return undefined;
+  const response = await store.createPending(event);
+  event.app_response = { id: response.id, mode: 'voice' };
+  return response;
+}
+
+function appResponsePayload(req: express.Request, id: string) {
+  return {
+    response_id: id,
+    response_status_url: `${req.protocol}://${req.get('host')}/app/responses/${id}`,
+    response_audio_url: `${req.protocol}://${req.get('host')}/app/responses/${id}/audio`
+  };
+}
+
 export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
   const app = express();
   const logger = pino({ level: config.logLevel });
   const acceptEvent = deps.acceptEvent ?? ((event) => acceptForOpenClaw(config, event));
   const afterAccepted = deps.afterAccepted;
+  const responseStore =
+    deps.appResponseStore ??
+    new AppResponseStore(config.appResponseDir ?? `${config.shareUploadDir}/../app-responses`, config.appResponseTtlMs ?? 86400000);
   mkdirSync(config.shareUploadDir, { recursive: true });
   const upload = multer({
     storage: multer.diskStorage({
@@ -118,7 +158,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
   app.disable('x-powered-by');
   app.use((req, res, next) => {
-    if (req.path.startsWith('/shortcuts/') || req.path.startsWith('/watch/')) {
+    if (req.path.startsWith('/shortcuts/') || req.path.startsWith('/watch/') || req.path.startsWith('/app/')) {
       const startedAt = Date.now();
       res.on('finish', () => {
         logger.info(
@@ -150,6 +190,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
 
     try {
       const event = normalizeShortcutMessage(config, req.body as ShortcutMessageRequest);
+      const response = await attachVoiceResponseIfRequested(responseStore, req.body as Record<string, unknown>, event);
       const result = await acceptEvent(event);
       logger.info({ requestId: event.request_id, source: event.source, assistant: event.assistant }, 'message accepted');
       afterAccepted?.(event);
@@ -157,6 +198,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         ok: true,
         queued: Boolean(result.queued),
         id: result.id ?? event.request_id,
+        ...(response ? appResponsePayload(req, response.id) : {}),
         spoken: `Sent to ${event.assistant}`
       });
     } catch (error) {
@@ -186,6 +228,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         const transcript =
           file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
         const event = normalizeShareSheetRequest(config, body, file, transcript);
+        const response = await attachVoiceResponseIfRequested(responseStore, body, event);
         const result = await acceptEvent(event);
         logger.info(
           {
@@ -201,6 +244,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
           ok: true,
           queued: Boolean(result.queued),
           id: result.id ?? event.request_id,
+          ...(response ? appResponsePayload(req, response.id) : {}),
           spoken: `Shared with ${event.assistant}`
         });
       } catch (error) {
@@ -239,6 +283,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       };
       const transcript = isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
       const event = normalizeShareSheetRequest(config, body, file, transcript);
+      const response = await attachVoiceResponseIfRequested(responseStore, body, event);
       const result = await acceptEvent(event);
       logger.info(
         {
@@ -254,6 +299,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         ok: true,
         queued: Boolean(result.queued),
         id: result.id ?? event.request_id,
+        ...(response ? appResponsePayload(req, response.id) : {}),
         spoken: `Shared with ${event.assistant}`
       });
     } catch (error) {
@@ -283,6 +329,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         const transcript =
           file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
         const event = normalizeWatchVoiceRequest(config, body, file, transcript);
+        const response = await attachVoiceResponseIfRequested(responseStore, body, event);
         const result = await acceptEvent(event);
         logger.info(
           {
@@ -297,7 +344,8 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         res.status(202).json({
           ok: true,
           queued: Boolean(result.queued),
-          id: result.id ?? event.request_id
+          id: result.id ?? event.request_id,
+          ...(response ? appResponsePayload(req, response.id) : {})
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'watch voice rejected';
@@ -305,6 +353,66 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         res.status(400).json({ ok: false, error: message });
       }
     });
+  });
+
+  app.get('/app/responses/:id', async (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized' });
+      return;
+    }
+    try {
+      const record = await responseStore.get(req.params.id);
+      if (!record) {
+        res.status(404).json({ ok: false, error: 'response not found' });
+        return;
+      }
+      res.json({
+        ok: true,
+        response: {
+          id: record.id,
+          request_id: record.request_id,
+          mode: record.mode,
+          status: record.status,
+          created_at: record.created_at,
+          updated_at: record.updated_at,
+          expires_at: record.expires_at,
+          source: record.source,
+          assistant: record.assistant,
+          device_name: record.device_name,
+          reply_text: record.reply_text,
+          audio_mime_type: record.audio_mime_type,
+          audio_size_bytes: record.audio_size_bytes,
+          audio_url: record.status === 'ready' ? `${req.protocol}://${req.get('host')}/app/responses/${record.id}/audio` : undefined,
+          error: record.error
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'response lookup failed';
+      res.status(400).json({ ok: false, error: message });
+    }
+  });
+
+  app.get('/app/responses/:id/audio', async (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized' });
+      return;
+    }
+    try {
+      const record = await responseStore.get(req.params.id);
+      if (!record) {
+        res.status(404).json({ ok: false, error: 'response not found' });
+        return;
+      }
+      if (record.status !== 'ready' || !record.audio_path) {
+        res.status(409).json({ ok: false, error: `response is ${record.status}` });
+        return;
+      }
+      res.type(record.audio_mime_type ?? 'audio/mpeg');
+      createReadStream(record.audio_path).pipe(res);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'response audio failed';
+      res.status(400).json({ ok: false, error: message });
+    }
   });
 
   app.use((_req, res) => {

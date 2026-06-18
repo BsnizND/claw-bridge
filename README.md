@@ -63,6 +63,7 @@ Over time, the assistant has more of your actual context: the links you saved, t
 - Durable JSONL queue for pending work, with delivered/failed outcomes archived separately.
 - Background delivery to OpenClaw through CLI or HTTP ingest.
 - Optional OpenClaw reply delivery back to a messaging channel, such as an existing Telegram chat.
+- Optional Walkie voice replies for the iOS/watchOS apps, backed by ElevenLabs audio and authenticated response polling.
 - Optional structured location context, including latitude, longitude, altitude, accuracy, and a map URL.
 - Optional voice memo metadata/transcript context for Shortcuts that can provide an audio transcript.
 - Optional server-side audio transcription for shared Voice Memos/audio files.
@@ -166,6 +167,10 @@ Body:
 }
 ```
 
+For app Walkie mode, include `response_mode: "voice"` or `walkie_mode: true`.
+The bridge returns a `response_id` plus authenticated status/audio URLs. The app
+polls the status URL, then plays the ElevenLabs-rendered reply when it is ready.
+
 ### `POST /shortcuts/share`
 
 Headers:
@@ -235,6 +240,8 @@ Form fields:
   accuracy fields, and map URL.
 - `latitude`, `longitude`, `altitude`, `horizontal_accuracy`,
   `vertical_accuracy`, `maps_url`: optional plain form fields.
+- `response_mode`: optional; set to `voice` for Walkie mode.
+- `walkie_mode`: optional boolean alias for `response_mode=voice`.
 
 This endpoint is for the native Watch app lane. It accepts the recording,
 attaches location when available, optionally transcribes the audio server-side,
@@ -263,13 +270,40 @@ Success:
   "ok": true,
   "queued": true,
   "id": "request-id",
-  "spoken": "Sent to openclaw"
+  "spoken": "Sent to openclaw",
+  "response_id": "response-id-for-walkie-mode",
+  "response_status_url": "https://bridge.example.com/app/responses/response-id-for-walkie-mode",
+  "response_audio_url": "https://bridge.example.com/app/responses/response-id-for-walkie-mode/audio"
 }
 ```
 
 The generated Shortcuts are silent on success. They read `spoken` only when
 the bridge returns an error, so a normal send is confirmed by the assistant's
 reply in the destination channel instead of by Siri or an iOS notification.
+
+### `GET /app/responses/:id`
+
+Returns the Walkie response status for an authenticated app request:
+
+```json
+{
+  "ok": true,
+  "response": {
+    "id": "response-id",
+    "status": "ready",
+    "created_at": "2026-06-13T16:00:00.000Z",
+    "updated_at": "2026-06-13T16:00:08.000Z",
+    "expires_at": "2026-06-14T16:00:00.000Z",
+    "audio_url": "https://bridge.example.com/app/responses/response-id/audio",
+    "audio_mime_type": "audio/mpeg",
+    "audio_size_bytes": 12345
+  }
+}
+```
+
+Statuses are `pending`, `rendering`, `ready`, `failed`, and `expired`.
+`GET /app/responses/:id/audio` streams the generated audio only after the
+response is ready.
 
 ## Configuration
 
@@ -295,6 +329,10 @@ Important settings:
 - `AUDIO_TRANSCRIBE_ENABLED`: when `true`, transcribe shared audio before delivery.
 - `AUDIO_TRANSCRIBE_CLI_BIN`: CLI used for transcription; defaults to `openclaw`.
 - `AUDIO_TRANSCRIBE_MODEL` / `AUDIO_TRANSCRIBE_LANGUAGE`: optional transcription hints.
+- `APP_RESPONSE_DIR`: directory for Walkie response metadata and generated audio.
+- `APP_RESPONSE_TTL_MS`: response lifetime before pending replies expire.
+- `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID`: required for real Walkie voice replies.
+- `ELEVENLABS_MODEL_ID`, `ELEVENLABS_OUTPUT_FORMAT`, `ELEVENLABS_BASE_URL`: optional ElevenLabs TTS tuning.
 
 Legacy `SIRI_BRIDGE_TOKEN`, `SIRI_BRIDGE_URL`, and `SIRI_MESSAGE_PREFIX`
 names are still accepted where they existed before, but new installs should use

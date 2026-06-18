@@ -2,6 +2,10 @@ import { spawn } from 'node:child_process';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { drainQueue, queueEvent } from './queue.js';
 
+export interface OpenClawDrainHooks {
+  afterDelivered?: (event: NormalizedSiriEvent, result: DeliveryResult) => Promise<void>;
+}
+
 function formatLocation(event: NormalizedSiriEvent): string[] {
   if (!event.location) {
     return [];
@@ -110,6 +114,86 @@ function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent):
   return config.openclawMessageStyle === 'compact' ? buildCompactMessage(config, event) : buildAssistantMessage(event);
 }
 
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function textFromContent(value: unknown): string | undefined {
+  if (typeof value === 'string') return stringValue(value);
+  if (!Array.isArray(value)) return undefined;
+  const parts = value
+    .map((part) => {
+      if (typeof part === 'string') return part;
+      if (part && typeof part === 'object') {
+        const item = part as Record<string, unknown>;
+        return stringValue(item.text) ?? stringValue(item.content);
+      }
+      return undefined;
+    })
+    .filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join('\n').trim() : undefined;
+}
+
+function extractReplyTextFromValue(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const obj = value as Record<string, unknown>;
+  const direct =
+    stringValue(obj.reply) ??
+    stringValue(obj.response) ??
+    stringValue(obj.message) ??
+    stringValue(obj.text) ??
+    stringValue(obj.assistant_message) ??
+    stringValue(obj.assistantMessage) ??
+    textFromContent(obj.content);
+  if (direct) return direct;
+
+  for (const key of ['result', 'data', 'output', 'assistant', 'replyMessage']) {
+    const nested = extractReplyTextFromValue(obj[key]);
+    if (nested) return nested;
+  }
+
+  if (Array.isArray(obj.messages)) {
+    const assistantMessage = [...obj.messages].reverse().find((item) => {
+      if (!item || typeof item !== 'object') return false;
+      const role = (item as Record<string, unknown>).role;
+      return role === 'assistant';
+    });
+    const text = extractReplyTextFromValue(assistantMessage);
+    if (text) return text;
+  }
+
+  return undefined;
+}
+
+function parseJsonCandidates(stdout: string): unknown[] {
+  const trimmed = stdout.trim();
+  if (!trimmed) return [];
+  try {
+    return [JSON.parse(trimmed) as unknown];
+  } catch {
+    // Some OpenClaw commands may print diagnostics before or after JSON.
+  }
+
+  const candidates: unknown[] = [];
+  for (const line of trimmed.split('\n').map((part) => part.trim()).filter(Boolean).reverse()) {
+    if (!line.startsWith('{') && !line.startsWith('[')) continue;
+    try {
+      candidates.push(JSON.parse(line) as unknown);
+    } catch {
+      // Keep scanning.
+    }
+  }
+  return candidates;
+}
+
+export function extractReplyTextFromOpenClawOutput(stdout: string): string | undefined {
+  for (const candidate of parseJsonCandidates(stdout)) {
+    const text = extractReplyTextFromValue(candidate);
+    if (text) return text;
+  }
+  return undefined;
+}
+
 async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
   const timeoutMs = config.openclawCliDrainTimeoutMs;
   const args = [
@@ -167,7 +251,7 @@ async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): 
       settled = true;
       clearTimeout(timeout);
       if (code === 0) {
-        resolve({ ok: true });
+        resolve({ ok: true, replyText: extractReplyTextFromOpenClawOutput(stdout), appResponseId: event.app_response?.id });
       } else {
         reject(new Error(`openclaw exited ${code}: ${stderr || stdout}`.trim()));
       }
@@ -190,7 +274,8 @@ async function deliverViaHttp(config: BridgeConfig, event: NormalizedSiriEvent):
   if (!res.ok) {
     throw new Error(`OpenClaw ingest failed with HTTP ${res.status}`);
   }
-  return { ok: true };
+  const body = await res.text();
+  return { ok: true, replyText: extractReplyTextFromOpenClawOutput(body), appResponseId: event.app_response?.id };
 }
 
 export async function acceptForOpenClaw(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
@@ -205,8 +290,9 @@ export async function deliverQueuedEventToOpenClaw(
   return config.openclawAdapter === 'http' ? await deliverViaHttp(config, event) : await deliverViaCli(config, event);
 }
 
-export async function drainOpenClawQueue(config: BridgeConfig) {
+export async function drainOpenClawQueue(config: BridgeConfig, hooks: OpenClawDrainHooks = {}) {
   return drainQueue(config.queuePath, config.queueArchivePath, config.queueMaxAttempts, async (event) => {
-    await deliverQueuedEventToOpenClaw(config, event);
+    const result = await deliverQueuedEventToOpenClaw(config, event);
+    await hooks.afterDelivered?.(event, result);
   });
 }

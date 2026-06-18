@@ -36,7 +36,32 @@ describe('config', () => {
     expect(config.allowedSources.has('watch_app')).toBe(true);
     expect(config.shareUploadDir).toBe('./data/uploads');
     expect(config.shareMaxUploadBytes).toBe(50 * 1024 * 1024);
+    expect(config.appResponseDir).toBe('./data/app-responses');
+    expect(config.appResponseTtlMs).toBe(24 * 60 * 60 * 1000);
+    expect(config.elevenLabsModelId).toBe('eleven_multilingual_v2');
+    expect(config.elevenLabsOutputFormat).toBe('mp3_44100_128');
+    expect(config.elevenLabsBaseUrl).toBe('https://api.elevenlabs.io');
     expect(config.audioTranscribeEnabled).toBe(false);
+  });
+
+  it('loads app response and ElevenLabs settings without requiring secrets by default', () => {
+    const config = loadConfig({
+      CLAW_BRIDGE_TOKEN: '0123456789abcdef01234567',
+      APP_RESPONSE_DIR: '/tmp/claw-bridge-responses',
+      APP_RESPONSE_TTL_MS: '60000',
+      ELEVENLABS_API_KEY: 'test-api-key',
+      ELEVENLABS_VOICE_ID: 'test-voice-id',
+      ELEVENLABS_MODEL_ID: 'eleven_turbo_v2_5',
+      ELEVENLABS_OUTPUT_FORMAT: 'mp3_44100_192',
+      ELEVENLABS_BASE_URL: 'https://example.test'
+    });
+    expect(config.appResponseDir).toBe('/tmp/claw-bridge-responses');
+    expect(config.appResponseTtlMs).toBe(60000);
+    expect(config.elevenLabsApiKey).toBe('test-api-key');
+    expect(config.elevenLabsVoiceId).toBe('test-voice-id');
+    expect(config.elevenLabsModelId).toBe('eleven_turbo_v2_5');
+    expect(config.elevenLabsOutputFormat).toBe('mp3_44100_192');
+    expect(config.elevenLabsBaseUrl).toBe('https://example.test');
   });
 
   it('requires reply routing when OpenClaw delivery is enabled', () => {

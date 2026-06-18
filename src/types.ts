@@ -1,5 +1,7 @@
 export type OpenClawAdapter = 'cli' | 'http';
 export type OpenClawMessageStyle = 'detailed' | 'compact';
+export type AppResponseMode = 'voice';
+export type AppResponseStatus = 'pending' | 'rendering' | 'ready' | 'failed' | 'expired';
 
 export interface BridgeConfig {
   port: number;
@@ -29,6 +31,13 @@ export interface BridgeConfig {
   queueMaxAttempts: number;
   shareUploadDir: string;
   shareMaxUploadBytes: number;
+  appResponseDir: string;
+  appResponseTtlMs: number;
+  elevenLabsApiKey?: string;
+  elevenLabsVoiceId?: string;
+  elevenLabsModelId: string;
+  elevenLabsOutputFormat: string;
+  elevenLabsBaseUrl: string;
   audioTranscribeEnabled: boolean;
   audioTranscribeCliBin: string;
   audioTranscribeTimeoutMs: number;
@@ -95,12 +104,38 @@ export interface NormalizedSiriEvent {
   location?: SiriLocation;
   voice_memo?: VoiceMemoMetadata;
   shared_item?: SharedItemMetadata;
+  app_response?: AppResponseRequest;
 }
 
 export interface DeliveryResult {
   ok: boolean;
   id?: string;
   queued?: boolean;
+  replyText?: string;
+  appResponseId?: string;
+}
+
+export interface AppResponseRequest {
+  id: string;
+  mode: AppResponseMode;
+}
+
+export interface AppResponseRecord {
+  id: string;
+  request_id: string;
+  mode: AppResponseMode;
+  status: AppResponseStatus;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+  source: string;
+  assistant: string;
+  device_name?: string;
+  reply_text?: string;
+  audio_path?: string;
+  audio_mime_type?: string;
+  audio_size_bytes?: number;
+  error?: string;
 }
 
 export interface QueueRecord {

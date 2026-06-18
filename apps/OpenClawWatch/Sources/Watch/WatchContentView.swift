@@ -3,6 +3,7 @@ import SwiftUI
 struct WatchContentView: View {
     @EnvironmentObject private var store: BridgeConfigurationStore
     @StateObject private var controller = WatchVoiceController()
+    @State private var walkieMode = false
 
     var body: some View {
         VStack(spacing: 10) {
@@ -13,9 +14,16 @@ struct WatchContentView: View {
                 .font(.headline)
                 .lineLimit(1)
 
+            Toggle(isOn: $walkieMode) {
+                Image(systemName: walkieMode ? "waveform.circle.fill" : "paperplane.circle")
+            }
+            .labelsHidden()
+            .tint(.green)
+            .accessibilityLabel("Walkie mode")
+
             Button {
                 Task {
-                    await controller.toggleRecording(configuration: store.configuration)
+                    await controller.toggleRecording(configuration: store.configuration, wantsVoiceReply: walkieMode)
                 }
             } label: {
                 Image(systemName: controller.status.isListening ? "stop.fill" : "mic.fill")
@@ -27,6 +35,20 @@ struct WatchContentView: View {
             .tint(controller.status.isListening ? .red : .blue)
             .disabled(controller.isBusy)
             .accessibilityLabel(controller.status.isListening ? "Stop recording" : "Start recording")
+
+            if controller.lastResponseID != nil {
+                Button {
+                    Task {
+                        await controller.replayLastResponse(configuration: store.configuration)
+                    }
+                } label: {
+                    Image(systemName: "play.fill")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 32)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Replay Jay")
+            }
 
             if let detail = controller.detailText {
                 Text(detail)

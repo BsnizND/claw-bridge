@@ -1,7 +1,9 @@
 import request from 'supertest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
+import { AppResponseStore } from '../src/app-response-store.js';
 import { createApp } from '../src/app.js';
 import type { BridgeConfig } from '../src/types.js';
 
@@ -251,6 +253,76 @@ describe('app routes', () => {
       })
     );
     expect(afterAccepted).toHaveBeenCalledWith(expect.objectContaining({ source: 'watch_app' }));
+  });
+
+  it('creates a voice response record for native Watch walkie uploads', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'watch-voice-id' });
+    const responseDir = join(tmpdir(), `claw-bridge-response-test-${Date.now()}`);
+    const app = createApp(config(), {
+      acceptEvent,
+      appResponseStore: new AppResponseStore(responseDir, 60000)
+    });
+    const res = await request(app)
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('walkie_mode', 'true')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body.response_id).toEqual(expect.any(String));
+    expect(res.body.response_status_url).toContain(`/app/responses/${res.body.response_id}`);
+    expect(acceptEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        app_response: { id: res.body.response_id, mode: 'voice' }
+      })
+    );
+
+    const status = await request(app)
+      .get(`/app/responses/${res.body.response_id}`)
+      .set('Authorization', 'Bearer 0123456789abcdef01234567');
+    expect(status.status).toBe(200);
+    expect(status.body.response).toMatchObject({
+      id: res.body.response_id,
+      status: 'pending',
+      mode: 'voice'
+    });
+  });
+
+  it('serves completed app response audio with bearer auth', async () => {
+    const responseDir = join(tmpdir(), `claw-bridge-ready-response-test-${Date.now()}`);
+    const store = new AppResponseStore(responseDir, 60000);
+    const app = createApp(config(), { appResponseStore: store });
+    const record = await store.createPending({
+      source: 'watch_app',
+      assistant: 'openclaw',
+      raw_text: 'hello',
+      captured_at: new Date().toISOString(),
+      request_id: 'ready-response-request'
+    });
+    const audioPath = store.audioPath(record.id, 'mp3');
+    await writeFile(audioPath, Buffer.from('mp3-bytes'), { mode: 0o600 });
+    await store.completeVoice(record.id, 'Jay says hello', audioPath, 'audio/mpeg');
+
+    const status = await request(app)
+      .get(`/app/responses/${record.id}`)
+      .set('Authorization', 'Bearer 0123456789abcdef01234567');
+    expect(status.status).toBe(200);
+    expect(status.body.response).toMatchObject({
+      status: 'ready',
+      reply_text: 'Jay says hello',
+      audio_mime_type: 'audio/mpeg',
+      audio_size_bytes: 9
+    });
+
+    const audio = await request(app)
+      .get(`/app/responses/${record.id}/audio`)
+      .set('Authorization', 'Bearer 0123456789abcdef01234567');
+    expect(audio.status).toBe(200);
+    expect(audio.header['content-type']).toContain('audio/mpeg');
+    expect(audio.body.toString()).toBe('mp3-bytes');
   });
 
   it('rejects unauthorized native Watch voice uploads', async () => {

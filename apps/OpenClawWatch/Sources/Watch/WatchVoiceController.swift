@@ -6,8 +6,11 @@ import Foundation
 final class WatchVoiceController: NSObject, ObservableObject {
     @Published private(set) var status: WatchVoiceStatus = .idle
     @Published private(set) var detailText: String?
+    @Published private(set) var lastResponseID: String?
 
     private let uploader = WatchVoiceUploadClient()
+    private let responseClient = WalkieResponseClient()
+    private let audioPlayer = WalkieAudioPlayer()
     private let locationManager = CLLocationManager()
     private let minimumRecordingByteCount: UInt64 = 1_024
     private var recorder: AVAudioRecorder?
@@ -18,6 +21,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
 
     var isBusy: Bool {
         if case .sending = status { return true }
+        if case .waitingForReply = status { return true }
         return false
     }
 
@@ -27,9 +31,9 @@ final class WatchVoiceController: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
     }
 
-    func toggleRecording(configuration: BridgeConfiguration) async {
+    func toggleRecording(configuration: BridgeConfiguration, wantsVoiceReply: Bool = false) async {
         if status.isListening {
-            await stopAndSend(configuration: configuration)
+            await stopAndSend(configuration: configuration, wantsVoiceReply: wantsVoiceReply)
         } else {
             await startRecording()
         }
@@ -69,7 +73,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
         }
     }
 
-    private func stopAndSend(configuration: BridgeConfiguration) async {
+    private func stopAndSend(configuration: BridgeConfiguration, wantsVoiceReply: Bool) async {
         recorder?.stop()
         recorder = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -96,13 +100,21 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 audioFileURL: currentAudioURL,
                 deviceName: "Apple Watch",
                 appName: "Claw Bridge",
-                location: location
+                location: location,
+                wantsVoiceReply: wantsVoiceReply
             )
-            _ = try await uploader.upload(request, configuration: configuration)
-            status = .sent
-            detailText = location == nil ? "Sent without location" : "Sent with location"
+            let response = try await uploader.upload(request, configuration: configuration)
             try? FileManager.default.removeItem(at: currentAudioURL)
             self.currentAudioURL = nil
+            if wantsVoiceReply, let responseID = response.response_id {
+                lastResponseID = responseID
+                status = .waitingForReply
+                detailText = "Waiting for Jay"
+                await waitForAndPlayResponse(responseID, configuration: configuration)
+            } else {
+                status = .sent
+                detailText = location == nil ? "Sent without location" : "Sent with location"
+            }
         } catch {
             NSLog("Claw Bridge Watch direct upload failed: \(error.localizedDescription)")
             do {
@@ -110,7 +122,8 @@ final class WatchVoiceController: NSObject, ObservableObject {
                     currentAudioURL,
                     deviceName: "Apple Watch",
                     appName: "Claw Bridge",
-                    location: location
+                    location: location,
+                    wantsVoiceReply: wantsVoiceReply
                 )
                 status = .queued
                 detailText = "Queued for iPhone upload"
@@ -118,6 +131,25 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 status = .failed(error.localizedDescription)
                 detailText = error.localizedDescription
             }
+        }
+    }
+
+    func replayLastResponse(configuration: BridgeConfiguration) async {
+        guard let lastResponseID else { return }
+        await waitForAndPlayResponse(lastResponseID, configuration: configuration)
+    }
+
+    private func waitForAndPlayResponse(_ responseID: String, configuration: BridgeConfiguration) async {
+        do {
+            _ = try await responseClient.waitForReady(id: responseID, configuration: configuration)
+            status = .replyReady
+            detailText = "Playing Jay"
+            let audioURL = try await responseClient.downloadAudio(id: responseID, configuration: configuration)
+            try audioPlayer.play(url: audioURL)
+            detailText = "Jay replied"
+        } catch {
+            status = .failed(error.localizedDescription)
+            detailText = error.localizedDescription
         }
     }
 
