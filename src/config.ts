@@ -35,7 +35,7 @@ const envSchema = z.object({
   APP_RESPONSE_TTL_MS: z.coerce.number().int().positive().default(24 * 60 * 60 * 1000),
   ELEVENLABS_API_KEY: z.string().min(1).optional(),
   ELEVENLABS_VOICE_ID: z.string().min(1).optional(),
-  ELEVENLABS_MODEL_ID: z.string().min(1).default('eleven_multilingual_v2'),
+  ELEVENLABS_MODEL_ID: z.string().min(1).default('eleven_v3'),
   ELEVENLABS_OUTPUT_FORMAT: z.string().min(1).default('mp3_44100_128'),
   ELEVENLABS_BASE_URL: z.string().url().default('https://api.elevenlabs.io'),
   APP_DEVICE_DIR: z.string().min(1).default('./data/app-devices'),

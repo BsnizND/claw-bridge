@@ -99,6 +99,14 @@ The bundle ID prefix must be unique to your Apple Developer account. The public
 project defaults to `com.example` so no private team or personal bundle IDs are
 committed.
 
+The iOS companion push entitlement is opt-in because Apple Personal Development
+Teams cannot sign Push Notifications. For a paid Apple Developer team with APNs
+enabled for the companion bundle id, add this to `Signing.local.xcconfig`:
+
+```text
+CLAW_BRIDGE_IOS_ENTITLEMENTS = Sources/iOS/OpenClawCompanion.entitlements
+```
+
 Regenerate the Xcode project after changing the local signing file:
 
 ```bash

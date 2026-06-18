@@ -38,7 +38,7 @@ describe('config', () => {
     expect(config.shareMaxUploadBytes).toBe(50 * 1024 * 1024);
     expect(config.appResponseDir).toBe('./data/app-responses');
     expect(config.appResponseTtlMs).toBe(24 * 60 * 60 * 1000);
-    expect(config.elevenLabsModelId).toBe('eleven_multilingual_v2');
+    expect(config.elevenLabsModelId).toBe('eleven_v3');
     expect(config.elevenLabsOutputFormat).toBe('mp3_44100_128');
     expect(config.elevenLabsBaseUrl).toBe('https://api.elevenlabs.io');
     expect(config.appDeviceDir).toBe('./data/app-devices');

@@ -351,7 +351,7 @@ Important settings:
 - `APP_RESPONSE_DIR`: directory for Walkie response metadata and generated audio.
 - `APP_RESPONSE_TTL_MS`: response lifetime before pending replies expire.
 - `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID`: required for real Walkie voice replies.
-- `ELEVENLABS_MODEL_ID`, `ELEVENLABS_OUTPUT_FORMAT`, `ELEVENLABS_BASE_URL`: optional ElevenLabs TTS tuning.
+- `ELEVENLABS_MODEL_ID`, `ELEVENLABS_OUTPUT_FORMAT`, `ELEVENLABS_BASE_URL`: optional ElevenLabs TTS tuning. Defaults to `eleven_v3`, ElevenLabs' latest expressive TTS model.
 - `APP_DEVICE_DIR`: directory for registered iOS/watchOS app device tokens.
 - `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY_PATH`, `APNS_BUNDLE_ID`, `APNS_ENVIRONMENT`: optional APNs provider settings for notification tap-to-play.
 

@@ -3,3 +3,4 @@
 
 // DEVELOPMENT_TEAM = ABCDE12345
 // CLAW_BRIDGE_BUNDLE_ID_PREFIX = com.example.yourname
+// CLAW_BRIDGE_IOS_ENTITLEMENTS = Sources/iOS/OpenClawCompanion.entitlements

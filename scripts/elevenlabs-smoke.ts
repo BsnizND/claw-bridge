@@ -32,7 +32,7 @@ async function main() {
     const config = {
       elevenLabsApiKey: requiredEnv('ELEVENLABS_API_KEY'),
       elevenLabsVoiceId: requiredEnv('ELEVENLABS_VOICE_ID'),
-      elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+      elevenLabsModelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_v3',
       elevenLabsOutputFormat: process.env.ELEVENLABS_OUTPUT_FORMAT || 'mp3_44100_128',
       elevenLabsBaseUrl: process.env.ELEVENLABS_BASE_URL || 'https://api.elevenlabs.io'
     } as BridgeConfig;
