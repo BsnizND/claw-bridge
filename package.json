@@ -11,6 +11,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "health:server": "tsx scripts/server-health.ts",
     "smoke:elevenlabs": "tsx scripts/elevenlabs-smoke.ts"
   },
   "keywords": [

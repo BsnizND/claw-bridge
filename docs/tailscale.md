@@ -39,10 +39,25 @@ curl -i http://127.0.0.1:8788/healthz
 
 ## Private tailnet URL with Serve
 
-Use Serve when the iPhone running the Shortcut is on the same tailnet:
+Use Serve when the iPhone running the Shortcut is on the same tailnet.
+If you expose the whole bridge origin, one command covers every route:
 
 ```bash
 tailscale serve --bg --https=443 localhost:8788
+tailscale serve status
+```
+
+If the host already has other services on the same Tailscale HTTPS port, expose
+each bridge path explicitly so Walkie mode can poll and play responses:
+
+```bash
+tailscale serve --bg --https=8443 --set-path=/healthz http://127.0.0.1:8788/healthz
+tailscale serve --bg --https=8443 --set-path=/shortcuts/message http://127.0.0.1:8788/shortcuts/message
+tailscale serve --bg --https=8443 --set-path=/shortcuts/share http://127.0.0.1:8788/shortcuts/share
+tailscale serve --bg --https=8443 --set-path=/shortcuts/share-file http://127.0.0.1:8788/shortcuts/share-file
+tailscale serve --bg --https=8443 --set-path=/watch/voice http://127.0.0.1:8788/watch/voice
+tailscale serve --bg --https=8443 --set-path=/app/responses http://127.0.0.1:8788/app/responses
+tailscale serve --bg --https=8443 --set-path=/app/devices/register http://127.0.0.1:8788/app/devices/register
 tailscale serve status
 ```
 
@@ -112,6 +127,19 @@ Check the Tailscale URL:
 ```bash
 curl -i https://your-node.your-tailnet.ts.net/healthz
 ```
+
+Or use the bundled non-mutating route check:
+
+```bash
+CLAW_BRIDGE_BASE_URL='https://your-node.your-tailnet.ts.net:8443' \
+CLAW_BRIDGE_TOKEN='your-long-random-token' \
+npm run health:server
+```
+
+Expected result: JSON with `ok: true`, `healthz: 200`, and
+`app_responses: 404`. The `404` is expected because the probe asks for a
+missing response id; it proves the authenticated app-response route is reaching
+the bridge and returning bridge JSON instead of a Tailscale edge 404.
 
 Check that unauthenticated Shortcut calls fail closed:
 
