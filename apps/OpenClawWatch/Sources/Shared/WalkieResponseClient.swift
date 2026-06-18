@@ -143,23 +143,27 @@ public final class WalkieAudioPlayer: NSObject, ObservableObject, AVAudioPlayerD
 
     private var player: AVAudioPlayer?
     private var finishContinuation: CheckedContinuation<Bool, Never>?
+    private var playbackURL: URL?
+    private var autoResumeAttempts = 0
+    private let maxAutoResumeAttempts = 3
+    private let finishTolerance: TimeInterval = 0.75
 
     public func play(url: URL) async throws -> Bool {
         stop()
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback, mode: .spokenAudio)
         try session.setActive(true)
-        let player = try AVAudioPlayer(contentsOf: url)
-        player.delegate = self
-        player.volume = 1.0
-        player.prepareToPlay()
-        self.player = player
+        playbackURL = url
+        autoResumeAttempts = 0
+        let player = try makePlayer(url: url, startTime: 0)
         isPlaying = true
         return await withCheckedContinuation { continuation in
             finishContinuation = continuation
             if !player.play() {
                 self.finishContinuation = nil
                 self.player = nil
+                self.playbackURL = nil
+                self.autoResumeAttempts = 0
                 self.isPlaying = false
                 try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
                 continuation.resume(returning: false)
@@ -172,14 +176,49 @@ public final class WalkieAudioPlayer: NSObject, ObservableObject, AVAudioPlayerD
         finishContinuation = nil
         player?.stop()
         player = nil
+        playbackURL = nil
+        autoResumeAttempts = 0
         isPlaying = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
+    private func makePlayer(url: URL, startTime: TimeInterval) throws -> AVAudioPlayer {
+        let player = try AVAudioPlayer(contentsOf: url)
+        player.delegate = self
+        player.volume = 1.0
+        if startTime > 0, startTime < player.duration {
+            player.currentTime = startTime
+        }
+        player.prepareToPlay()
+        self.player = player
+        return player
+    }
+
     nonisolated public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        let stoppedAt = player.currentTime
+        let duration = player.duration
         Task { @MainActor in
+            let endedEarly = !flag || (duration > 0 && stoppedAt < duration - self.finishTolerance)
+            if endedEarly,
+               self.autoResumeAttempts < self.maxAutoResumeAttempts,
+               let playbackURL = self.playbackURL {
+                self.autoResumeAttempts += 1
+                let resumeAt = max(0, min(stoppedAt - 0.1, duration))
+                do {
+                    try AVAudioSession.sharedInstance().setActive(true)
+                    let resumedPlayer = try self.makePlayer(url: playbackURL, startTime: resumeAt)
+                    if resumedPlayer.play() {
+                        self.isPlaying = true
+                        return
+                    }
+                } catch {
+                    NSLog("Claw Bridge audio auto-resume failed: \(error.localizedDescription)")
+                }
+            }
             self.isPlaying = false
             self.player = nil
+            self.playbackURL = nil
+            self.autoResumeAttempts = 0
             self.finishContinuation?.resume(returning: flag)
             self.finishContinuation = nil
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
