@@ -41,5 +41,9 @@
 	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Claw Bridge records audio only when you press the Watch push-to-talk control.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

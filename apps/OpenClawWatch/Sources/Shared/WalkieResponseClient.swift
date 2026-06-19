@@ -151,7 +151,7 @@ public final class WalkieAudioPlayer: NSObject, ObservableObject, AVAudioPlayerD
     public func play(url: URL) async throws -> Bool {
         stop()
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .spokenAudio)
+        try session.setCategory(.playback, mode: .spokenAudio, policy: .longFormAudio, options: [])
         try session.setActive(true)
         playbackURL = url
         autoResumeAttempts = 0

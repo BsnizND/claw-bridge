@@ -65,6 +65,8 @@ targets:
           PreciseWatchVoiceMessage: Claw Bridge can attach precise location to a voice message when you ask location-aware questions.
         WKCompanionAppBundleIdentifier: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge
         WKWatchKitApp: true
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -99,6 +101,8 @@ targets:
           NSExtensionAttributes:
             WKAppBundleIdentifier: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp
           NSExtensionPointIdentifier: com.apple.watchkit
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp.watchkitextension

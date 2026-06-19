@@ -38,6 +38,10 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge</string>
 	<key>WKWatchKitApp</key>
