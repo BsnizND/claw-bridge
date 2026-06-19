@@ -129,15 +129,15 @@ final class WatchVoiceController: NSObject, ObservableObject {
         } catch {
             NSLog("Claw Bridge Watch direct upload failed: \(error.localizedDescription)")
             do {
-                try WatchRelayController.shared.relayAudioFile(
+                _ = try WatchRelayController.shared.relayAudioFile(
                     currentAudioURL,
                     deviceName: "Apple Watch",
                     appName: "Claw Bridge",
                     location: location,
                     wantsVoiceReply: wantsVoiceReply
                 )
-                status = .queued
-                detailText = "Queued for iPhone upload"
+                status = .relayPending
+                detailText = "Transferring to iPhone"
             } catch {
                 status = .failed(error.localizedDescription)
                 detailText = error.localizedDescription

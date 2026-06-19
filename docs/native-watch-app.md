@@ -193,10 +193,18 @@ the companion starts, returns to the foreground, receives a new relay file,
 sends configuration to the Watch, or the user taps **Retry Now** in the iPhone
 app.
 
-This means a Watch status of **Queued** should be read as "accepted for iPhone
-relay." If the iPhone companion has already received the relay, the iPhone app's
-Watch Relay section is the source of truth for whether the message is still
-pending or has drained to the bridge.
+The Watch UI reflects real relay state instead of assuming success. Watch-owned
+states come from WatchConnectivity: **Relay Pending** means the file is still in
+the Watch outstanding-transfer queue, **On iPhone** means WatchConnectivity
+reported the file transfer finished successfully, and **Relay Failed** shows the
+transfer error. iPhone-owned bridge states are mirrored back to the Watch through
+WatchConnectivity application context: **Queued on iPhone** means the durable
+iPhone outbox has the file, **Uploading** means the iPhone is sending it to the
+bridge, **Retrying** means the item is still queued because the bridge upload
+failed, and **Sent** means the bridge accepted the upload. If the Watch loses its
+active transfer state before receiving either a finish callback or an iPhone
+snapshot, it shows **Relay Unknown** instead of claiming that the relay is still
+pending.
 
 Walkie mode metadata is included in the relay transfer, so a direct Watch
 network failure should not silently downgrade a requested voice reply. For

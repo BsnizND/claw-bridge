@@ -3,6 +3,7 @@ import SwiftUI
 struct WatchContentView: View {
     @EnvironmentObject private var store: BridgeConfigurationStore
     @StateObject private var controller = WatchVoiceController()
+    @ObservedObject private var relay = WatchRelayController.shared
     @State private var walkieMode = false
 
     var body: some View {
@@ -10,7 +11,7 @@ struct WatchContentView: View {
             AssistantPortraitView(status: controller.status)
                 .frame(maxWidth: 116)
 
-            Text(controller.status.title)
+            Text(displayedStatusTitle)
                 .font(.headline)
                 .lineLimit(1)
 
@@ -50,7 +51,7 @@ struct WatchContentView: View {
                 .accessibilityLabel("Replay Jay")
             }
 
-            if let detail = controller.detailText {
+            if let detail = displayedDetailText {
                 Text(detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -59,6 +60,9 @@ struct WatchContentView: View {
             }
         }
         .padding(.horizontal, 10)
+        .onAppear {
+            relay.refreshOutstandingTransfers()
+        }
         .onOpenURL { url in
             guard url.scheme == "clawbridge",
                   url.host == "record" || url.path == "/record" else {
@@ -67,6 +71,31 @@ struct WatchContentView: View {
             Task {
                 await controller.startRecordingFromComplication()
             }
+        }
+    }
+
+    private var displayedStatusTitle: String {
+        if shouldShowRelayState {
+            return relay.handoffState.title ?? "Relay Unknown"
+        }
+        return controller.status.title
+    }
+
+    private var displayedDetailText: String? {
+        if shouldShowRelayState {
+            return relay.handoffState.detailText ?? "No active iPhone transfer found"
+        }
+        return controller.detailText
+    }
+
+    private var shouldShowRelayState: Bool {
+        switch controller.status {
+        case .relayPending:
+            return true
+        case .idle:
+            return relay.handoffState.isActive
+        default:
+            return false
         }
     }
 }

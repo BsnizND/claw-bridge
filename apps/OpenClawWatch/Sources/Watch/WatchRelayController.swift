@@ -1,9 +1,80 @@
 import Foundation
+import Combine
 import WatchConnectivity
+
+struct WatchRelayHandoff: Equatable, Sendable {
+    var id: String
+}
+
+enum WatchRelayHandoffState: Equatable, Sendable {
+    case idle
+    case pending(id: String?, outstandingCount: Int)
+    case transferred(id: String)
+    case queuedOnPhone(id: String?, pendingCount: Int, detail: String?)
+    case uploadingToBridge(id: String?, pendingCount: Int, detail: String?)
+    case retryingBridge(id: String?, pendingCount: Int, detail: String?)
+    case sentToBridge(id: String?)
+    case failed(id: String?, message: String)
+
+    var title: String? {
+        switch self {
+        case .idle:
+            nil
+        case .pending:
+            "Relay Pending"
+        case .transferred:
+            "On iPhone"
+        case .queuedOnPhone:
+            "Queued on iPhone"
+        case .uploadingToBridge:
+            "Uploading"
+        case .retryingBridge:
+            "Retrying"
+        case .sentToBridge:
+            "Sent"
+        case .failed:
+            "Relay Failed"
+        }
+    }
+
+    var detailText: String? {
+        switch self {
+        case .idle:
+            nil
+        case .pending(_, let outstandingCount):
+            outstandingCount == 1
+                ? "Transferring to iPhone"
+                : "Transferring \(outstandingCount) files to iPhone"
+        case .transferred:
+            "iPhone received it"
+        case .queuedOnPhone(_, let pendingCount, let detail):
+            detail ?? Self.pendingCountText(pendingCount)
+        case .uploadingToBridge(_, let pendingCount, let detail):
+            detail ?? (pendingCount <= 1 ? "iPhone is uploading it" : "iPhone is uploading \(pendingCount) files")
+        case .retryingBridge(_, let pendingCount, let detail):
+            detail ?? (pendingCount <= 1 ? "Bridge unreachable; retrying" : "\(pendingCount) queued; retrying")
+        case .sentToBridge:
+            "Bridge accepted it"
+        case .failed(_, let message):
+            message
+        }
+    }
+
+    var isActive: Bool {
+        if case .idle = self { return false }
+        return true
+    }
+
+    private static func pendingCountText(_ pendingCount: Int) -> String {
+        pendingCount <= 1 ? "Waiting for bridge upload" : "\(pendingCount) Watch uploads queued"
+    }
+}
 
 @MainActor
 final class WatchRelayController: NSObject, ObservableObject {
     static let shared = WatchRelayController()
+
+    @Published private(set) var handoffState: WatchRelayHandoffState = .idle
 
     private var store: BridgeConfigurationStore?
 
@@ -17,7 +88,13 @@ final class WatchRelayController: NSObject, ObservableObject {
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        refreshOutstandingTransfers(session: session)
         NSLog("Claw Bridge Watch relay WCSession activating; configComplete=\(store.configuration.isComplete)")
+    }
+
+    func refreshOutstandingTransfers() {
+        guard WCSession.isSupported() else { return }
+        refreshOutstandingTransfers(session: WCSession.default)
     }
 
     func relayAudioFile(
@@ -26,11 +103,13 @@ final class WatchRelayController: NSObject, ObservableObject {
         appName: String,
         location: WatchVoiceLocation?,
         wantsVoiceReply: Bool = false
-    ) throws {
+    ) throws -> WatchRelayHandoff {
         guard canRelay else {
             throw WatchRelayError.unavailable
         }
+        let relayID = UUID().uuidString
         var metadata: [String: String] = [
+            "relay_id": relayID,
             "source": "watch_app",
             "device_name": deviceName,
             "app_name": appName,
@@ -48,8 +127,86 @@ final class WatchRelayController: NSObject, ObservableObject {
             metadata["vertical_accuracy"] = location.verticalAccuracy.map { String($0) }
             metadata["maps_url"] = location.mapsURL
         }
-        WCSession.default.transferFile(fileURL, metadata: metadata)
-        NSLog("Claw Bridge Watch queued audio file for iPhone relay")
+        let transfer = WCSession.default.transferFile(fileURL, metadata: metadata)
+        handoffState = .pending(id: relayID, outstandingCount: WCSession.default.outstandingFileTransfers.count)
+        NSLog("Claw Bridge Watch started iPhone relay transfer; relayID=\(relayID); transferring=\(transfer.isTransferring)")
+        return WatchRelayHandoff(id: relayID)
+    }
+
+    private func refreshOutstandingTransfers(session: WCSession) {
+        let transfers = session.outstandingFileTransfers
+        guard !transfers.isEmpty else {
+            if case .pending = handoffState {
+                handoffState = .idle
+            }
+            return
+        }
+        var latestRelayID: String?
+        for transfer in transfers {
+            if let id = relayID(from: transfer) {
+                latestRelayID = id
+            }
+        }
+        handoffState = .pending(id: latestRelayID, outstandingCount: transfers.count)
+    }
+
+    private func relayID(from transfer: WCSessionFileTransfer) -> String? {
+        transfer.file.metadata?["relay_id"] as? String
+    }
+
+    private func markFinished(relayID: String?, errorMessage: String?) {
+        if let errorMessage {
+            handoffState = .failed(id: relayID, message: errorMessage)
+            NSLog("Claw Bridge Watch iPhone relay transfer failed; relayID=\(relayID ?? "unknown"); error=\(errorMessage)")
+            return
+        }
+        if let relayID {
+            handoffState = .transferred(id: relayID)
+        } else {
+            handoffState = .transferred(id: "unknown")
+        }
+        NSLog("Claw Bridge Watch iPhone relay transfer finished; relayID=\(relayID ?? "unknown")")
+    }
+
+    private func applyBridgeSnapshot(_ snapshot: WatchRelayBridgeSnapshot) {
+        guard shouldApplyBridgeSnapshot(snapshot) else { return }
+        switch snapshot.state {
+        case .receivedByPhone:
+            handoffState = .transferred(id: snapshot.relayID ?? "unknown")
+        case .queuedOnPhone:
+            handoffState = .queuedOnPhone(
+                id: snapshot.relayID,
+                pendingCount: snapshot.pendingCount,
+                detail: snapshot.detail
+            )
+        case .uploadingToBridge:
+            handoffState = .uploadingToBridge(
+                id: snapshot.relayID,
+                pendingCount: snapshot.pendingCount,
+                detail: snapshot.detail
+            )
+        case .retryingBridge:
+            handoffState = .retryingBridge(
+                id: snapshot.relayID,
+                pendingCount: snapshot.pendingCount,
+                detail: snapshot.detail
+            )
+        case .sentToBridge:
+            handoffState = .sentToBridge(id: snapshot.relayID)
+        case .failed:
+            handoffState = .failed(id: snapshot.relayID, message: snapshot.detail ?? "Relay failed")
+        }
+        NSLog("Claw Bridge Watch relay bridge state updated; state=\(snapshot.state.rawValue); relayID=\(snapshot.relayID ?? "unknown"); pending=\(snapshot.pendingCount)")
+    }
+
+    private func shouldApplyBridgeSnapshot(_ snapshot: WatchRelayBridgeSnapshot) -> Bool {
+        guard let snapshotRelayID = snapshot.relayID else { return true }
+        switch handoffState {
+        case .pending(let currentRelayID, _) where currentRelayID != nil && currentRelayID != snapshotRelayID:
+            return false
+        default:
+            return true
+        }
     }
 }
 
@@ -60,16 +217,31 @@ extension WatchRelayController: WCSessionDelegate {
         error: Error?
     ) {
         NSLog("Claw Bridge Watch relay WCSession activation completed; state=\(activationState.rawValue); error=\(error?.localizedDescription ?? "none")")
+        Task { @MainActor in
+            refreshOutstandingTransfers()
+        }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         let bridgeURLText = applicationContext["bridgeURL"] as? String
         let bearerToken = applicationContext["bearerToken"] as? String ?? ""
+        let relaySnapshot = WatchRelayBridgeSnapshot(applicationContext: applicationContext)
         Task { @MainActor in
             guard let store else { return }
             let bridgeURL = bridgeURLText.flatMap(URL.init(string:))
             store.configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: bearerToken)
+            if let relaySnapshot {
+                applyBridgeSnapshot(relaySnapshot)
+            }
             NSLog("Claw Bridge Watch received bridge configuration; configComplete=\(store.configuration.isComplete)")
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {
+        let relayID = fileTransfer.file.metadata?["relay_id"] as? String
+        let errorMessage = error?.localizedDescription
+        Task { @MainActor in
+            markFinished(relayID: relayID, errorMessage: errorMessage)
         }
     }
 }

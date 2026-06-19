@@ -15,6 +15,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
     private var isDraining = false
     private var drainRequestedWhileRunning = false
     private var retryTask: Task<Void, Never>?
+    private var latestRelaySnapshot: WatchRelayBridgeSnapshot?
 
     var isSupported: Bool { WCSession.isSupported() }
 
@@ -31,23 +32,8 @@ final class CompanionRelayController: NSObject, ObservableObject {
     }
 
     func sendConfiguration(_ configuration: BridgeConfiguration) {
-        guard WCSession.isSupported(), WCSession.default.activationState == .activated else {
-            NSLog("Claw Bridge companion configuration send skipped; activationState=\(WCSession.default.activationState.rawValue)")
-            return
-        }
-        var context: [String: Any] = [
-            "bearerToken": configuration.bearerToken
-        ]
-        if let bridgeURL = configuration.bridgeURL?.absoluteString {
-            context["bridgeURL"] = bridgeURL
-        }
-        do {
-            try WCSession.default.updateApplicationContext(context)
-            NSLog("Claw Bridge companion configuration sent to Watch; configComplete=\(configuration.isComplete)")
-            drainPending(reason: "configuration")
-        } catch {
-            NSLog("Claw Bridge companion configuration send failed: \(error.localizedDescription)")
-        }
+        sendApplicationContext(configuration: configuration, relaySnapshot: latestRelaySnapshot)
+        drainPending(reason: "configuration")
     }
 
     func drainPending(reason: String = "manual") {
@@ -64,10 +50,26 @@ final class CompanionRelayController: NSObject, ObservableObject {
         do {
             let item = try outbox.enqueue(fileURL: fileURL, metadata: metadata)
             refreshOutboxStatus()
+            publishRelaySnapshot(
+                WatchRelayBridgeSnapshot(
+                    state: .queuedOnPhone,
+                    relayID: relayID(for: item),
+                    pendingCount: pendingRelayCount,
+                    detail: pendingRelayCount <= 1 ? "Waiting for bridge upload" : "\(pendingRelayCount) Watch uploads queued"
+                )
+            )
             NSLog("Claw Bridge relay queued Watch file in durable outbox; id=\(item.id); pending=\(pendingRelayCount)")
             drainPending(reason: "watch-file")
         } catch {
             relayStatusText = "Watch relay failed: \(error.localizedDescription)"
+            publishRelaySnapshot(
+                WatchRelayBridgeSnapshot(
+                    state: .failed,
+                    relayID: metadata["relay_id"],
+                    pendingCount: pendingRelayCount,
+                    detail: error.localizedDescription
+                )
+            )
             NSLog("Claw Bridge relay enqueue failed: \(error.localizedDescription)")
         }
     }
@@ -99,6 +101,14 @@ final class CompanionRelayController: NSObject, ObservableObject {
         guard store.configuration.isComplete else {
             pendingRelayCount = items.count
             relayStatusText = "Queued \(items.count); bridge configuration required"
+            publishRelaySnapshot(
+                WatchRelayBridgeSnapshot(
+                    state: .queuedOnPhone,
+                    relayID: relayID(for: items[0]),
+                    pendingCount: items.count,
+                    detail: "Bridge configuration required"
+                )
+            )
             NSLog("Claw Bridge relay drain skipped: bridge configuration incomplete")
             return
         }
@@ -118,6 +128,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
             let location = WatchVoiceLocation(metadata: metadata)
             let capturedAt = metadata["captured_at"].flatMap { ISO8601DateFormatter().date(from: $0) } ?? item.createdAt
             let wantsVoiceReply = metadata["response_mode"] == "voice" || metadata["walkie_mode"] == "true"
+            let relayID = relayID(for: item)
             let request = WatchVoiceUploadRequest(
                 audioFileURL: fileURL,
                 deviceName: metadata["device_name"] ?? "Apple Watch",
@@ -129,15 +140,40 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 appPlatform: "ios"
             )
             do {
+                let currentPendingCount = outbox.items().count
                 NSLog("Claw Bridge relay upload starting; id=\(item.id); configComplete=\(store.configuration.isComplete)")
-                _ = try await uploader.upload(request, configuration: store.configuration)
+                publishRelaySnapshot(
+                    WatchRelayBridgeSnapshot(
+                        state: .uploadingToBridge,
+                        relayID: relayID,
+                        pendingCount: currentPendingCount,
+                        detail: currentPendingCount <= 1 ? "iPhone is uploading it" : "iPhone is uploading \(currentPendingCount) files"
+                    )
+                )
+                let response = try await uploader.upload(request, configuration: store.configuration)
                 try outbox.remove(id: item.id)
                 refreshOutboxStatus()
+                publishRelaySnapshot(
+                    WatchRelayBridgeSnapshot(
+                        state: .sentToBridge,
+                        relayID: relayID,
+                        pendingCount: pendingRelayCount,
+                        detail: response.queued == true ? "Bridge queued it" : "Bridge accepted it"
+                    )
+                )
                 NSLog("Claw Bridge relay upload succeeded; id=\(item.id); pending=\(pendingRelayCount)")
             } catch {
                 let message = error.localizedDescription
                 try? outbox.markFailed(id: item.id, error: message)
                 refreshOutboxStatus(failure: message)
+                publishRelaySnapshot(
+                    WatchRelayBridgeSnapshot(
+                        state: .retryingBridge,
+                        relayID: relayID,
+                        pendingCount: pendingRelayCount,
+                        detail: pendingRelayCount <= 1 ? "Bridge unreachable; retrying" : "\(pendingRelayCount) queued; retrying"
+                    )
+                )
                 scheduleRetry()
                 NSLog("Claw Bridge relay upload failed; id=\(item.id); error=\(message)")
                 return
@@ -147,16 +183,79 @@ final class CompanionRelayController: NSObject, ObservableObject {
     }
 
     private func refreshOutboxStatus(failure: String? = nil) {
-        let count = outbox.items().count
+        let items = outbox.items()
+        let count = items.count
         pendingRelayCount = count
         if count == 0 {
             relayStatusText = "No queued Watch uploads"
         } else if let failure {
             relayStatusText = "Queued \(count); retrying when bridge is reachable"
+            latestRelaySnapshot = outboxSnapshot(for: items, failure: failure)
             NSLog("Claw Bridge relay pending after failure; pending=\(count); error=\(failure)")
         } else {
             relayStatusText = "Queued \(count) Watch upload\(count == 1 ? "" : "s")"
+            latestRelaySnapshot = outboxSnapshot(for: items)
         }
+    }
+
+    private func relayID(for item: CompanionRelayOutboxItem) -> String {
+        item.metadata["relay_id"] ?? item.id
+    }
+
+    private func outboxSnapshot(
+        for items: [CompanionRelayOutboxItem],
+        failure: String? = nil
+    ) -> WatchRelayBridgeSnapshot? {
+        guard let item = items.first else { return nil }
+        let message = failure ?? item.lastError
+        if message != nil {
+            return WatchRelayBridgeSnapshot(
+                state: .retryingBridge,
+                relayID: relayID(for: item),
+                pendingCount: items.count,
+                detail: items.count <= 1 ? "Bridge unreachable; retrying" : "\(items.count) queued; retrying"
+            )
+        }
+        return WatchRelayBridgeSnapshot(
+            state: .queuedOnPhone,
+            relayID: relayID(for: item),
+            pendingCount: items.count,
+            detail: items.count <= 1 ? "Waiting for bridge upload" : "\(items.count) Watch uploads queued"
+        )
+    }
+
+    private func sendApplicationContext(
+        configuration: BridgeConfiguration,
+        relaySnapshot: WatchRelayBridgeSnapshot?
+    ) {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated else {
+            NSLog("Claw Bridge companion application context send skipped; activationState=\(WCSession.default.activationState.rawValue)")
+            return
+        }
+        var context: [String: Any] = [
+            "bearerToken": configuration.bearerToken
+        ]
+        if let bridgeURL = configuration.bridgeURL?.absoluteString {
+            context["bridgeURL"] = bridgeURL
+        }
+        if let relaySnapshot {
+            relaySnapshot.applicationContextFields.forEach { context[$0.key] = $0.value }
+        }
+        do {
+            try WCSession.default.updateApplicationContext(context)
+            NSLog("Claw Bridge companion application context sent to Watch; configComplete=\(configuration.isComplete); relayState=\(relaySnapshot?.state.rawValue ?? "none")")
+        } catch {
+            NSLog("Claw Bridge companion application context send failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func publishRelaySnapshot(_ snapshot: WatchRelayBridgeSnapshot) {
+        latestRelaySnapshot = snapshot
+        guard let configuration = store?.configuration else {
+            NSLog("Claw Bridge relay snapshot held until configuration is available; state=\(snapshot.state.rawValue)")
+            return
+        }
+        sendApplicationContext(configuration: configuration, relaySnapshot: snapshot)
     }
 
     private func scheduleRetry() {
