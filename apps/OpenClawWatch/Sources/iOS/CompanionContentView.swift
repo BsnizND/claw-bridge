@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CompanionContentView: View {
     @EnvironmentObject private var store: BridgeConfigurationStore
+    @ObservedObject private var relay = CompanionRelayController.shared
     @StateObject private var walkie = CompanionWalkieController()
     @State private var bridgeURLText = ""
     @State private var tokenText = ""
@@ -32,6 +33,20 @@ struct CompanionContentView: View {
                 Section("Status") {
                     Label(store.configuration.isComplete ? "Ready for Watch uploads" : "Bridge configuration required",
                           systemImage: store.configuration.isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                }
+
+                Section("Watch Relay") {
+                    Label(
+                        relay.relayStatusText,
+                        systemImage: relay.pendingRelayCount == 0 ? "checkmark.circle" : "tray.and.arrow.up"
+                    )
+
+                    Button {
+                        relay.drainPending(reason: "manual")
+                    } label: {
+                        Label("Retry Now", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(relay.pendingRelayCount == 0 || !store.configuration.isComplete)
                 }
 
                 Section("Walkie") {
@@ -86,6 +101,7 @@ struct CompanionContentView: View {
             .onAppear {
                 bridgeURLText = store.configuration.bridgeURL?.absoluteString ?? ""
                 tokenText = store.configuration.bearerToken
+                relay.drainPending(reason: "ui-appear")
             }
             .onReceive(NotificationCenter.default.publisher(for: .clawBridgeOpenResponse)) { notification in
                 guard let responseID = notification.object as? String else { return }

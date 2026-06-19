@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		074D66411C4C02BCAF1DF55A /* CompanionRelayOutbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2979C1EB89D528F7C8F9ACB6 /* CompanionRelayOutbox.swift */; };
 		0AD2DC0613E92DE1E90F357D /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		18C69D2FC40422012B224E2D /* OpenClawWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
@@ -92,6 +93,7 @@
 		19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawBridgeComplication.swift; sourceTree = "<group>"; };
 		1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchVoiceController.swift; sourceTree = "<group>"; };
 		1ED7E8B5B525A071F1186287 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2979C1EB89D528F7C8F9ACB6 /* CompanionRelayOutbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionRelayOutbox.swift; sourceTree = "<group>"; };
 		2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionRelayController.swift; sourceTree = "<group>"; };
 		33D2F98CC9106F5DE7F213C3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3CB66DEE7BAB2FFBE123831A /* .gitkeep */ = {isa = PBXFileReference; path = .gitkeep; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 				7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */,
 				A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */,
 				2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */,
+				2979C1EB89D528F7C8F9ACB6 /* CompanionRelayOutbox.swift */,
 				992030626503F9F333EC8065 /* CompanionWalkieController.swift */,
 				33D2F98CC9106F5DE7F213C3 /* Info.plist */,
 				B56351101E3C6ED506D781F4 /* OpenClawCompanion.entitlements */,
@@ -375,6 +378,7 @@
 				A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */,
 				784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */,
 				C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */,
+				074D66411C4C02BCAF1DF55A /* CompanionRelayOutbox.swift in Sources */,
 				FE82F2FB795AFA9A5F7867CE /* CompanionWalkieController.swift in Sources */,
 				596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */,
 				AB74930D19E0311630630215 /* WalkieResponseClient.swift in Sources */,

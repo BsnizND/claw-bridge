@@ -186,6 +186,18 @@ fails, it transfers the audio file and metadata to the iPhone companion through
 WatchConnectivity. The companion then uploads to the same `/watch/voice`
 contract using the bridge URL and token saved on the phone.
 
+The iPhone relay is durable. Once the companion receives a Watch file, it
+copies the audio and metadata into an on-device outbox before attempting the
+bridge upload. If the bridge is offline, the item stays queued and retries when
+the companion starts, returns to the foreground, receives a new relay file,
+sends configuration to the Watch, or the user taps **Retry Now** in the iPhone
+app.
+
+This means a Watch status of **Queued** should be read as "accepted for iPhone
+relay." If the iPhone companion has already received the relay, the iPhone app's
+Watch Relay section is the source of truth for whether the message is still
+pending or has drained to the bridge.
+
 Walkie mode metadata is included in the relay transfer, so a direct Watch
 network failure should not silently downgrade a requested voice reply. For
 relayed Walkie uploads, the iPhone companion also attaches its stable

@@ -33,7 +33,8 @@ final class WatchRelayController: NSObject, ObservableObject {
         var metadata: [String: String] = [
             "source": "watch_app",
             "device_name": deviceName,
-            "app_name": appName
+            "app_name": appName,
+            "captured_at": ISO8601DateFormatter().string(from: Date())
         ]
         if wantsVoiceReply {
             metadata["response_mode"] = "voice"
