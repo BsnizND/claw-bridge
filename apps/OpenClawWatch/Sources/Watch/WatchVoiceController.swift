@@ -48,7 +48,9 @@ final class WatchVoiceController: NSObject, ObservableObject {
     }
 
     func startRecordingFromComplication() async {
-        guard !status.isListening, !isBusy else { return }
+        guard !status.isListening else { return }
+        if case .sending = status { return }
+        cancelResponsePlayback()
         await startRecording()
     }
 
@@ -148,6 +150,21 @@ final class WatchVoiceController: NSObject, ObservableObject {
     func replayLastResponse(configuration: BridgeConfiguration) async {
         guard let lastResponseID else { return }
         beginResponsePlayback(lastResponseID, configuration: configuration, preserveSentStatus: false)
+    }
+
+    private func cancelResponsePlayback() {
+        responsePlaybackTask?.cancel()
+        responsePlaybackTask = nil
+        responsePlaybackToken = nil
+        isAwaitingReply = false
+        audioPlayer.stop()
+        switch status {
+        case .waitingForReply, .playing, .replyReady, .failed:
+            status = .idle
+            detailText = nil
+        default:
+            break
+        }
     }
 
     private func beginResponsePlayback(
