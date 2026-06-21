@@ -135,6 +135,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 appName: metadata["app_name"] ?? "Claw Bridge",
                 capturedAt: capturedAt,
                 location: location,
+                noLocationReason: metadata["no_location_reason"],
                 wantsVoiceReply: wantsVoiceReply,
                 appDeviceID: CompanionPushController.shared.deviceID,
                 appPlatform: "ios"
@@ -324,6 +325,8 @@ private extension WatchVoiceLocation {
         altitude = metadata["altitude"].flatMap(Double.init)
         horizontalAccuracy = metadata["horizontal_accuracy"].flatMap(Double.init)
         verticalAccuracy = metadata["vertical_accuracy"].flatMap(Double.init)
+        locationTimestamp = metadata["location_timestamp"]
+        locationAgeSeconds = metadata["location_age_seconds"].flatMap(Double.init)
         mapsURL = metadata["maps_url"]
     }
 }

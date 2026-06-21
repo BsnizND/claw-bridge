@@ -74,6 +74,8 @@ export interface SiriLocation {
   altitude?: number;
   horizontal_accuracy?: number;
   vertical_accuracy?: number;
+  location_timestamp?: string;
+  location_age_seconds?: number;
   maps_url?: string;
   name?: string;
   address?: string;
@@ -100,6 +102,10 @@ export interface SharedItemMetadata {
   size_bytes?: number;
 }
 
+export interface CaptureReceiptMetadata {
+  no_location_reason?: string;
+}
+
 export interface NormalizedSiriEvent {
   source: string;
   assistant: string;
@@ -112,6 +118,7 @@ export interface NormalizedSiriEvent {
   location?: SiriLocation;
   voice_memo?: VoiceMemoMetadata;
   shared_item?: SharedItemMetadata;
+  capture_receipt?: CaptureReceiptMetadata;
   app_response?: AppResponseRequest;
 }
 

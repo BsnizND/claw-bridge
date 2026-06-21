@@ -102,6 +102,7 @@ final class WatchRelayController: NSObject, ObservableObject {
         deviceName: String,
         appName: String,
         location: WatchVoiceLocation?,
+        noLocationReason: String? = nil,
         wantsVoiceReply: Bool = false
     ) throws -> WatchRelayHandoff {
         guard canRelay else {
@@ -125,7 +126,11 @@ final class WatchRelayController: NSObject, ObservableObject {
             metadata["altitude"] = location.altitude.map { String($0) }
             metadata["horizontal_accuracy"] = location.horizontalAccuracy.map { String($0) }
             metadata["vertical_accuracy"] = location.verticalAccuracy.map { String($0) }
+            metadata["location_timestamp"] = location.locationTimestamp
+            metadata["location_age_seconds"] = location.locationAgeSeconds.map { String($0) }
             metadata["maps_url"] = location.mapsURL
+        } else if let noLocationReason, noLocationReason.isEmpty == false {
+            metadata["no_location_reason"] = noLocationReason
         }
         let transfer = WCSession.default.transferFile(fileURL, metadata: metadata)
         handoffState = .pending(id: relayID, outstandingCount: WCSession.default.outstandingFileTransfers.count)

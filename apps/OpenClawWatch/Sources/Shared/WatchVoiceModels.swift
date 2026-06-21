@@ -7,15 +7,31 @@ public struct WatchVoiceLocation: Codable, Equatable, Sendable {
     public var altitude: Double?
     public var horizontalAccuracy: Double?
     public var verticalAccuracy: Double?
+    public var locationTimestamp: String?
+    public var locationAgeSeconds: Double?
     public var mapsURL: String?
 
     public init(location: CLLocation) {
+        let capturedAt = Date()
         latitude = location.coordinate.latitude
         longitude = location.coordinate.longitude
         altitude = location.altitude.isFinite ? location.altitude : nil
         horizontalAccuracy = location.horizontalAccuracy.isFinite ? location.horizontalAccuracy : nil
         verticalAccuracy = location.verticalAccuracy.isFinite ? location.verticalAccuracy : nil
+        locationTimestamp = ISO8601DateFormatter().string(from: location.timestamp)
+        let age = capturedAt.timeIntervalSince(location.timestamp)
+        locationAgeSeconds = age.isFinite ? max(0, age) : nil
         mapsURL = "https://maps.apple.com/?ll=\(latitude),\(longitude)"
+    }
+}
+
+public struct WatchVoiceLocationReceipt: Equatable, Sendable {
+    public var location: WatchVoiceLocation?
+    public var noLocationReason: String?
+
+    public init(location: WatchVoiceLocation?, noLocationReason: String? = nil) {
+        self.location = location
+        self.noLocationReason = noLocationReason
     }
 }
 

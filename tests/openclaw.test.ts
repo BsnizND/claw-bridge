@@ -24,6 +24,8 @@ function eventWithLocationAndMemo(text = 'find burritos near me'): NormalizedSir
       latitude: 33.6001,
       longitude: -111.9002,
       horizontal_accuracy: 8,
+      location_timestamp: '2026-06-13T15:59:55.000Z',
+      location_age_seconds: 5,
       maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
     },
     voice_memo: {
@@ -55,6 +57,30 @@ function shareEvent(text = 'Shared from iOS share sheet: screenshot OCR text'): 
       kind: 'text',
       text: 'screenshot OCR text',
       title: 'IMG_8055'
+    }
+  };
+}
+
+function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedSiriEvent {
+  return {
+    ...event(text),
+    source: 'watch_app',
+    raw_text: `Apple Watch voice message: ${text}`,
+    capture_receipt: {
+      no_location_reason: 'location_timeout'
+    },
+    voice_memo: {
+      filename: 'Latest memo.m4a',
+      mime_type: 'audio/mp4',
+      file_path: '/tmp/Latest memo.m4a',
+      size_bytes: 1234
+    },
+    shared_item: {
+      kind: 'audio',
+      filename: 'Latest memo.m4a',
+      mime_type: 'audio/mp4',
+      file_path: '/tmp/Latest memo.m4a',
+      size_bytes: 1234
     }
   };
 }
@@ -216,6 +242,8 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('File path: /tmp/Latest memo.m4a');
     expect(args).toContain('Location: 33.6001, -111.9002');
     expect(args).toContain('Accuracy: 8m');
+    expect(args).toContain('Location timestamp: 2026-06-13T15:59:55.000Z');
+    expect(args).toContain('Location age: 5s');
     expect(args).toContain('Map: https://maps.apple.com/?ll=33.6001,-111.9002');
     expect(args).toContain('Voice memo attached:');
     expect(args).toContain('Transcript: this is the voice memo transcript');
@@ -224,6 +252,40 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('telegram');
     expect(args).toContain('--reply-to');
     expect(args).toContain('telegram:1234');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('passes Watch no-location capture receipts as metadata', async () => {
+    const dir = join(tmpdir(), `claw-bridge-watch-receipt-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawMessageStyle: 'compact',
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, watchEventWithoutLocation());
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('Sent via Apple Watch voice message: voice note without gps');
+    expect(args).toContain('Capture receipt:');
+    expect(args).toContain('No location reason: location_timeout');
+    expect(args).not.toContain('Location:');
     await rm(dir, { recursive: true, force: true });
   });
 

@@ -43,6 +43,8 @@ function normalizeLocation(body: ShortcutMessageRequest): SiriLocation | undefin
     altitude: asOptionalNumber(location.altitude),
     horizontal_accuracy: asOptionalNumber(location.horizontal_accuracy),
     vertical_accuracy: asOptionalNumber(location.vertical_accuracy),
+    location_timestamp: asOptionalString(location.location_timestamp),
+    location_age_seconds: asOptionalNumber(location.location_age_seconds),
     maps_url: asOptionalString(location.maps_url),
     name: asOptionalString(location.name),
     address: asOptionalString(location.address)

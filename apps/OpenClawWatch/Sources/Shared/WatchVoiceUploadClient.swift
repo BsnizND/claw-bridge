@@ -6,6 +6,7 @@ public struct WatchVoiceUploadRequest: Sendable {
     public var appName: String
     public var capturedAt: Date
     public var location: WatchVoiceLocation?
+    public var noLocationReason: String?
     public var wantsVoiceReply: Bool
     public var appDeviceID: String?
     public var appPlatform: String?
@@ -16,6 +17,7 @@ public struct WatchVoiceUploadRequest: Sendable {
         appName: String,
         capturedAt: Date = Date(),
         location: WatchVoiceLocation? = nil,
+        noLocationReason: String? = nil,
         wantsVoiceReply: Bool = false,
         appDeviceID: String? = nil,
         appPlatform: String? = nil
@@ -25,6 +27,7 @@ public struct WatchVoiceUploadRequest: Sendable {
         self.appName = appName
         self.capturedAt = capturedAt
         self.location = location
+        self.noLocationReason = noLocationReason
         self.wantsVoiceReply = wantsVoiceReply
         self.appDeviceID = appDeviceID
         self.appPlatform = appPlatform
@@ -133,9 +136,17 @@ public final class WatchVoiceUploadClient: Sendable {
             if let verticalAccuracy = location.verticalAccuracy {
                 body.appendFormField("vertical_accuracy", value: String(verticalAccuracy), boundary: boundary)
             }
+            if let locationTimestamp = location.locationTimestamp {
+                body.appendFormField("location_timestamp", value: locationTimestamp, boundary: boundary)
+            }
+            if let locationAgeSeconds = location.locationAgeSeconds {
+                body.appendFormField("location_age_seconds", value: String(locationAgeSeconds), boundary: boundary)
+            }
             if let mapsURL = location.mapsURL {
                 body.appendFormField("maps_url", value: mapsURL, boundary: boundary)
             }
+        } else if let noLocationReason = request.noLocationReason, noLocationReason.isEmpty == false {
+            body.appendFormField("no_location_reason", value: noLocationReason, boundary: boundary)
         }
         let audio = try Data(contentsOf: request.audioFileURL)
         body.appendFileField(

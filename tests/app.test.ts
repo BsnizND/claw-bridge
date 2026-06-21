@@ -244,6 +244,8 @@ describe('app routes', () => {
       .field('latitude', '33.6001')
       .field('longitude', '-111.9002')
       .field('horizontal_accuracy', '8')
+      .field('location_timestamp', '2026-06-14T20:11:57.000Z')
+      .field('location_age_seconds', '3')
       .field('maps_url', 'https://maps.apple.com/?ll=33.6001,-111.9002')
       .attach('audio', Buffer.from('audio-ish'), {
         filename: 'watch-message.m4a',
@@ -263,6 +265,8 @@ describe('app routes', () => {
           latitude: 33.6001,
           longitude: -111.9002,
           horizontal_accuracy: 8,
+          location_timestamp: '2026-06-14T20:11:57.000Z',
+          location_age_seconds: 3,
           maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
         }),
         shared_item: expect.objectContaining({
@@ -281,6 +285,31 @@ describe('app routes', () => {
       })
     );
     expect(afterAccepted).toHaveBeenCalledWith(expect.objectContaining({ source: 'watch_app' }));
+  });
+
+  it('preserves Watch no-location reasons without inventing location', async () => {
+    const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'watch-voice-id' });
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('device_name', 'Apple Watch Ultra')
+      .field('app_name', 'OpenClaw Watch')
+      .field('captured_at', '2026-06-14T20:12:00.000Z')
+      .field('no_location_reason', 'location_timeout')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(202);
+    const event = acceptEvent.mock.calls[0]?.[0];
+    expect(event).toMatchObject({
+      source: 'watch_app',
+      capture_receipt: {
+        no_location_reason: 'location_timeout'
+      }
+    });
+    expect(event.location).toBeUndefined();
   });
 
   it('creates a voice response record for native Watch walkie uploads', async () => {

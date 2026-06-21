@@ -19,11 +19,25 @@ function formatLocation(event: NormalizedSiriEvent): string[] {
     `Location: ${event.location.latitude}, ${event.location.longitude}`,
     event.location.horizontal_accuracy !== undefined ? `Accuracy: ${event.location.horizontal_accuracy}m` : undefined,
     event.location.altitude !== undefined ? `Altitude: ${event.location.altitude}m` : undefined,
+    event.location.location_timestamp ? `Location timestamp: ${event.location.location_timestamp}` : undefined,
+    event.location.location_age_seconds !== undefined ? `Location age: ${event.location.location_age_seconds}s` : undefined,
     event.location.name ? `Place: ${event.location.name}` : undefined,
     event.location.address ? `Address: ${event.location.address}` : undefined,
     event.location.maps_url ? `Map: ${event.location.maps_url}` : undefined
   ];
   return parts.filter((part): part is string => Boolean(part));
+}
+
+function formatCaptureReceipt(event: NormalizedSiriEvent): string[] {
+  if (!event.capture_receipt) {
+    return [];
+  }
+  return [
+    'Capture receipt:',
+    event.capture_receipt.no_location_reason
+      ? `No location reason: ${event.capture_receipt.no_location_reason}`
+      : undefined
+  ].filter((part): part is string => Boolean(part));
 }
 
 function formatVoiceMemo(event: NormalizedSiriEvent): string[] {
@@ -76,6 +90,8 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
     ...(event.shared_item ? [''] : []),
     ...formatLocation(event),
     ...(event.location ? [''] : []),
+    ...formatCaptureReceipt(event),
+    ...(event.capture_receipt ? [''] : []),
     ...formatVoiceMemo(event),
     ...(event.voice_memo ? [''] : []),
     `Captured at: ${event.captured_at}`,
@@ -111,7 +127,12 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
   const prefix = compactPrefix(config, event);
   const text = compactText(event);
   const message = prefix ? `${prefix} ${text}` : text;
-  const context = [...formatSharedItem(event), ...formatLocation(event), ...formatVoiceMemo(event)];
+  const context = [
+    ...formatSharedItem(event),
+    ...formatLocation(event),
+    ...formatCaptureReceipt(event),
+    ...formatVoiceMemo(event)
+  ];
   return context.length ? [message, '', ...context].join('\n') : message;
 }
 
