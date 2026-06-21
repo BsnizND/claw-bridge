@@ -241,6 +241,7 @@ describe('app routes', () => {
       .field('device_name', 'Apple Watch Ultra')
       .field('app_name', 'OpenClaw Watch')
       .field('captured_at', '2026-06-14T20:12:00.000Z')
+      .field('source_context', 'golf_mode')
       .field('latitude', '33.6001')
       .field('longitude', '-111.9002')
       .field('horizontal_accuracy', '8')
@@ -261,6 +262,7 @@ describe('app routes', () => {
         captured_at: '2026-06-14T20:12:00.000Z',
         device_name: 'Apple Watch Ultra',
         shortcut_name: 'OpenClaw Watch',
+        source_context: 'golf_mode',
         location: expect.objectContaining({
           latitude: 33.6001,
           longitude: -111.9002,
@@ -285,6 +287,22 @@ describe('app routes', () => {
       })
     );
     expect(afterAccepted).toHaveBeenCalledWith(expect.objectContaining({ source: 'watch_app' }));
+  });
+
+  it('rejects unsupported Watch source context values', async () => {
+    const acceptEvent = vi.fn();
+    const res = await request(createApp(config(), { acceptEvent }))
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('source_context', 'shot_classifier')
+      .attach('audio', Buffer.from('audio-ish'), {
+        filename: 'watch-message.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('unsupported source_context');
+    expect(acceptEvent).not.toHaveBeenCalled();
   });
 
   it('preserves Watch no-location reasons without inventing location', async () => {

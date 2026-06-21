@@ -128,6 +128,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
             let location = WatchVoiceLocation(metadata: metadata)
             let capturedAt = metadata["captured_at"].flatMap { ISO8601DateFormatter().date(from: $0) } ?? item.createdAt
             let wantsVoiceReply = metadata["response_mode"] == "voice" || metadata["walkie_mode"] == "true"
+            let sourceContext = metadata["source_context"].flatMap(WatchVoiceSourceContext.init(rawValue:))
             let relayID = relayID(for: item)
             let request = WatchVoiceUploadRequest(
                 audioFileURL: fileURL,
@@ -138,7 +139,8 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 noLocationReason: metadata["no_location_reason"],
                 wantsVoiceReply: wantsVoiceReply,
                 appDeviceID: CompanionPushController.shared.deviceID,
-                appPlatform: "ios"
+                appPlatform: "ios",
+                sourceContext: sourceContext
             )
             do {
                 let currentPendingCount = outbox.items().count

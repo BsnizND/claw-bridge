@@ -17,6 +17,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
     private let minimumRecordingDuration: TimeInterval = 0.8
     private let maximumLocationAge: TimeInterval = 120
     private let locationUploadTimeoutNanoseconds: UInt64 = 4_000_000_000
+    private let requiredLocationUploadTimeoutNanoseconds: UInt64 = 15_000_000_000
     private var recorder: AVAudioRecorder?
     private var currentAudioURL: URL?
     private var recordingStartedAt: Date?
@@ -39,13 +40,21 @@ final class WatchVoiceController: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
     }
 
-    func toggleRecording(configuration: BridgeConfiguration, wantsVoiceReply: Bool = false) async {
+    func toggleRecording(
+        configuration: BridgeConfiguration,
+        wantsVoiceReply: Bool = false,
+        sourceContext: WatchVoiceSourceContext? = nil
+    ) async {
         if status.isListening {
             guard canStopCurrentRecording else {
                 detailText = "Keep talking"
                 return
             }
-            await stopAndSend(configuration: configuration, wantsVoiceReply: wantsVoiceReply)
+            await stopAndSend(
+                configuration: configuration,
+                wantsVoiceReply: wantsVoiceReply,
+                sourceContext: sourceContext
+            )
         } else {
             await startRecording()
         }
@@ -88,7 +97,11 @@ final class WatchVoiceController: NSObject, ObservableObject {
         }
     }
 
-    private func stopAndSend(configuration: BridgeConfiguration, wantsVoiceReply: Bool) async {
+    private func stopAndSend(
+        configuration: BridgeConfiguration,
+        wantsVoiceReply: Bool,
+        sourceContext: WatchVoiceSourceContext?
+    ) async {
         let recordingDuration = recorder?.currentTime ?? recordingElapsedTime
         recorder?.stop()
         recorder = nil
@@ -109,9 +122,18 @@ final class WatchVoiceController: NSObject, ObservableObject {
             return
         }
         status = .sending
-        detailText = "Getting location"
-        let locationReceipt = await locationForUpload()
+        let requiresLocation = sourceContext == .golfMode
+        detailText = requiresLocation ? "Getting GPS" : "Getting location"
+        let locationReceipt = await locationForUpload(requireLocation: requiresLocation)
         let location = locationReceipt.location
+        if requiresLocation, location == nil {
+            status = .failed("Golf Mode needs location.")
+            detailText = "No GPS. Step outside and retry."
+            try? FileManager.default.removeItem(at: currentAudioURL)
+            self.currentAudioURL = nil
+            recordingStartedAt = nil
+            return
+        }
         detailText = location == nil ? "Uploading without location" : "Uploading"
         do {
             let request = WatchVoiceUploadRequest(
@@ -120,7 +142,8 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 appName: "Claw Bridge",
                 location: location,
                 noLocationReason: locationReceipt.noLocationReason,
-                wantsVoiceReply: wantsVoiceReply
+                wantsVoiceReply: wantsVoiceReply,
+                sourceContext: sourceContext
             )
             let response = try await uploader.upload(request, configuration: configuration)
             try? FileManager.default.removeItem(at: currentAudioURL)
@@ -144,7 +167,8 @@ final class WatchVoiceController: NSObject, ObservableObject {
                     appName: "Claw Bridge",
                     location: location,
                     noLocationReason: locationReceipt.noLocationReason,
-                    wantsVoiceReply: wantsVoiceReply
+                    wantsVoiceReply: wantsVoiceReply,
+                    sourceContext: sourceContext
                 )
                 status = .relayPending
                 detailText = "Transferring to iPhone"
@@ -291,7 +315,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
         return latestLocation
     }
 
-    private func locationForUpload() async -> WatchVoiceLocationReceipt {
+    private func locationForUpload(requireLocation: Bool = false) async -> WatchVoiceLocationReceipt {
         let authorizationStatus = locationManager.authorizationStatus
         switch authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
@@ -318,7 +342,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
         )
         locationTimeoutTask?.cancel()
         locationManager.requestLocation()
-        let timeoutNanoseconds = locationUploadTimeoutNanoseconds
+        let timeoutNanoseconds = requireLocation ? requiredLocationUploadTimeoutNanoseconds : locationUploadTimeoutNanoseconds
         return await withCheckedContinuation { continuation in
             pendingLocationContinuation = continuation
             locationTimeoutTask = Task { [weak self] in

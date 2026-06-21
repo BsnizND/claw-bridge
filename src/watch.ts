@@ -3,6 +3,7 @@ import { extname } from 'node:path';
 import type { BridgeConfig, NormalizedSiriEvent, ShortcutMessageRequest } from './types.js';
 import { normalizeShortcutMessage } from './siri.js';
 import type { UploadedShareFile } from './share.js';
+import type { SourceContext } from './types.js';
 
 function asOptionalString(value: unknown): string | undefined {
   if (Array.isArray(value)) return asOptionalString(value[0]);
@@ -44,6 +45,12 @@ function isLikelyAudioFile(file: UploadedShareFile): boolean {
   return ['.m4a', '.aac', '.caf', '.wav', '.mp3', '.mp4'].includes(extension);
 }
 
+function normalizeSourceContext(value: string | undefined): SourceContext | undefined {
+  if (!value) return undefined;
+  if (value === 'golf_mode') return 'golf_mode';
+  throw new Error(`unsupported source_context: ${value}`);
+}
+
 export function normalizeWatchVoiceRequest(
   config: BridgeConfig,
   body: Record<string, unknown>,
@@ -75,6 +82,7 @@ export function normalizeWatchVoiceRequest(
   };
 
   const event = normalizeShortcutMessage(config, shortcutBody);
+  event.source_context = normalizeSourceContext(asOptionalString(body.source_context));
   event.shared_item = {
     kind: 'audio',
     title: asOptionalString(body.title),

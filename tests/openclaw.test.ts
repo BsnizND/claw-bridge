@@ -85,6 +85,21 @@ function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedS
   };
 }
 
+function golfWatchEvent(text = 'hitting 7 iron from here'): NormalizedSiriEvent {
+  return {
+    ...watchEventWithoutLocation(text),
+    raw_text: `Apple Watch voice message: ${text}`,
+    source_context: 'golf_mode',
+    location: {
+      latitude: 33.5979,
+      longitude: -111.7581,
+      horizontal_accuracy: 4,
+      maps_url: 'https://maps.apple.com/?ll=33.5979,-111.7581'
+    },
+    capture_receipt: undefined
+  };
+}
+
 describe('OpenClaw delivery', () => {
   it('extracts assistant reply text from common OpenClaw JSON shapes', () => {
     expect(extractReplyTextFromOpenClawOutput(JSON.stringify({ reply: 'hello from reply' }))).toBe('hello from reply');
@@ -286,6 +301,41 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('Capture receipt:');
     expect(args).toContain('No location reason: location_timeout');
     expect(args).not.toContain('Location:');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('passes Golf Mode as source context without classifying the shot', async () => {
+    const dir = join(tmpdir(), `claw-bridge-golf-context-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawMessageStyle: 'compact',
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, golfWatchEvent());
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('Sent from Golf Mode via Apple Watch voice message: hitting 7 iron from here');
+    expect(args).toContain('Source context: Golf Mode');
+    expect(args).toContain('Location: 33.5979, -111.7581');
+    expect(args).not.toContain('shot_type');
+    expect(args).not.toContain('club_recommendation');
     await rm(dir, { recursive: true, force: true });
   });
 

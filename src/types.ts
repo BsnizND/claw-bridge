@@ -106,6 +106,8 @@ export interface CaptureReceiptMetadata {
   no_location_reason?: string;
 }
 
+export type SourceContext = 'golf_mode';
+
 export interface NormalizedSiriEvent {
   source: string;
   assistant: string;
@@ -119,6 +121,7 @@ export interface NormalizedSiriEvent {
   voice_memo?: VoiceMemoMetadata;
   shared_item?: SharedItemMetadata;
   capture_receipt?: CaptureReceiptMetadata;
+  source_context?: SourceContext;
   app_response?: AppResponseRequest;
 }
 

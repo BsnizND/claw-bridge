@@ -4,7 +4,8 @@ struct WatchContentView: View {
     @EnvironmentObject private var store: BridgeConfigurationStore
     @StateObject private var controller = WatchVoiceController()
     @ObservedObject private var relay = WatchRelayController.shared
-    @State private var walkieMode = false
+    @AppStorage("clawBridgeWalkieMode") private var walkieMode = false
+    @AppStorage("clawBridgeGolfMode") private var golfMode = false
 
     var body: some View {
         VStack(spacing: 10) {
@@ -22,9 +23,20 @@ struct WatchContentView: View {
             .tint(.green)
             .accessibilityLabel("Walkie mode")
 
+            Toggle(isOn: $golfMode) {
+                Image(systemName: golfMode ? "flag.checkered.circle.fill" : "flag.circle")
+            }
+            .labelsHidden()
+            .tint(.orange)
+            .accessibilityLabel("Golf mode")
+
             Button {
                 Task {
-                    await controller.toggleRecording(configuration: store.configuration, wantsVoiceReply: walkieMode)
+                    await controller.toggleRecording(
+                        configuration: store.configuration,
+                        wantsVoiceReply: walkieMode,
+                        sourceContext: golfMode ? .golfMode : nil
+                    )
                 }
             } label: {
                 Image(systemName: controller.status.isListening ? "stop.fill" : "mic.fill")

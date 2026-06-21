@@ -35,6 +35,16 @@ public struct WatchVoiceLocationReceipt: Equatable, Sendable {
     }
 }
 
+public enum WatchVoiceSourceContext: String, Codable, Equatable, Sendable {
+    case golfMode = "golf_mode"
+
+    public var displayName: String {
+        switch self {
+        case .golfMode: "Golf Mode"
+        }
+    }
+}
+
 public enum WatchVoiceStatus: Equatable, Sendable {
     case idle
     case recording

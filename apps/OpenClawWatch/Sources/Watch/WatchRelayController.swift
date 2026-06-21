@@ -103,7 +103,8 @@ final class WatchRelayController: NSObject, ObservableObject {
         appName: String,
         location: WatchVoiceLocation?,
         noLocationReason: String? = nil,
-        wantsVoiceReply: Bool = false
+        wantsVoiceReply: Bool = false,
+        sourceContext: WatchVoiceSourceContext? = nil
     ) throws -> WatchRelayHandoff {
         guard canRelay else {
             throw WatchRelayError.unavailable
@@ -119,6 +120,9 @@ final class WatchRelayController: NSObject, ObservableObject {
         if wantsVoiceReply {
             metadata["response_mode"] = "voice"
             metadata["walkie_mode"] = "true"
+        }
+        if let sourceContext {
+            metadata["source_context"] = sourceContext.rawValue
         }
         if let location {
             metadata["latitude"] = String(location.latitude)

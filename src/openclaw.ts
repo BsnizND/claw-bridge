@@ -40,6 +40,14 @@ function formatCaptureReceipt(event: NormalizedSiriEvent): string[] {
   ].filter((part): part is string => Boolean(part));
 }
 
+function formatSourceContext(event: NormalizedSiriEvent): string[] {
+  if (!event.source_context) {
+    return [];
+  }
+  const label = event.source_context === 'golf_mode' ? 'Golf Mode' : event.source_context;
+  return [`Source context: ${label}`];
+}
+
 function formatVoiceMemo(event: NormalizedSiriEvent): string[] {
   if (!event.voice_memo) {
     return [];
@@ -86,6 +94,8 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
     '',
     event.raw_text,
     '',
+    ...formatSourceContext(event),
+    ...(event.source_context ? [''] : []),
     ...formatSharedItem(event),
     ...(event.shared_item ? [''] : []),
     ...formatLocation(event),
@@ -106,6 +116,9 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 
 function compactPrefix(config: BridgeConfig, event: NormalizedSiriEvent): string | undefined {
   if (event.source === 'ios_share_sheet') return 'Sent via iOS share sheet:';
+  if (event.source === 'watch_app' && event.source_context === 'golf_mode') {
+    return 'Sent from Golf Mode via Apple Watch voice message:';
+  }
   if (event.source === 'watch_app') return 'Sent via Apple Watch voice message:';
   return config.voiceMessagePrefix?.trim() || 'Sent via voice message:';
 }
@@ -128,6 +141,7 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
   const text = compactText(event);
   const message = prefix ? `${prefix} ${text}` : text;
   const context = [
+    ...formatSourceContext(event),
     ...formatSharedItem(event),
     ...formatLocation(event),
     ...formatCaptureReceipt(event),
