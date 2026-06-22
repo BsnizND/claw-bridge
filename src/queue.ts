@@ -88,6 +88,7 @@ export async function drainQueue(
   hooks: DrainQueueHooks = {}
 ): Promise<DrainQueueResult> {
   const records = await readQueue(queuePath);
+  const initialRequestIds = new Set(records.map((record) => record.event.request_id));
   let delivered = 0;
   let failed = 0;
   let changed = false;
@@ -131,14 +132,18 @@ export async function drainQueue(
     await appendQueueArchive(archivePath, terminalRecords);
   }
 
+  let finalPendingRecords = pendingRecords;
   if (changed || terminalRecords.length > 0) {
-    await writeQueue(queuePath, pendingRecords);
+    const latestRecords = await readQueue(queuePath);
+    const appendedDuringDrain = latestRecords.filter((record) => !initialRequestIds.has(record.event.request_id));
+    finalPendingRecords = [...pendingRecords, ...appendedDuringDrain];
+    await writeQueue(queuePath, finalPendingRecords);
   }
 
   return {
     delivered,
     failed,
-    pending: pendingRecords.length,
+    pending: finalPendingRecords.length,
     archived: terminalRecords.length
   };
 }

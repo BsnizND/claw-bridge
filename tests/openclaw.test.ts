@@ -244,6 +244,48 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('preserves events accepted while a drain is rewriting the queue', async () => {
+    const dir = join(tmpdir(), `claw-bridge-drain-race-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    await writeFile(binPath, `#!/bin/sh\nprintf '{"reply":"delivered reply text"}\\n'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawWorkdir: dir,
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, event('first accepted message'));
+    const secondEvent = {
+      ...event('second accepted message'),
+      request_id: 'second-request-id'
+    };
+
+    const drain = await drainOpenClawQueue(config, {
+      afterDelivered: async () => {
+        await acceptForOpenClaw(config, secondEvent);
+      }
+    });
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 1, archived: 1 });
+    const queue = await readFile(queuePath, 'utf8');
+    expect(queue).toContain('second accepted message');
+    expect(queue).not.toContain('first accepted message');
+    const archive = await readFile(archivePath, 'utf8');
+    expect(archive).toContain('first accepted message');
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('can deliver queued events through the Telegram direct session', async () => {
     const dir = join(tmpdir(), `claw-bridge-telegram-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
