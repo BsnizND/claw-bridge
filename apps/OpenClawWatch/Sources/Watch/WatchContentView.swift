@@ -108,16 +108,6 @@ struct WatchContentView: View {
         if case .failed = controller.status {
             return .red
         }
-        if golfMode {
-            switch controller.locationReadiness {
-            case .ready:
-                return .green
-            case .waiting, .unknown:
-                return .yellow
-            case .denied, .unavailable:
-                return .red
-            }
-        }
         return .blue
     }
 

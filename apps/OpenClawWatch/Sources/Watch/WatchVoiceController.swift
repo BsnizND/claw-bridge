@@ -156,15 +156,6 @@ final class WatchVoiceController: NSObject, ObservableObject {
         detailText = requiresLocation ? "Getting GPS" : "Getting location"
         let locationReceipt = await locationForUpload(requireLocation: requiresLocation)
         let location = locationReceipt.location
-        if requiresLocation, location == nil {
-            status = .failed("Golf Mode needs location.")
-            detailText = "No GPS. Step outside and retry."
-            try? FileManager.default.removeItem(at: currentAudioURL)
-            self.currentAudioURL = nil
-            recordingStartedAt = nil
-            WKInterfaceDevice.current().play(.failure)
-            return
-        }
         detailText = location == nil ? "Uploading without location" : "Uploading"
         do {
             let request = WatchVoiceUploadRequest(
