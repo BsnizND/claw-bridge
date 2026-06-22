@@ -13,15 +13,15 @@ struct WatchContentView: View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 ModeToggleButton(
-                    title: "Golf",
-                    systemImage: "flag.fill",
-                    isOn: golfMode || golfWorkout.isActive,
+                    accessibilityLabel: "Active Mode",
+                    systemImage: "figure.run",
+                    isOn: activeModeEnabled,
                     tint: .orange,
                     action: toggleGolfMode
                 )
 
                 ModeToggleButton(
-                    title: "Speak",
+                    accessibilityLabel: "Speak",
                     systemImage: "speaker.wave.2.fill",
                     isOn: walkieMode,
                     tint: .green,
@@ -39,13 +39,15 @@ struct WatchContentView: View {
                 }
             } label: {
                 ZStack(alignment: .topTrailing) {
-                    VStack(spacing: 8) {
-                        Image(systemName: controller.status.isListening ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 36, weight: .semibold))
-                        Text(recordButtonTitle)
-                            .font(.headline)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
+                    ZStack {
+                        if controller.isRecordControlBusy {
+                            ProgressView()
+                                .controlSize(.large)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: controller.status.isListening ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 38, weight: .semibold))
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 92)
@@ -56,22 +58,21 @@ struct WatchContentView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .tint(controller.status.isListening ? .red : .blue)
+            .tint(recordButtonTint)
             .disabled(controller.isBusy)
             .accessibilityLabel(controller.status.isListening ? "Stop recording" : "Start recording")
+            .accessibilityValue(recordAccessibilityValue)
 
             if controller.lastResponseID != nil {
-                Button {
-                    Task {
-                        await controller.replayLastResponse(configuration: store.configuration)
-                    }
-                } label: {
-                    Image(systemName: "play.fill")
+                Button(action: toggleReplyPlayback) {
+                    Image(systemName: controller.isReplyPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 18, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 32)
                 }
                 .buttonStyle(.bordered)
-                .accessibilityLabel("Replay Jay")
+                .disabled(controller.status.isListening || controller.isRecordControlBusy)
+                .accessibilityLabel(controller.isReplyPlaying ? "Pause Jay" : "Replay Jay")
             }
         }
         .padding(.horizontal, 10)
@@ -93,6 +94,30 @@ struct WatchContentView: View {
         }
     }
 
+    private var activeModeEnabled: Bool {
+        golfMode || golfWorkout.isActive
+    }
+
+    private var recordButtonTint: Color {
+        if controller.status.isListening {
+            return .red
+        }
+        if controller.isRecordControlBusy {
+            return .gray
+        }
+        return .blue
+    }
+
+    private var recordAccessibilityValue: String {
+        if controller.status.isListening {
+            return "Recording"
+        }
+        if controller.isRecordControlBusy {
+            return "Working"
+        }
+        return "Ready"
+    }
+
     private func toggleGolfMode() {
         Task {
             controller.stopPlayback()
@@ -108,6 +133,16 @@ struct WatchContentView: View {
         }
     }
 
+    private func toggleReplyPlayback() {
+        if controller.isReplyPlaying {
+            controller.pauseLastResponse()
+        } else {
+            Task {
+                await controller.replayLastResponse(configuration: store.configuration)
+            }
+        }
+    }
+
     private func restoreGolfModeIfNeeded() {
         guard golfMode, !restoredStoredGolfMode else { return }
         restoredStoredGolfMode = true
@@ -118,19 +153,10 @@ struct WatchContentView: View {
         }
     }
 
-    private var recordButtonTitle: String {
-        if controller.status.isListening {
-            return "Stop"
-        }
-        if controller.isBusy {
-            return "Busy"
-        }
-        return "Record"
-    }
 }
 
 private struct ModeToggleButton: View {
-    let title: String
+    let accessibilityLabel: String
     let systemImage: String
     let isOn: Bool
     let tint: Color
@@ -138,20 +164,14 @@ private struct ModeToggleButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
-                Text(title)
-                    .font(.caption2.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .semibold))
             .frame(maxWidth: .infinity)
-            .frame(height: 38)
+            .frame(height: 42)
         }
         .buttonStyle(.borderedProminent)
         .tint(isOn ? tint : .gray)
-        .accessibilityLabel(title)
+        .accessibilityLabel(accessibilityLabel)
         .accessibilityValue(isOn ? "On" : "Off")
     }
 }

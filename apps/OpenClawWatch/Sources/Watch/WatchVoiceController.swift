@@ -32,9 +32,20 @@ final class WatchVoiceController: NSObject, ObservableObject {
     private var responsePlaybackToken: UUID?
 
     var isBusy: Bool {
+        isRecordControlBusy || isReplyPlaying
+    }
+
+    var isRecordControlBusy: Bool {
+        if isReplyPlaying { return false }
         if case .sending = status { return true }
-        if case .playing = status { return true }
+        if case .relayPending = status { return true }
+        if case .waitingForReply = status { return true }
         if isAwaitingReply { return true }
+        return false
+    }
+
+    var isReplyPlaying: Bool {
+        if case .playing = status { return true }
         return false
     }
 
@@ -207,6 +218,10 @@ final class WatchVoiceController: NSObject, ObservableObject {
     func replayLastResponse(configuration: BridgeConfiguration) async {
         guard let lastResponseID else { return }
         beginResponsePlayback(lastResponseID, configuration: configuration, preserveSentStatus: false)
+    }
+
+    func pauseLastResponse() {
+        cancelResponsePlayback()
     }
 
     private func cancelResponsePlayback() {
