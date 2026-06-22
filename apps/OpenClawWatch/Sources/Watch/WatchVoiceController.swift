@@ -93,6 +93,21 @@ final class WatchVoiceController: NSObject, ObservableObject {
         cancelResponsePlayback()
     }
 
+    func clearReplyPlayback() {
+        cancelResponsePlayback(clearLastResponse: true)
+    }
+
+    var hasPlayableReply: Bool {
+        guard lastResponseID != nil else { return false }
+        if isAwaitingReply { return false }
+        switch status {
+        case .playing, .replyReady:
+            return true
+        default:
+            return false
+        }
+    }
+
     private func startRecording() async {
         do {
             try await requestMicrophonePermission()
@@ -216,12 +231,15 @@ final class WatchVoiceController: NSObject, ObservableObject {
         cancelResponsePlayback()
     }
 
-    private func cancelResponsePlayback() {
+    private func cancelResponsePlayback(clearLastResponse: Bool = false) {
         responsePlaybackTask?.cancel()
         responsePlaybackTask = nil
         responsePlaybackToken = nil
         isAwaitingReply = false
         audioPlayer.stop()
+        if clearLastResponse {
+            lastResponseID = nil
+        }
         switch status {
         case .waitingForReply, .playing, .replyReady, .failed:
             status = .idle

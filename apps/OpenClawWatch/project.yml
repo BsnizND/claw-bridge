@@ -7,10 +7,35 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "29"
+    CURRENT_PROJECT_VERSION: "31"
     MARKETING_VERSION: "0.1.8"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+schemes:
+  OpenClawCompanion:
+    build:
+      targets:
+        OpenClawCompanion: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  OpenClawWatchApp:
+    build:
+      targets:
+        OpenClawWatchApp: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  ClawBridgeComplicationExtension:
+    build:
+      targets:
+        ClawBridgeComplicationExtension: all
+    run:
+      config: Debug
+    archive:
+      config: Release
 targets:
   OpenClawCompanion:
     type: application

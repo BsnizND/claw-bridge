@@ -10,35 +10,35 @@ struct WatchContentView: View {
     @State private var restoredStoredGolfMode = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                ModeToggleButton(
-                    accessibilityLabel: "Active Mode",
-                    systemImage: "figure.run",
-                    isOn: activeModeEnabled,
-                    tint: .orange,
-                    action: toggleGolfMode
-                )
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    ModeToggleButton(
+                        accessibilityLabel: "Active Mode",
+                        systemImage: "figure.run",
+                        isOn: activeModeEnabled,
+                        tint: .orange,
+                        action: toggleGolfMode
+                    )
 
-                ModeToggleButton(
-                    accessibilityLabel: "Speak",
-                    systemImage: "speaker.wave.2.fill",
-                    isOn: walkieMode,
-                    tint: .green,
-                    action: { walkieMode.toggle() }
-                )
-            }
-
-            Button {
-                Task {
-                    await controller.toggleRecording(
-                        configuration: store.configuration,
-                        wantsVoiceReply: walkieMode,
-                        sourceContext: golfMode ? .golfMode : nil
+                    ModeToggleButton(
+                        accessibilityLabel: "Speak",
+                        systemImage: "speaker.wave.2.fill",
+                        isOn: walkieMode,
+                        tint: .green,
+                        action: toggleWalkieMode
                     )
                 }
-            } label: {
-                ZStack(alignment: .topTrailing) {
+
+                Button {
+                    Task {
+                        await controller.toggleRecording(
+                            configuration: store.configuration,
+                            wantsVoiceReply: walkieMode,
+                            sourceContext: golfMode ? .golfMode : nil
+                        )
+                    }
+                } label: {
                     ZStack {
                         if controller.isRecordControlBusy {
                             ProgressView()
@@ -51,29 +51,31 @@ struct WatchContentView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 92)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(recordButtonTint)
+                .disabled(controller.isBusy)
+                .accessibilityLabel(controller.status.isListening ? "Stop recording" : "Start recording")
+                .accessibilityValue(recordAccessibilityValue)
 
-                    LocationReadinessDot(readiness: controller.locationReadiness)
-                        .padding(10)
-                        .opacity(golfMode ? 1 : 0.45)
+                if walkieMode && controller.hasPlayableReply {
+                    Button(action: toggleReplyPlayback) {
+                        Image(systemName: controller.isReplyPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 32)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(controller.status.isListening || controller.isRecordControlBusy)
+                    .accessibilityLabel(controller.isReplyPlaying ? "Pause Jay" : "Replay Jay")
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(recordButtonTint)
-            .disabled(controller.isBusy)
-            .accessibilityLabel(controller.status.isListening ? "Stop recording" : "Start recording")
-            .accessibilityValue(recordAccessibilityValue)
 
-            if controller.lastResponseID != nil {
-                Button(action: toggleReplyPlayback) {
-                    Image(systemName: controller.isReplyPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 32)
-                }
-                .buttonStyle(.bordered)
-                .disabled(controller.status.isListening || controller.isRecordControlBusy)
-                .accessibilityLabel(controller.isReplyPlaying ? "Pause Jay" : "Replay Jay")
-            }
+            LocationReadinessDot(readiness: controller.locationReadiness)
+                .opacity(golfMode ? 1 : 0.45)
+                .padding(.trailing, 2)
+                .padding(.bottom, 2)
+                .allowsHitTesting(false)
         }
         .padding(.horizontal, 10)
         .onAppear {
@@ -136,6 +138,15 @@ struct WatchContentView: View {
             if !started {
                 controller.warmLocationForGolfMode()
             }
+        }
+    }
+
+    private func toggleWalkieMode() {
+        if walkieMode {
+            walkieMode = false
+            controller.clearReplyPlayback()
+        } else {
+            walkieMode = true
         }
     }
 
