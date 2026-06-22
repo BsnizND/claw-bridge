@@ -1,6 +1,8 @@
-import { mkdir, appendFile, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, appendFile, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { NormalizedSiriEvent, QueueRecord } from './types.js';
+
+const DRAIN_LOCK_STALE_MS = 30 * 60 * 1000;
 
 export async function queueEvent(queuePath: string, event: NormalizedSiriEvent, reason: unknown): Promise<void> {
   const record: QueueRecord = {
@@ -64,6 +66,7 @@ export interface DrainQueueResult {
   failed: number;
   pending: number;
   archived: number;
+  skipped?: boolean;
 }
 
 export interface DrainQueueHooks {
@@ -80,6 +83,38 @@ function isRetryableError(error: unknown): boolean {
   return retryable !== false;
 }
 
+async function tryRemoveStaleLock(lockPath: string): Promise<void> {
+  try {
+    const lockStat = await stat(lockPath);
+    if (Date.now() - lockStat.mtimeMs > DRAIN_LOCK_STALE_MS) {
+      await unlink(lockPath);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}
+
+async function acquireDrainLock(queuePath: string) {
+  const lockPath = `${queuePath}.drain.lock`;
+  await mkdir(dirname(queuePath), { recursive: true });
+  try {
+    const handle = await open(lockPath, 'wx');
+    await handle.writeFile(`${process.pid} ${new Date().toISOString()}\n`, 'utf8');
+    return { handle, lockPath };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    await tryRemoveStaleLock(lockPath);
+    try {
+      const handle = await open(lockPath, 'wx');
+      await handle.writeFile(`${process.pid} ${new Date().toISOString()}\n`, 'utf8');
+      return { handle, lockPath };
+    } catch (retryError) {
+      if ((retryError as NodeJS.ErrnoException).code !== 'EEXIST') throw retryError;
+      return undefined;
+    }
+  }
+}
+
 export async function drainQueue(
   queuePath: string,
   archivePath: string,
@@ -87,6 +122,18 @@ export async function drainQueue(
   deliver: (event: NormalizedSiriEvent) => Promise<void>,
   hooks: DrainQueueHooks = {}
 ): Promise<DrainQueueResult> {
+  const lock = await acquireDrainLock(queuePath);
+  if (!lock) {
+    return {
+      delivered: 0,
+      failed: 0,
+      pending: (await readQueue(queuePath)).length,
+      archived: 0,
+      skipped: true
+    };
+  }
+
+  try {
   const records = await readQueue(queuePath);
   const initialRequestIds = new Set(records.map((record) => record.event.request_id));
   let delivered = 0;
@@ -146,4 +193,16 @@ export async function drainQueue(
     pending: finalPendingRecords.length,
     archived: terminalRecords.length
   };
+  } finally {
+    try {
+      await lock.handle.close();
+    } catch {
+      // Preserve the delivery result/error; stale lock cleanup below can recover later.
+    }
+    try {
+      await unlink(lock.lockPath);
+    } catch {
+      // Preserve the delivery result/error; stale lock cleanup can recover later.
+    }
+  }
 }

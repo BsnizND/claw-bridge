@@ -286,6 +286,44 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('does not double-deliver when two drain processes overlap', async () => {
+    const dir = join(tmpdir(), `claw-bridge-drain-lock-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const deliveredPath = join(dir, 'delivered.txt');
+    await writeFile(
+      binPath,
+      `#!/bin/sh\nprintf 'delivered\\n' >> '${deliveredPath}'\nsleep 0.2\nprintf '{"reply":"delivered reply text"}\\n'\n`,
+      'utf8'
+    );
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawWorkdir: dir,
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, event('deliver exactly once'));
+    const results = await Promise.all([drainOpenClawQueue(config), drainOpenClawQueue(config)]);
+
+    expect(results.reduce((sum, result) => sum + result.delivered, 0)).toBe(1);
+    expect(results.filter((result) => result.skipped).length).toBe(1);
+    const deliveredLines = (await readFile(deliveredPath, 'utf8')).split('\n').filter(Boolean);
+    expect(deliveredLines).toHaveLength(1);
+    const archiveLines = (await readFile(archivePath, 'utf8')).split('\n').filter(Boolean);
+    expect(archiveLines).toHaveLength(1);
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('can deliver queued events through the Telegram direct session', async () => {
     const dir = join(tmpdir(), `claw-bridge-telegram-drain-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
