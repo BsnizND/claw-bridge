@@ -8,6 +8,10 @@
 
 CLAW_BRIDGE_BUNDLE_ID_PREFIX = com.example
 CLAW_BRIDGE_IOS_ENTITLEMENTS =
+CLAW_BRIDGE_IOS_DISPLAY_NAME = Claw Bridge
+CLAW_BRIDGE_WATCH_DISPLAY_NAME = Claw Bridge
+CLAW_BRIDGE_HOST_APP_NAME =
+CLAW_BRIDGE_HOST_APP_SCHEME =
 
 #include? "Signing.local.xcconfig"
 #include? "Bridge.local.xcconfig"

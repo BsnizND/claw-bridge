@@ -51,10 +51,12 @@ targets:
     info:
       path: Sources/iOS/Info.plist
       properties:
-        CFBundleDisplayName: Claw Bridge
+        CFBundleDisplayName: $(CLAW_BRIDGE_IOS_DISPLAY_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
+        ClawBridgeHostAppName: $(CLAW_BRIDGE_HOST_APP_NAME)
+        ClawBridgeHostAppScheme: $(CLAW_BRIDGE_HOST_APP_SCHEME)
         ClawBridgeLegacyMigrationBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         UILaunchScreen: {}
         NSLocalNetworkUsageDescription: Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.
@@ -82,7 +84,7 @@ targets:
     info:
       path: Sources/Watch/Info.plist
       properties:
-        CFBundleDisplayName: Claw Bridge
+        CFBundleDisplayName: $(CLAW_BRIDGE_WATCH_DISPLAY_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleURLTypes:
@@ -119,7 +121,7 @@ targets:
     info:
       path: Sources/WatchExtension/Info.plist
       properties:
-        CFBundleDisplayName: Claw Bridge
+        CFBundleDisplayName: $(CLAW_BRIDGE_WATCH_DISPLAY_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
@@ -153,7 +155,7 @@ targets:
     info:
       path: Sources/Complication/Info.plist
       properties:
-        CFBundleDisplayName: Claw Bridge
+        CFBundleDisplayName: $(CLAW_BRIDGE_WATCH_DISPLAY_NAME)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

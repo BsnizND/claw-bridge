@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Claw Bridge</string>
+	<string>$(CLAW_BRIDGE_IOS_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,6 +22,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ClawBridgeDefaultBaseURL</key>
 	<string>$(CLAW_BRIDGE_DEFAULT_BASE_URL)</string>
+	<key>ClawBridgeHostAppName</key>
+	<string>$(CLAW_BRIDGE_HOST_APP_NAME)</string>
+	<key>ClawBridgeHostAppScheme</key>
+	<string>$(CLAW_BRIDGE_HOST_APP_SCHEME)</string>
 	<key>ClawBridgeLegacyMigrationBearerToken</key>
 	<string>$(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>NSLocalNetworkUsageDescription</key>

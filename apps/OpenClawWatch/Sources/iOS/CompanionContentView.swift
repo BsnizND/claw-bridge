@@ -1,16 +1,30 @@
 import SwiftUI
 
 struct CompanionContentView: View {
+    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var store: BridgeConfigurationStore
     @ObservedObject private var relay = CompanionRelayController.shared
     @StateObject private var walkie = CompanionWalkieController()
     @State private var bridgeURLText = ""
     @State private var tokenText = ""
     @State private var isShowingCredentialRemovalConfirmation = false
+    private let hostApp = CompanionHostAppConfiguration.current
 
     var body: some View {
         NavigationStack {
             Form {
+                if let hostApp {
+                    Section {
+                        Button {
+                            openURL(hostApp.url)
+                        } label: {
+                            Label("Open \(hostApp.name)", systemImage: "arrow.up.forward.app.fill")
+                        }
+                    } footer: {
+                        Text("Use \(hostApp.name) for conversations and capture. This helper keeps Watch uploads moving in the background.")
+                    }
+                }
+
                 Section("Bridge") {
                     TextField("https://example.com", text: $bridgeURLText)
                         .textContentType(.URL)
@@ -85,39 +99,41 @@ struct CompanionContentView: View {
                     .disabled(relay.pendingRelayCount == 0 || !store.configuration.isComplete)
                 }
 
-                Section("Walkie") {
-                    TextField("Message Jay", text: $walkie.messageText, axis: .vertical)
-                        .lineLimit(2...4)
-                        .disabled(walkie.isBusy)
+                if hostApp == nil {
+                    Section("Walkie") {
+                        TextField("Message Jay", text: $walkie.messageText, axis: .vertical)
+                            .lineLimit(2 ... 4)
+                            .disabled(walkie.isBusy)
 
-                    HStack {
-                        Button {
-                            Task {
-                                await walkie.send(configuration: store.configuration)
-                            }
-                        } label: {
-                            Label("Send", systemImage: "waveform.circle.fill")
-                        }
-                        .disabled(walkie.isBusy || walkie.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                        if walkie.lastResponseID != nil {
+                        HStack {
                             Button {
                                 Task {
-                                    await walkie.replay(configuration: store.configuration)
+                                    await walkie.send(configuration: store.configuration)
                                 }
                             } label: {
-                                Label("Replay", systemImage: "play.circle")
+                                Label("Send", systemImage: "waveform.circle.fill")
                             }
-                            .disabled(walkie.isBusy)
+                            .disabled(walkie.isBusy || walkie.messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                            if walkie.lastResponseID != nil {
+                                Button {
+                                    Task {
+                                        await walkie.replay(configuration: store.configuration)
+                                    }
+                                } label: {
+                                    Label("Replay", systemImage: "play.circle")
+                                }
+                                .disabled(walkie.isBusy)
+                            }
                         }
-                    }
 
-                    Label(walkie.statusText, systemImage: walkie.isBusy ? "clock" : "speaker.wave.2")
+                        Label(walkie.statusText, systemImage: walkie.isBusy ? "clock" : "speaker.wave.2")
 
-                    if let detail = walkie.detailText {
-                        Text(detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        if let detail = walkie.detailText {
+                            Text(detail)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -133,7 +149,7 @@ struct CompanionContentView: View {
                     Label(walkie.notificationStatus, systemImage: "bell")
                 }
             }
-            .navigationTitle("Claw Bridge")
+            .navigationTitle(companionDisplayName)
             .onAppear {
                 bridgeURLText = store.configuration.bridgeURL?.absoluteString ?? ""
                 tokenText = store.configuration.bearerToken
@@ -154,6 +170,12 @@ struct CompanionContentView: View {
             : "Remove Credential from iPhone and Watch"
     }
 
+    private var companionDisplayName: String {
+        let configured = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return configured.flatMap { $0.isEmpty ? nil : $0 } ?? "Claw Bridge"
+    }
+
     private func removeCredential() {
         do {
             try store.clearCredential()
@@ -162,6 +184,25 @@ struct CompanionContentView: View {
         } catch {
             tokenText = store.configuration.bearerToken
         }
+    }
+}
+
+private struct CompanionHostAppConfiguration {
+    let name: String
+    let url: URL
+
+    static var current: CompanionHostAppConfiguration? {
+        let name = (Bundle.main.object(forInfoDictionaryKey: "ClawBridgeHostAppName") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let scheme = (Bundle.main.object(forInfoDictionaryKey: "ClawBridgeHostAppScheme") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !name.isEmpty,
+              !scheme.isEmpty,
+              let url = URL(string: "\(scheme)://home")
+        else {
+            return nil
+        }
+        return CompanionHostAppConfiguration(name: name, url: url)
     }
 }
 
