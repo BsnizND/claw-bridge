@@ -171,6 +171,7 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
 }
 
 function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
+  if (event.source === 'lifeos_app_voice') return event.raw_text;
   return config.openclawMessageStyle === 'compact' ? buildCompactMessage(config, event) : buildAssistantMessage(event);
 }
 

@@ -69,12 +69,20 @@ export function normalizeShareSheetRequest(
   const sharedUrl = asOptionalString(body.shared_url);
   const title = asOptionalString(body.shared_title) ?? asOptionalString(body.title);
   const location = buildLocation(body);
-  const rawText = buildSharedText(body, file, transcript);
+  const source = asOptionalString(body.source) ?? 'ios_share_sheet';
+  const kind = inferSharedKind(file, sharedUrl, sharedText);
+  if (source === 'lifeos_app_voice' && kind !== 'audio') {
+    throw new Error('lifeos_app_voice requires an audio file');
+  }
+  if (source === 'lifeos_app_voice' && !transcript) {
+    throw new Error('lifeos_app_voice requires an audio transcript');
+  }
+  const rawText = source === 'lifeos_app_voice' ? transcript : buildSharedText(body, file, transcript);
   const sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
 
   const shortcutBody: ShortcutMessageRequest = {
     message: rawText,
-    source: asOptionalString(body.source) ?? 'ios_share_sheet',
+    source,
     assistant: asOptionalString(body.assistant),
     captured_at: asOptionalString(body.captured_at),
     device_name: asOptionalString(body.device_name) ?? 'iPhone',
@@ -86,7 +94,6 @@ export function normalizeShareSheetRequest(
 
   const event = normalizeShortcutMessage(config, shortcutBody);
   if (sessionKey) event.session_key = sessionKey;
-  const kind = inferSharedKind(file, sharedUrl, sharedText);
   event.shared_item = {
     kind,
     text: sharedText,

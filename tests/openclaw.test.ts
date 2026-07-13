@@ -92,6 +92,33 @@ function lifeOSSaveUrlEvent(text = 'Why should I care about this?'): NormalizedS
   };
 }
 
+function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): NormalizedSiriEvent {
+  return {
+    source: 'lifeos_app_voice',
+    assistant: 'jay',
+    raw_text: text,
+    captured_at: '2026-07-13T20:12:00.000Z',
+    request_id: 'lifeos-app-voice-request-id',
+    session_key: 'agent:jay:lifeos-home:current-conversation',
+    device_name: 'Brian\u2019s iPhone',
+    shortcut_name: 'LifeOS Voice Capture',
+    shared_item: {
+      kind: 'audio',
+      filename: 'lifeos-capture.m4a',
+      mime_type: 'audio/mp4',
+      file_path: '/private/lifeos/audio/lifeos-capture.m4a',
+      size_bytes: 4321
+    },
+    voice_memo: {
+      transcript: text,
+      filename: 'lifeos-capture.m4a',
+      mime_type: 'audio/mp4',
+      file_path: '/private/lifeos/audio/lifeos-capture.m4a',
+      size_bytes: 4321
+    }
+  };
+}
+
 function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedSiriEvent {
   return {
     ...event(text),
@@ -658,6 +685,68 @@ describe('OpenClaw delivery', () => {
     expect(args).not.toContain('Sent via iOS share sheet: Shared via iPhone share sheet:');
     expect(args).not.toContain('Wrong voice prefix:');
     await rm(dir, { recursive: true, force: true });
+  });
+
+  it('delivers native LifeOS iPhone voice as transcript only while archiving private audio provenance', async () => {
+    for (const style of ['compact', 'detailed'] as const) {
+      const dir = join(tmpdir(), `claw-bridge-lifeos-app-voice-${style}-test-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const queuePath = join(dir, 'queue.jsonl');
+      const archivePath = join(dir, 'queue.archive.jsonl');
+      const binPath = join(dir, 'fake-openclaw');
+      const argsPath = join(dir, 'args.txt');
+      await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+      await chmod(binPath, 0o755);
+
+      const config = {
+        openclawAdapter: 'cli',
+        openclawCliBin: binPath,
+        openclawCliDrainTimeoutMs: 1000,
+        openclawMessageStyle: style,
+        assistantId: 'jay',
+        openclawSessionKey: 'agent:jay:main',
+        queuePath,
+        queueArchivePath: archivePath,
+        queueMaxAttempts: 3
+      } as BridgeConfig;
+
+      await acceptForOpenClaw(config, lifeOSAppVoiceEvent());
+      expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+
+      const args = await readFile(argsPath, 'utf8');
+      const argLines = args.trim().split('\n');
+      expect(argLines[argLines.indexOf('--message') + 1]).toBe('Remind me to order coffee filters');
+      expect(args).not.toContain('Sent via');
+      expect(args).not.toContain('Shared item:');
+      expect(args).not.toContain('Voice memo attached:');
+      expect(args).not.toContain('Filename:');
+      expect(args).not.toContain('MIME type:');
+      expect(args).not.toContain('File path:');
+      expect(args).not.toContain('Capture action:');
+
+      const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
+        event: NormalizedSiriEvent;
+      };
+      expect(archiveRecord.event).toMatchObject({
+        source: 'lifeos_app_voice',
+        raw_text: 'Remind me to order coffee filters',
+        shared_item: {
+          kind: 'audio',
+          filename: 'lifeos-capture.m4a',
+          mime_type: 'audio/mp4',
+          file_path: '/private/lifeos/audio/lifeos-capture.m4a',
+          size_bytes: 4321
+        },
+        voice_memo: {
+          transcript: 'Remind me to order coffee filters',
+          filename: 'lifeos-capture.m4a',
+          mime_type: 'audio/mp4',
+          file_path: '/private/lifeos/audio/lifeos-capture.m4a',
+          size_bytes: 4321
+        }
+      });
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('preserves the explicit LifeOS URL save action and provenance in compact messages', async () => {

@@ -14,7 +14,7 @@ function config(): BridgeConfig {
     bridgeToken: '0123456789abcdef01234567',
     assistantId: 'openclaw',
     maxMessageChars: 1200,
-    allowedSources: new Set(['siri_watch', 'siri_iphone', 'shortcuts', 'ios_share_sheet', 'watch_app']),
+    allowedSources: new Set(['siri_watch', 'siri_iphone', 'shortcuts', 'ios_share_sheet', 'lifeos_app_voice', 'watch_app']),
     shareUploadDir: join(tmpdir(), `claw-bridge-share-test-${Date.now()}`),
     shareMaxUploadBytes: 1024 * 1024,
     watchMinAudioSeconds: 1.5,
