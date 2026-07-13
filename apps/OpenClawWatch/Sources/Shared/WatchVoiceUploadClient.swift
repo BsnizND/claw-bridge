@@ -58,6 +58,7 @@ public enum WatchVoiceUploadError: LocalizedError, Equatable {
     case invalidEndpoint
     case missingAudioFile
     case server(String)
+    case invalidReceipt(String)
     case badResponse
 
     public var errorDescription: String? {
@@ -65,7 +66,8 @@ public enum WatchVoiceUploadError: LocalizedError, Equatable {
         case .missingConfiguration: "Bridge URL and token are required."
         case .invalidEndpoint: "Bridge URL must be a valid HTTP(S) URL."
         case .missingAudioFile: "Recorded audio file is missing."
-        case .server(let message): message
+        case let .server(message): message
+        case let .invalidReceipt(message): message
         case .badResponse: "Bridge returned an unreadable response."
         }
     }
@@ -106,7 +108,7 @@ public final class WatchVoiceUploadClient: Sendable {
             throw WatchVoiceUploadError.badResponse
         }
         let decoded = try? JSONDecoder().decode(WatchVoiceUploadResponse.self, from: data)
-        if !(200..<300).contains(http.statusCode) {
+        if !(200 ..< 300).contains(http.statusCode) {
             throw WatchVoiceUploadError.server(decoded?.error ?? "Bridge returned HTTP \(http.statusCode)")
         }
         guard let decoded else {
@@ -114,6 +116,15 @@ public final class WatchVoiceUploadClient: Sendable {
         }
         if decoded.ok == false {
             throw WatchVoiceUploadError.server(decoded.error ?? "Bridge rejected the upload.")
+        }
+        guard decoded.queued == true else {
+            throw WatchVoiceUploadError.invalidReceipt("Bridge did not confirm the upload was durably queued.")
+        }
+        guard let responseID = decoded.id, responseID.isEmpty == false else {
+            throw WatchVoiceUploadError.invalidReceipt("Bridge receipt is missing a request ID.")
+        }
+        guard responseID == request.requestID else {
+            throw WatchVoiceUploadError.invalidReceipt("Bridge receipt request ID does not match the upload.")
         }
         return decoded
     }

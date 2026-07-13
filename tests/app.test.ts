@@ -275,7 +275,7 @@ describe('app routes', () => {
       });
 
     expect(res.status).toBe(202);
-    expect(res.body).toMatchObject({ ok: true, queued: true, id: 'watch-voice-id' });
+    expect(res.body).toMatchObject({ ok: true, queued: true, id: 'watch-upload-request-id' });
     expect(acceptEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         source: 'watch_app',

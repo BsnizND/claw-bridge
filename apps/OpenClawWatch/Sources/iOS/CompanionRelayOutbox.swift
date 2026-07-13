@@ -15,28 +15,35 @@ final class CompanionRelayOutbox {
     private let fileManager: FileManager
     private let directory: URL
     private let manifestURL: URL
+    private let removeAudioFile: (URL) throws -> Void
     private let encoder: JSONEncoder
     private let decoder = JSONDecoder()
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        directory: URL? = nil,
+        removeAudioFile: ((URL) throws -> Void)? = nil
+    ) {
         self.fileManager = fileManager
         let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
-        directory = baseDirectory
+        self.directory = directory ?? baseDirectory
             .appending(path: "ClawBridge", directoryHint: .isDirectory)
             .appending(path: "WatchRelayOutbox", directoryHint: .isDirectory)
-        manifestURL = directory.appending(path: "manifest.json")
+        manifestURL = self.directory.appending(path: "manifest.json")
+        self.removeAudioFile = removeAudioFile ?? { try fileManager.removeItem(at: $0) }
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: self.directory, withIntermediateDirectories: true)
     }
 
-    func items() -> [CompanionRelayOutboxItem] {
-        (try? loadItems()) ?? []
+    func items() throws -> [CompanionRelayOutboxItem] {
+        try loadItems()
     }
 
     func enqueue(fileURL: URL, metadata: [String: String]) throws -> CompanionRelayOutboxItem {
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        var items = try loadItems()
         let id = UUID().uuidString
         let fileExtension = fileURL.pathExtension.isEmpty ? "m4a" : fileURL.pathExtension
         let audioFileName = "\(id).\(fileExtension)"
@@ -45,7 +52,6 @@ final class CompanionRelayOutbox {
             try fileManager.removeItem(at: destination)
         }
         try fileManager.copyItem(at: fileURL, to: destination)
-        var items = try loadItems()
         let item = CompanionRelayOutboxItem(
             id: id,
             audioFileName: audioFileName,
@@ -56,7 +62,12 @@ final class CompanionRelayOutbox {
             lastError: nil
         )
         items.append(item)
-        try saveItems(items)
+        do {
+            try saveItems(items)
+        } catch {
+            try? fileManager.removeItem(at: destination)
+            throw error
+        }
         return item
     }
 
@@ -76,12 +87,16 @@ final class CompanionRelayOutbox {
     func remove(id: String) throws {
         var items = try loadItems()
         guard let item = items.first(where: { $0.id == id }) else { return }
-        let audioURL = audioURL(for: item)
-        if fileManager.fileExists(atPath: audioURL.path) {
-            try fileManager.removeItem(at: audioURL)
-        }
         items.removeAll { $0.id == id }
         try saveItems(items)
+
+        // The manifest is the durable queue authority. Commit dequeue before
+        // best-effort payload cleanup so a deletion error cannot resurrect a
+        // request whose bridge receipt was already accepted.
+        let audioURL = audioURL(for: item)
+        if fileManager.fileExists(atPath: audioURL.path) {
+            try? removeAudioFile(audioURL)
+        }
     }
 
     private func loadItems() throws -> [CompanionRelayOutboxItem] {

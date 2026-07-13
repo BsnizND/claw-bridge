@@ -478,7 +478,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         res.status(202).json({
           ok: true,
           queued: Boolean(result.queued),
-          id: result.id ?? event.request_id,
+          id: event.request_id,
           ...(response ? appResponsePayload(req, response.id) : {})
         });
       } catch (error) {

@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import WatchConnectivity
 
 @MainActor
@@ -8,14 +8,26 @@ final class CompanionRelayController: NSObject, ObservableObject {
 
     @Published private(set) var pendingRelayCount = 0
     @Published private(set) var relayStatusText = "No queued Watch uploads"
+    @Published private(set) var isRelayOutboxBlocked = false
 
-    private let uploader = WatchVoiceUploadClient()
-    private let outbox = CompanionRelayOutbox()
+    private let uploader: WatchVoiceUploadClient
+    private let outbox: CompanionRelayOutbox
     private var store: BridgeConfigurationStore?
     private var isDraining = false
     private var drainRequestedWhileRunning = false
     private var retryTask: Task<Void, Never>?
     private var latestRelaySnapshot: WatchRelayBridgeSnapshot?
+
+    init(
+        uploader: WatchVoiceUploadClient = WatchVoiceUploadClient(),
+        outbox: CompanionRelayOutbox = CompanionRelayOutbox(),
+        store: BridgeConfigurationStore? = nil
+    ) {
+        self.uploader = uploader
+        self.outbox = outbox
+        self.store = store
+        super.init()
+    }
 
     var isSupported: Bool { WCSession.isSupported() }
 
@@ -53,7 +65,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
     private func enqueue(fileURL: URL, metadata: [String: String]) {
         do {
             let item = try outbox.enqueue(fileURL: fileURL, metadata: metadata)
-            refreshOutboxStatus()
+            guard refreshOutboxStatus() != nil else { return }
             publishRelaySnapshot(
                 WatchRelayBridgeSnapshot(
                     state: .queuedOnPhone,
@@ -65,20 +77,20 @@ final class CompanionRelayController: NSObject, ObservableObject {
             NSLog("Claw Bridge relay queued Watch file in durable outbox; id=\(item.id); pending=\(pendingRelayCount)")
             drainPending(reason: "watch-file")
         } catch {
-            relayStatusText = "Watch relay failed: \(error.localizedDescription)"
+            surfaceOutboxBlocked(error: error, detail: "iPhone relay queue unavailable; retry blocked")
             publishRelaySnapshot(
                 WatchRelayBridgeSnapshot(
-                    state: .failed,
+                    state: .retryingBridge,
                     relayID: metadata["relay_id"],
                     pendingCount: pendingRelayCount,
-                    detail: error.localizedDescription
+                    detail: "iPhone relay queue unavailable; retry blocked"
                 )
             )
             NSLog("Claw Bridge relay enqueue failed: \(error.localizedDescription)")
         }
     }
 
-    private func drainOutbox(reason: String) async {
+    func drainOutbox(reason: String) async {
         guard !isDraining else {
             drainRequestedWhileRunning = true
             return
@@ -92,9 +104,8 @@ final class CompanionRelayController: NSObject, ObservableObject {
             }
         }
 
-        let items = outbox.items()
+        guard let items = refreshOutboxStatus() else { return }
         guard !items.isEmpty else {
-            refreshOutboxStatus()
             return
         }
         guard let store else {
@@ -123,10 +134,19 @@ final class CompanionRelayController: NSObject, ObservableObject {
         for item in items {
             let fileURL = outbox.audioURL(for: item)
             guard FileManager.default.fileExists(atPath: fileURL.path) else {
-                try? outbox.remove(id: item.id)
-                refreshOutboxStatus()
-                NSLog("Claw Bridge relay discarded outbox item with missing audio; id=\(item.id)")
-                continue
+                let message = "Recorded audio file is missing; relay is blocked until the file is recovered."
+                guard markOutboxItemFailed(id: item.id, message: message) else { return }
+                guard refreshOutboxStatus(failure: message, blocked: true) != nil else { return }
+                publishRelaySnapshot(
+                    WatchRelayBridgeSnapshot(
+                        state: .retryingBridge,
+                        relayID: relayID(for: item),
+                        pendingCount: pendingRelayCount,
+                        detail: "Audio missing on iPhone; relay blocked"
+                    )
+                )
+                NSLog("Claw Bridge relay retained blocked outbox item with missing audio; id=\(item.id)")
+                return
             }
             let metadata = item.metadata
             let location = WatchVoiceLocation(metadata: metadata)
@@ -149,7 +169,13 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 sourceContext: sourceContext
             )
             do {
-                let currentPendingCount = outbox.items().count
+                let currentPendingCount: Int
+                do {
+                    currentPendingCount = try outbox.items().count
+                } catch {
+                    surfaceOutboxBlocked(error: error, detail: "iPhone relay queue unreadable; retry blocked")
+                    return
+                }
                 NSLog("Claw Bridge relay upload starting; id=\(item.id); configComplete=\(store.configuration.isComplete)")
                 publishRelaySnapshot(
                     WatchRelayBridgeSnapshot(
@@ -161,7 +187,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 )
                 let response = try await uploader.upload(request, configuration: store.configuration)
                 try outbox.remove(id: item.id)
-                refreshOutboxStatus()
+                guard refreshOutboxStatus() != nil else { return }
                 publishRelaySnapshot(
                     WatchRelayBridgeSnapshot(
                         state: .sentToBridge,
@@ -173,8 +199,8 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 NSLog("Claw Bridge relay upload succeeded; id=\(item.id); pending=\(pendingRelayCount)")
             } catch {
                 let message = error.localizedDescription
-                try? outbox.markFailed(id: item.id, error: message)
-                refreshOutboxStatus(failure: message)
+                guard markOutboxItemFailed(id: item.id, message: message) else { return }
+                guard refreshOutboxStatus(failure: message) != nil else { return }
                 publishRelaySnapshot(
                     WatchRelayBridgeSnapshot(
                         state: .retryingBridge,
@@ -191,12 +217,26 @@ final class CompanionRelayController: NSObject, ObservableObject {
         refreshOutboxStatus()
     }
 
-    private func refreshOutboxStatus(failure: String? = nil) {
-        let items = outbox.items()
+    @discardableResult
+    func refreshOutboxStatus(
+        failure: String? = nil,
+        blocked: Bool = false
+    ) -> [CompanionRelayOutboxItem]? {
+        let items: [CompanionRelayOutboxItem]
+        do {
+            items = try outbox.items()
+        } catch {
+            surfaceOutboxBlocked(error: error, detail: "iPhone relay queue unreadable; retry blocked")
+            return nil
+        }
         let count = items.count
         pendingRelayCount = count
+        isRelayOutboxBlocked = blocked
         if count == 0 {
             relayStatusText = "No queued Watch uploads"
+        } else if blocked {
+            relayStatusText = "Queued \(count); Watch relay blocked"
+            latestRelaySnapshot = outboxSnapshot(for: items, failure: failure, blocked: true)
         } else if let failure {
             relayStatusText = "Queued \(count); retrying when bridge is reachable"
             latestRelaySnapshot = outboxSnapshot(for: items, failure: failure)
@@ -205,6 +245,7 @@ final class CompanionRelayController: NSObject, ObservableObject {
             relayStatusText = "Queued \(count) Watch upload\(count == 1 ? "" : "s")"
             latestRelaySnapshot = outboxSnapshot(for: items)
         }
+        return items
     }
 
     private func relayID(for item: CompanionRelayOutboxItem) -> String {
@@ -213,7 +254,8 @@ final class CompanionRelayController: NSObject, ObservableObject {
 
     private func outboxSnapshot(
         for items: [CompanionRelayOutboxItem],
-        failure: String? = nil
+        failure: String? = nil,
+        blocked: Bool = false
     ) -> WatchRelayBridgeSnapshot? {
         guard let item = items.first else { return nil }
         let message = failure ?? item.lastError
@@ -222,7 +264,9 @@ final class CompanionRelayController: NSObject, ObservableObject {
                 state: .retryingBridge,
                 relayID: relayID(for: item),
                 pendingCount: items.count,
-                detail: items.count <= 1 ? "Bridge unreachable; retrying" : "\(items.count) queued; retrying"
+                detail: blocked
+                    ? "iPhone relay queue blocked"
+                    : (items.count <= 1 ? "Bridge unreachable; retrying" : "\(items.count) queued; retrying")
             )
         }
         return WatchRelayBridgeSnapshot(
@@ -231,6 +275,32 @@ final class CompanionRelayController: NSObject, ObservableObject {
             pendingCount: items.count,
             detail: items.count <= 1 ? "Waiting for bridge upload" : "\(items.count) Watch uploads queued"
         )
+    }
+
+    private func markOutboxItemFailed(id: String, message: String) -> Bool {
+        do {
+            try outbox.markFailed(id: id, error: message)
+            return true
+        } catch {
+            surfaceOutboxBlocked(error: error, detail: "iPhone relay queue unreadable; retry blocked")
+            return false
+        }
+    }
+
+    private func surfaceOutboxBlocked(error: Error, detail: String) {
+        // An unreadable manifest is actionable pending state with an unknown
+        // item count. Keep the existing UI out of its empty/checkmark state.
+        pendingRelayCount = max(pendingRelayCount, 1)
+        isRelayOutboxBlocked = true
+        relayStatusText = "Watch relay blocked; queued uploads need recovery"
+        publishRelaySnapshot(
+            WatchRelayBridgeSnapshot(
+                state: .retryingBridge,
+                pendingCount: pendingRelayCount,
+                detail: detail
+            )
+        )
+        NSLog("Claw Bridge relay outbox blocked; detail=\(detail); error=\(error.localizedDescription)")
     }
 
     private func sendApplicationContext(
@@ -281,14 +351,14 @@ final class CompanionRelayController: NSObject, ObservableObject {
             } catch {
                 return
             }
-            await self?.drainPending(reason: "retry")
+            self?.drainPending(reason: "retry")
         }
     }
 }
 
 extension CompanionRelayController: WCSessionDelegate {
     nonisolated func session(
-        _ session: WCSession,
+        _: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
@@ -300,13 +370,13 @@ extension CompanionRelayController: WCSessionDelegate {
         }
     }
 
-    nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
+    nonisolated func sessionDidBecomeInactive(_: WCSession) {}
 
     nonisolated func sessionDidDeactivate(_ session: WCSession) {
         session.activate()
     }
 
-    nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
+    nonisolated func session(_: WCSession, didReceive file: WCSessionFile) {
         let fileURL = file.fileURL
         let metadata = (file.metadata ?? [:]).compactMapValues { $0 as? String }
         NSLog("Claw Bridge relay received Watch file; metadataKeys=\(metadata.keys.sorted().joined(separator: ","))")
@@ -331,7 +401,8 @@ private extension WatchVoiceLocation {
         guard let latitudeText = metadata["latitude"],
               let longitudeText = metadata["longitude"],
               let latitude = Double(latitudeText),
-              let longitude = Double(longitudeText) else {
+              let longitude = Double(longitudeText)
+        else {
             return nil
         }
         self.latitude = latitude

@@ -32,6 +32,7 @@
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
 		A4135BBB6B29256A7F754B70 /* ClawBridgeComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AB74930D19E0311630630215 /* WalkieResponseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */; };
+		B48744C2AD877C4A89BBEA3C /* CompanionRelayDurabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 012DD0918CCEC5BDC681CAC0 /* CompanionRelayDurabilityTests.swift */; };
 		C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B7F51E7572666EDDBECA2DC /* CompanionRelayController.swift */; };
 		CB3F2EECA265D767E432D6A8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78A33A0012AD2147E3D18A3D /* Assets.xcassets */; };
 		D621D8A50C6516DA152405A1 /* GolfWorkoutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6F9D08DCAB2EA704AD0F06 /* GolfWorkoutController.swift */; };
@@ -99,6 +100,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		012DD0918CCEC5BDC681CAC0 /* CompanionRelayDurabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionRelayDurabilityTests.swift; sourceTree = "<group>"; };
 		01ED1B3A17547DD342460148 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRelayController.swift; sourceTree = "<group>"; };
 		0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchVoiceUploadClient.swift; sourceTree = "<group>"; };
@@ -150,6 +152,7 @@
 			isa = PBXGroup;
 			children = (
 				ACD46CA10546F17C7926734A /* BridgeConfigurationStoreTests.swift */,
+				012DD0918CCEC5BDC681CAC0 /* CompanionRelayDurabilityTests.swift */,
 			);
 			name = iOS;
 			path = Tests/iOS;
@@ -428,6 +431,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3A3CAC623383F5FCE56C6301 /* BridgeConfigurationStoreTests.swift in Sources */,
+				B48744C2AD877C4A89BBEA3C /* CompanionRelayDurabilityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
