@@ -58,6 +58,8 @@ struct WatchContentView: View {
                 .accessibilityLabel(recordAccessibilityLabel)
                 .accessibilityValue(recordAccessibilityValue)
 
+                WatchDeliveryStatusView(presentation: deliveryStatusPresentation)
+
                 if walkieMode && controller.hasPlayableReply {
                     Button(action: toggleReplyPlayback) {
                         Image(systemName: controller.isReplyPlaying ? "pause.fill" : "play.fill")
@@ -98,6 +100,27 @@ struct WatchContentView: View {
 
     private var activeModeEnabled: Bool {
         golfMode || golfWorkout.isActive
+    }
+
+    private var deliveryStatusPresentation: WatchDeliveryStatusPresentation {
+        if shouldShowRelayStatus,
+           let relayPresentation = WatchDeliveryStatusPresentation(relayState: relay.handoffState) {
+            return relayPresentation
+        }
+        return WatchDeliveryStatusPresentation(
+            voiceStatus: controller.status,
+            detail: controller.detailText
+        )
+    }
+
+    private var shouldShowRelayStatus: Bool {
+        guard relay.handoffState.isActive else { return false }
+        switch controller.status {
+        case .idle, .relayPending:
+            return true
+        default:
+            return false
+        }
     }
 
     private var recordButtonTint: Color {
@@ -192,6 +215,103 @@ struct WatchContentView: View {
         }
     }
 
+}
+
+private struct WatchDeliveryStatusPresentation {
+    let title: String
+    let detail: String?
+    let systemImage: String
+    let tint: Color
+
+    init(voiceStatus: WatchVoiceStatus, detail: String?) {
+        title = voiceStatus.title
+        self.detail = detail
+        switch voiceStatus {
+        case .idle:
+            systemImage = "checkmark.circle"
+            tint = .secondary
+        case .recording:
+            systemImage = "waveform"
+            tint = .red
+        case .sending, .waitingForReply:
+            systemImage = "arrow.up.circle.fill"
+            tint = .blue
+        case .relayPending:
+            systemImage = "clock.fill"
+            tint = .orange
+        case .sent, .replyReady:
+            systemImage = "checkmark.circle.fill"
+            tint = .green
+        case .playing:
+            systemImage = "speaker.wave.2.fill"
+            tint = .green
+        case .failed:
+            systemImage = "exclamationmark.triangle.fill"
+            tint = .red
+        }
+    }
+
+    init?(relayState: WatchRelayHandoffState) {
+        guard let title = relayState.title else { return nil }
+        self.title = title
+        detail = relayState.detailText
+        switch relayState {
+        case .idle:
+            return nil
+        case .pending, .queuedOnPhone, .uploadingToBridge, .retryingBridge:
+            systemImage = "clock.fill"
+            tint = .orange
+        case .transferred:
+            systemImage = "iphone"
+            tint = .blue
+        case .sentToBridge:
+            systemImage = "checkmark.circle.fill"
+            tint = .green
+        case .failed:
+            systemImage = "exclamationmark.triangle.fill"
+            tint = .red
+        }
+    }
+}
+
+private struct WatchDeliveryStatusView: View {
+    let presentation: WatchDeliveryStatusPresentation
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: presentation.systemImage)
+                .foregroundStyle(presentation.tint)
+                .font(.caption.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(presentation.title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                if let detail = presentation.detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Delivery status")
+        .accessibilityValue(accessibilityValue)
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    private var accessibilityValue: String {
+        guard let detail = presentation.detail, !detail.isEmpty else {
+            return presentation.title
+        }
+        return "\(presentation.title). \(detail)"
+    }
 }
 
 private struct ModeToggleButton: View {
