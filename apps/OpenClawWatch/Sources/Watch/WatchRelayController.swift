@@ -239,23 +239,35 @@ extension WatchRelayController: WCSessionDelegate {
     }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        let bridgeURLText = applicationContext["bridgeURL"] as? String
-        let bearerToken = applicationContext["bearerToken"] as? String
+        let credentialCommand = BridgeCredentialWatchContext.command(from: applicationContext)
         let relaySnapshot = WatchRelayBridgeSnapshot(applicationContext: applicationContext)
         Task { @MainActor in
             guard let store else { return }
-            if bridgeURLText != nil || bearerToken != nil {
-                let bridgeURL = bridgeURLText.flatMap(URL.init(string:)) ?? store.configuration.bridgeURL
+            switch credentialCommand {
+            case let .update(bridgeURL, bearerToken):
                 do {
                     try store.updateConfiguration(
                         BridgeConfiguration(
-                            bridgeURL: bridgeURL,
-                            bearerToken: bearerToken ?? store.configuration.bearerToken
+                            bridgeURL: bridgeURL ?? store.configuration.bridgeURL,
+                            bearerToken: bearerToken
                         )
                     )
                 } catch {
                     NSLog("Claw Bridge Watch configuration Keychain save failed: \(error.localizedDescription)")
                 }
+            case let .clear(bridgeURL):
+                do {
+                    try store.updateConfiguration(
+                        BridgeConfiguration(
+                            bridgeURL: bridgeURL ?? store.configuration.bridgeURL,
+                            bearerToken: ""
+                        )
+                    )
+                } catch {
+                    NSLog("Claw Bridge Watch credential clear failed: \(error.localizedDescription)")
+                }
+            case .none:
+                break
             }
             if let relaySnapshot {
                 applyBridgeSnapshot(relaySnapshot)

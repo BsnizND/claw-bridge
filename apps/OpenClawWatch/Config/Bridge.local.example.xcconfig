@@ -3,3 +3,8 @@
 // and relayed to the Watch through WatchConnectivity.
 
 // CLAW_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
+
+// Existing installs that previously relied on a compiled token need one
+// migration build with the same private value. Remove this line for the next
+// build after both iPhone and Watch have launched and migrated to Keychain.
+// CLAW_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-existing-private-token

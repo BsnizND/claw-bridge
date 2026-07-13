@@ -27,12 +27,16 @@ final class CompanionRelayController: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
         NSLog("Claw Bridge companion WCSession activating; configComplete=\(store.configuration.isComplete)")
-        sendConfiguration(store.configuration)
+        sendConfiguration(store)
         drainPending(reason: "startup")
     }
 
-    func sendConfiguration(_ configuration: BridgeConfiguration) {
-        sendApplicationContext(configuration: configuration, relaySnapshot: latestRelaySnapshot)
+    func sendConfiguration(_ store: BridgeConfigurationStore) {
+        sendApplicationContext(
+            configuration: store.configuration,
+            credentialSyncState: store.credentialSyncState,
+            relaySnapshot: latestRelaySnapshot
+        )
         drainPending(reason: "configuration")
     }
 
@@ -231,19 +235,19 @@ final class CompanionRelayController: NSObject, ObservableObject {
 
     private func sendApplicationContext(
         configuration: BridgeConfiguration,
+        credentialSyncState: BridgeCredentialSyncState,
         relaySnapshot: WatchRelayBridgeSnapshot?
     ) {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else {
             NSLog("Claw Bridge companion application context send skipped; activationState=\(WCSession.default.activationState.rawValue)")
             return
         }
-        var context: [String: Any] = [:]
-        if let bridgeURL = configuration.bridgeURL?.absoluteString {
-            context["bridgeURL"] = bridgeURL
-        }
-        let bearerToken = configuration.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        if bearerToken.isEmpty == false {
-            context["bearerToken"] = bearerToken
+        guard var context = BridgeCredentialWatchContext.configurationFields(
+            configuration: configuration,
+            syncState: credentialSyncState
+        ) else {
+            NSLog("Claw Bridge companion application context held; credential state is not authoritative")
+            return
         }
         if let relaySnapshot {
             relaySnapshot.applicationContextFields.forEach { context[$0.key] = $0.value }
@@ -258,11 +262,15 @@ final class CompanionRelayController: NSObject, ObservableObject {
 
     private func publishRelaySnapshot(_ snapshot: WatchRelayBridgeSnapshot) {
         latestRelaySnapshot = snapshot
-        guard let configuration = store?.configuration else {
+        guard let store else {
             NSLog("Claw Bridge relay snapshot held until configuration is available; state=\(snapshot.state.rawValue)")
             return
         }
-        sendApplicationContext(configuration: configuration, relaySnapshot: snapshot)
+        sendApplicationContext(
+            configuration: store.configuration,
+            credentialSyncState: store.credentialSyncState,
+            relaySnapshot: snapshot
+        )
     }
 
     private func scheduleRetry() {
@@ -287,7 +295,7 @@ extension CompanionRelayController: WCSessionDelegate {
         NSLog("Claw Bridge companion WCSession activation completed; state=\(activationState.rawValue); error=\(error?.localizedDescription ?? "none")")
         Task { @MainActor in
             guard let store else { return }
-            sendConfiguration(store.configuration)
+            sendConfiguration(store)
             drainPending(reason: "watch-connectivity-activation")
         }
     }

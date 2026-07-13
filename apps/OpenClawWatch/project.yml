@@ -7,7 +7,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "35"
+    CURRENT_PROJECT_VERSION: "36"
     MARKETING_VERSION: "0.1.10"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -55,6 +55,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
+        ClawBridgeLegacyMigrationBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         UILaunchScreen: {}
         NSLocalNetworkUsageDescription: Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.
         NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
@@ -122,6 +123,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
+        ClawBridgeLegacyMigrationBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         NSMicrophoneUsageDescription: Claw Bridge records audio only when you press the Watch push-to-talk control.
         NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:

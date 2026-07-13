@@ -6,6 +6,7 @@ struct CompanionContentView: View {
     @StateObject private var walkie = CompanionWalkieController()
     @State private var bridgeURLText = ""
     @State private var tokenText = ""
+    @State private var isShowingCredentialRemovalConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -28,12 +29,29 @@ struct CompanionContentView: View {
                                     bearerToken: tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
                                 )
                             )
-                            CompanionRelayController.shared.sendConfiguration(store.configuration)
+                            CompanionRelayController.shared.sendConfiguration(store)
                         } catch {
-                            tokenText = ""
+                            tokenText = store.configuration.bearerToken
                         }
                     }
                     .disabled(bridgeURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || tokenText.isEmpty)
+
+                    Button(credentialRemovalButtonTitle, role: .destructive) {
+                        isShowingCredentialRemovalConfirmation = true
+                    }
+                    .disabled(store.credentialSyncState == .explicitlyCleared)
+                    .confirmationDialog(
+                        "Remove bridge credential?",
+                        isPresented: $isShowingCredentialRemovalConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Remove from iPhone and Watch", role: .destructive) {
+                            removeCredential()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("Uploads stop until you save a bearer token again.")
+                    }
                 }
 
                 Section("Status") {
@@ -44,6 +62,12 @@ struct CompanionContentView: View {
                         Text(credentialErrorMessage)
                             .font(.footnote)
                             .foregroundStyle(.red)
+                    }
+
+                    if store.credentialSyncState == .explicitlyCleared {
+                        Text("Credential removed from this iPhone and the paired Watch.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -121,6 +145,22 @@ struct CompanionContentView: View {
                     await walkie.open(responseID: responseID, configuration: store.configuration)
                 }
             }
+        }
+    }
+
+    private var credentialRemovalButtonTitle: String {
+        store.configuration.bearerToken.isEmpty
+            ? "Clear Credential from Paired Watch"
+            : "Remove Credential from iPhone and Watch"
+    }
+
+    private func removeCredential() {
+        do {
+            try store.clearCredential()
+            tokenText = ""
+            CompanionRelayController.shared.sendConfiguration(store)
+        } catch {
+            tokenText = store.configuration.bearerToken
         }
     }
 }

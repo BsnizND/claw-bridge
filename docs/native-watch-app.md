@@ -134,12 +134,31 @@ CLAW_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
 Use the bridge base URL, not `/watch/voice`; the app appends `/watch/voice`
 internally. Enter the bearer token in the iPhone companion app. The iPhone
 stores it in device-only Keychain and sends it to the Watch over
-WatchConnectivity; the Watch persists it in its own Keychain. The token is not
-compiled into either app's Info.plist.
+WatchConnectivity; the Watch persists it in its own Keychain. Normal new-install
+builds leave the legacy migration token setting undefined.
 
-Upgrades migrate the legacy UserDefaults credential once and then remove the
-plaintext value. If Keychain migration fails, the app remains unconfigured and
-shows the failure instead of continuing with the plaintext credential.
+Existing personal installs that used `CLAW_BRIDGE_DEFAULT_BEARER_TOKEN` require
+a two-build migration because an upgraded app cannot read the bundle it
+replaces:
+
+1. Keep the existing private token line for one build, install it, and launch
+   both the iPhone and Watch apps. That migration build exposes the old setting
+   through `ClawBridgeLegacyMigrationBearerToken`, writes it to each device's
+   Keychain, and records completion.
+2. Remove `CLAW_BRIDGE_DEFAULT_BEARER_TOKEN` from the ignored local config,
+   increment the build number, rebuild, and launch both apps again. Confirm
+   uploads still work, then rotate the bridge token and save the replacement in
+   the iPhone app so no credential compiled into the migration build remains
+   valid.
+
+Legacy UserDefaults credentials migrate in the same first phase and the
+plaintext defaults value is removed only after the Keychain write succeeds. If
+Keychain migration fails, the app keeps the legacy value for retry, preserves
+any previously working live configuration, and shows the failure.
+
+Use **Remove Credential from iPhone and Watch** for intentional deprovisioning.
+The companion sends an explicit versioned clear command; missing or unreadable
+iPhone credentials do not silently erase a still-working Watch credential.
 
 ## Server configuration
 

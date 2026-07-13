@@ -29,13 +29,16 @@ describe('Apple project metadata', () => {
     ]);
   });
 
-  it('does not compile a bearer-token default into Apple bundles', () => {
-    const tokenKey = 'ClawBridgeDefaultBearerToken';
-    expect(read('apps/OpenClawWatch/project.yml')).not.toContain(tokenKey);
-    expect(read('apps/OpenClawWatch/Sources/iOS/Info.plist')).not.toContain(tokenKey);
-    expect(read('apps/OpenClawWatch/Sources/WatchExtension/Info.plist')).not.toContain(tokenKey);
-    expect(read('apps/OpenClawWatch/Config/Bridge.local.example.xcconfig')).not.toContain(
-      'CLAW_BRIDGE_DEFAULT_BEARER_TOKEN'
+  it('keeps the legacy bundle credential bridge explicit and migration-only', () => {
+    const projectSpec = read('apps/OpenClawWatch/project.yml');
+    const legacyMigrationKey = 'ClawBridgeLegacyMigrationBearerToken';
+
+    expect(projectSpec.match(new RegExp(legacyMigrationKey, 'g'))).toHaveLength(2);
+    expect(read('apps/OpenClawWatch/Sources/iOS/Info.plist')).toContain(legacyMigrationKey);
+    expect(read('apps/OpenClawWatch/Sources/WatchExtension/Info.plist')).toContain(legacyMigrationKey);
+    expect(read('apps/OpenClawWatch/Config/Bridge.local.example.xcconfig')).toContain(
+      'Remove this line for the next'
     );
+    expect(projectSpec).not.toContain('ClawBridgeDefaultBearerToken:');
   });
 });

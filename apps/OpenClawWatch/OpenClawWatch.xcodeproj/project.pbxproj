@@ -20,12 +20,14 @@
 		596ABA1F2FDD0E2B2EE61A28 /* OpenClawCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */; };
 		6827AA670EEAA5EC82582E4D /* ClawBridgeComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19FFC0773FF82AA922F85ED1 /* ClawBridgeComplication.swift */; };
 		7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */; };
+		778569EE05CB3D0B771DB6D7 /* BridgeCredentialWatchContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADC5DFAAD0A6092C34DBBA1 /* BridgeCredentialWatchContext.swift */; };
 		784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */; };
 		7AE88694BCC3256C7A8CC909 /* WatchContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4028A3C1D185247A4002C3C5 /* WatchContentView.swift */; };
 		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		7C52094C6F9DC3C6691E0395 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
 		7C859158C567E41BB54782E4 /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
 		859EDDBC08109DB915723EC8 /* BridgeCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */; };
+		8ECF8CAEA86F52DC8321D65F /* BridgeCredentialWatchContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADC5DFAAD0A6092C34DBBA1 /* BridgeCredentialWatchContext.swift */; };
 		909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
 		A4135BBB6B29256A7F754B70 /* ClawBridgeComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -115,6 +117,7 @@
 		78A33A0012AD2147E3D18A3D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionContentView.swift; sourceTree = "<group>"; };
 		82EE61436B6A62250DB9F2C8 /* OpenClawCompanionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = OpenClawCompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8ADC5DFAAD0A6092C34DBBA1 /* BridgeCredentialWatchContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeCredentialWatchContext.swift; sourceTree = "<group>"; };
 		901185BE1C5614F08C8A3582 /* OpenClawWatchExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenClawWatchExtension.entitlements; sourceTree = "<group>"; };
 		992030626503F9F333EC8065 /* CompanionWalkieController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWalkieController.swift; sourceTree = "<group>"; };
 		A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionPushController.swift; sourceTree = "<group>"; };
@@ -228,6 +231,7 @@
 			children = (
 				F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */,
 				DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */,
+				8ADC5DFAAD0A6092C34DBBA1 /* BridgeCredentialWatchContext.swift */,
 				EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */,
 				BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */,
 				5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */,
@@ -433,6 +437,7 @@
 			files = (
 				59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */,
 				E2FE9F7EFF5590E43BA6DA6C /* BridgeCredentialStore.swift in Sources */,
+				8ECF8CAEA86F52DC8321D65F /* BridgeCredentialWatchContext.swift in Sources */,
 				A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */,
 				784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */,
 				C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */,
@@ -459,6 +464,7 @@
 			files = (
 				535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */,
 				859EDDBC08109DB915723EC8 /* BridgeCredentialStore.swift in Sources */,
+				778569EE05CB3D0B771DB6D7 /* BridgeCredentialWatchContext.swift in Sources */,
 				D621D8A50C6516DA152405A1 /* GolfWorkoutController.swift in Sources */,
 				7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */,
 				3DF5F17DF9FE4FC80A962696 /* WalkieResponseClient.swift in Sources */,
@@ -532,7 +538,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -658,7 +664,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 35;
+				CURRENT_PROJECT_VERSION = 36;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;

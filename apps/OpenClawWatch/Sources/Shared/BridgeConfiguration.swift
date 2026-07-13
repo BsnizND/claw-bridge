@@ -14,15 +14,23 @@ public struct BridgeConfiguration: Codable, Equatable, Sendable {
     }
 }
 
+enum BridgeCredentialSyncState: String, Equatable, Sendable {
+    case present
+    case missing
+    case explicitlyCleared = "cleared"
+}
+
 public final class BridgeConfigurationStore: ObservableObject {
     @Published public private(set) var configuration: BridgeConfiguration
     @Published public private(set) var credentialErrorMessage: String?
+    @Published private(set) var credentialSyncState: BridgeCredentialSyncState
 
     private let defaults: UserDefaults
     private let credentialStore: BridgeCredentialStoring
     private let legacyConfigurationKey = "openclaw.bridge.configuration"
     private let bridgeURLKey = "openclaw.bridge.url"
     private let migrationCompleteKey = "openclaw.bridge.credentials-migrated-to-keychain"
+    private let credentialSyncStateKey = "openclaw.bridge.credential-sync-state"
 
     public convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -61,6 +69,14 @@ public final class BridgeConfigurationStore: ObservableObject {
             )
             configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: token ?? "")
             credentialErrorMessage = nil
+            if token != nil {
+                credentialSyncState = .present
+                defaults.set(BridgeCredentialSyncState.present.rawValue, forKey: credentialSyncStateKey)
+            } else if defaults.string(forKey: credentialSyncStateKey) == BridgeCredentialSyncState.explicitlyCleared.rawValue {
+                credentialSyncState = .explicitlyCleared
+            } else {
+                credentialSyncState = .missing
+            }
             if token != nil || defaults.bool(forKey: migrationCompleteKey) {
                 defaults.removeObject(forKey: legacyConfigurationKey)
             } else if legacy?.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
@@ -69,15 +85,23 @@ public final class BridgeConfigurationStore: ObservableObject {
         } catch {
             configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: "")
             credentialErrorMessage = error.localizedDescription
+            credentialSyncState = .missing
         }
     }
 
     public func updateConfiguration(_ proposed: BridgeConfiguration) throws {
         let token = proposed.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
         let bridgeURL = proposed.bridgeURL
+        let previousConfiguration = configuration
+        let previousSyncState = credentialSyncState
+        let previousPersistedSyncState = defaults.string(forKey: credentialSyncStateKey)
 
         do {
             if token.isEmpty {
+                // Persist the clear intent first. If the process exits immediately
+                // after Keychain deletion, the next launch can still deprovision
+                // the paired Watch. A failed deletion restores the prior marker.
+                defaults.set(BridgeCredentialSyncState.explicitlyCleared.rawValue, forKey: credentialSyncStateKey)
                 try credentialStore.deleteBearerToken()
             } else {
                 try credentialStore.writeBearerToken(token)
@@ -90,12 +114,31 @@ public final class BridgeConfigurationStore: ObservableObject {
             defaults.set(true, forKey: migrationCompleteKey)
             defaults.removeObject(forKey: legacyConfigurationKey)
             configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: token)
+            credentialSyncState = token.isEmpty ? .explicitlyCleared : .present
+            if token.isEmpty == false {
+                defaults.set(credentialSyncState.rawValue, forKey: credentialSyncStateKey)
+            }
             credentialErrorMessage = nil
         } catch {
-            configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: "")
+            if let previousPersistedSyncState {
+                defaults.set(previousPersistedSyncState, forKey: credentialSyncStateKey)
+            } else {
+                defaults.removeObject(forKey: credentialSyncStateKey)
+            }
+            configuration = previousConfiguration
+            credentialSyncState = previousSyncState
             credentialErrorMessage = error.localizedDescription
             throw error
         }
+    }
+
+    public func clearCredential() throws {
+        try updateConfiguration(
+            BridgeConfiguration(
+                bridgeURL: configuration.bridgeURL,
+                bearerToken: ""
+            )
+        )
     }
 
     private static func migrateLegacyCredentialIfNeeded(
@@ -115,9 +158,11 @@ public final class BridgeConfigurationStore: ObservableObject {
         }
 
         let legacyDefaultsToken = legacy?.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        let candidate = legacyDefaultsToken?.isEmpty == false
-            ? legacyDefaultsToken
-            : legacyBundleValue("ClawBridgeDefaultBearerToken")
+        let legacyBundleToken = (
+            legacyBundleValue("ClawBridgeLegacyMigrationBearerToken")
+                ?? legacyBundleValue("ClawBridgeDefaultBearerToken")
+        )?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = legacyDefaultsToken?.isEmpty == false ? legacyDefaultsToken : legacyBundleToken
         guard let candidate, candidate.isEmpty == false else {
             return nil
         }
