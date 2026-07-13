@@ -7,10 +7,6 @@ struct OpenClawCompanionApp: App {
     @UIApplicationDelegateAdaptor(OpenClawCompanionAppDelegate.self) private var appDelegate
     @StateObject private var store = BridgeConfigurationStore()
 
-    init() {
-        CompanionRelayController.shared.start(store: store)
-    }
-
     var body: some Scene {
         WindowGroup {
             CompanionContentView()
@@ -21,7 +17,7 @@ struct OpenClawCompanionApp: App {
                 }
                 .onChange(of: scenePhase) {
                     if scenePhase == .active {
-                        CompanionRelayController.shared.drainPending(reason: "foreground")
+                        CompanionRelayController.shared.sendConfiguration(store)
                     }
                 }
         }

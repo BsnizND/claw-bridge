@@ -160,6 +160,24 @@ Use **Remove Credential from iPhone and Watch** for intentional deprovisioning.
 The companion sends an explicit versioned clear command; missing or unreadable
 iPhone credentials do not silently erase a still-working Watch credential.
 
+### Rotating the bridge credential
+
+The iPhone companion and Watch keep separate device-only Keychain copies. They
+do not automatically learn that the bridge server or another LifeOS app has a
+new bearer token.
+
+After rotating `CLAW_BRIDGE_TOKEN` on the bridge:
+
+1. Open the iPhone companion, replace the bearer token, and tap **Save**.
+2. Open the Watch app so WatchConnectivity can apply the latest configuration.
+3. Send one Watch recording and require an accepted bridge receipt before
+   invalidating any rollback credential or calling the rotation complete.
+
+The iPhone companion republishes its saved configuration whenever it returns to
+the foreground. A green iPhone configuration status proves only that the phone
+has a URL and credential; the Watch recording is the end-to-end proof that the
+paired Watch received the replacement.
+
 ## Server configuration
 
 Include `watch_app` in `ALLOWED_SOURCES`:
