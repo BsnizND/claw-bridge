@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>$(CLAW_BRIDGE_IOS_DISPLAY_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -29,9 +29,9 @@
 	<key>ClawBridgeLegacyMigrationBearerToken</key>
 	<string>$(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.</string>
+	<string>$(CLAW_BRIDGE_IOS_DISPLAY_NAME) can relay Watch voice messages to your configured OpenClaw bridge.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
+	<string>$(CLAW_BRIDGE_IOS_DISPLAY_NAME) can attach your current location to Watch voice messages when you allow it.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

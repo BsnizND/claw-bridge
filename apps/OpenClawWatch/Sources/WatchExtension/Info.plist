@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
@@ -33,18 +33,18 @@
 		<string>com.apple.watchkit</string>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Claw Bridge can start a golf workout to keep location ready while you use Golf Mode.</string>
+	<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME) can start a golf workout to keep location ready while you use Golf Mode.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Claw Bridge can record a golf workout while Golf Mode is active.</string>
+	<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME) can record a golf workout while Golf Mode is active.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>PreciseWatchVoiceMessage</key>
-		<string>Claw Bridge can attach precise location to a voice message when you ask location-aware questions.</string>
+		<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME) can attach precise location to a voice message when you ask location-aware questions.</string>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Claw Bridge can attach your current location to Watch voice messages when you allow it.</string>
+	<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME) can attach your current location to Watch voice messages when you allow it.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Claw Bridge records audio only when you press the Watch push-to-talk control.</string>
+	<string>$(CLAW_BRIDGE_WATCH_DISPLAY_NAME) records audio only when you press the Watch push-to-talk control.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
