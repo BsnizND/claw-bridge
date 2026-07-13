@@ -84,8 +84,22 @@ function formatSharedItem(event: NormalizedSiriEvent): string[] {
   return parts.filter((part): part is string => Boolean(part));
 }
 
+function isLifeOSSaveUrl(event: NormalizedSiriEvent): boolean {
+  return event.source === 'ios_share_sheet'
+    && event.shortcut_name === 'LifeOS Share Extension'
+    && Boolean(optionalLifeOSHomeSessionKey(event.session_key))
+    && event.shared_item?.kind === 'url'
+    && Boolean(event.shared_item.url);
+}
+
+function formatCaptureAction(event: NormalizedSiriEvent): string[] {
+  return isLifeOSSaveUrl(event) ? ['Capture action: Save to LifeOS'] : [];
+}
+
 function buildAssistantMessage(event: NormalizedSiriEvent): string {
-  const heading = event.source === 'ios_share_sheet'
+  const heading = isLifeOSSaveUrl(event)
+    ? `LifeOS save request via iOS share sheet for ${event.assistant}:`
+    : event.source === 'ios_share_sheet'
     ? `iOS share sheet item for ${event.assistant}:`
     : event.source === 'watch_app'
       ? `Apple Watch voice message for ${event.assistant}:`
@@ -95,6 +109,8 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
     '',
     event.raw_text,
     '',
+    ...formatCaptureAction(event),
+    ...(isLifeOSSaveUrl(event) ? [''] : []),
     ...formatSourceContext(event),
     ...(event.source_context ? [''] : []),
     ...formatSharedItem(event),
@@ -116,6 +132,7 @@ function buildAssistantMessage(event: NormalizedSiriEvent): string {
 }
 
 function compactPrefix(config: BridgeConfig, event: NormalizedSiriEvent): string | undefined {
+  if (isLifeOSSaveUrl(event)) return 'LifeOS save request via iOS share sheet:';
   if (event.source === 'ios_share_sheet') return 'Sent via iOS share sheet:';
   if (event.source === 'watch_app' && event.source_context === 'golf_mode') {
     return 'Sent from Golf Mode via Apple Watch voice message:';
@@ -142,6 +159,8 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
   const text = compactText(event);
   const message = prefix ? `${prefix} ${text}` : text;
   const context = [
+    ...formatCaptureAction(event),
+    ...(isLifeOSSaveUrl(event) ? [`Captured at: ${event.captured_at}`, `Request id: ${event.request_id}`] : []),
     ...formatSourceContext(event),
     ...formatSharedItem(event),
     ...formatLocation(event),
