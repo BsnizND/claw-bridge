@@ -196,7 +196,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
                 requestID: requestID,
                 audioFileURL: currentAudioURL,
                 deviceName: "Apple Watch",
-                appName: "Claw Bridge",
+                appName: watchDisplayName,
                 capturedAt: capturedAt,
                 durationSeconds: recordingDuration,
                 location: location,
@@ -232,7 +232,7 @@ final class WatchVoiceController: NSObject, ObservableObject {
                     currentAudioURL,
                     requestID: requestID,
                     deviceName: "Apple Watch",
-                    appName: "Claw Bridge",
+                    appName: watchDisplayName,
                     capturedAt: capturedAt,
                     durationSeconds: recordingDuration,
                     location: location,
@@ -252,6 +252,12 @@ final class WatchVoiceController: NSObject, ObservableObject {
         if sendOperationToken == sendToken {
             sendOperationToken = nil
         }
+    }
+
+    private var watchDisplayName: String {
+        let configured = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return configured.flatMap { $0.isEmpty ? nil : $0 } ?? "Claw Bridge"
     }
 
     func replayLastResponse(configuration: BridgeConfiguration) async {

@@ -43,13 +43,13 @@ struct ClawBridgeComplicationEntryView: View {
     private var content: some View {
         switch family {
         case .accessoryInline:
-            Label("Claw Bridge", image: "ComplicationIcon")
+            Label(complicationDisplayName, image: "ComplicationIcon")
         case .accessoryRectangular:
             HStack(spacing: 6) {
                 complicationIcon
                     .frame(width: 24, height: 24)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Claw Bridge")
+                    Text(complicationDisplayName)
                         .font(.headline)
                     Text("Record")
                         .font(.caption2)
@@ -74,7 +74,11 @@ struct ClawBridgeComplicationEntryView: View {
             .renderingMode(.template)
             .resizable()
             .scaledToFit()
-            .accessibilityLabel("Claw Bridge")
+            .accessibilityLabel(complicationDisplayName)
+    }
+
+    private var complicationDisplayName: String {
+        configuredComplicationDisplayName
     }
 }
 
@@ -86,7 +90,7 @@ struct ClawBridgeRecordComplication: Widget {
             ClawBridgeComplicationEntryView(entry: entry)
         }
         .configurationDisplayName("Record Message")
-        .description("Open Claw Bridge ready to record a voice message.")
+        .description("Open \(configuredComplicationDisplayName) ready to record a voice message.")
         .supportedFamilies([
             .accessoryCircular,
             .accessoryCorner,
@@ -94,6 +98,12 @@ struct ClawBridgeRecordComplication: Widget {
             .accessoryRectangular
         ])
     }
+}
+
+private var configuredComplicationDisplayName: String {
+    let configured = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return configured.flatMap { $0.isEmpty ? nil : $0 } ?? "Claw Bridge"
 }
 
 @main
