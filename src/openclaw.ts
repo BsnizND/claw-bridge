@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { drainQueue, hasQueuedOrArchivedRequest, queueEvent } from './queue.js';
+import { optionalLifeOSHomeSessionKey } from './session.js';
 
 export interface OpenClawDrainHooks {
   afterDelivered?: (event: NormalizedSiriEvent, result: DeliveryResult) => Promise<void>;
@@ -251,7 +252,7 @@ async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): 
     '--agent',
     event.assistant || config.assistantId,
     '--session-key',
-    config.openclawSessionKey,
+    optionalLifeOSHomeSessionKey(event.session_key) ?? config.openclawSessionKey,
     '--message',
     buildOpenClawMessage(config, event),
     '--json',

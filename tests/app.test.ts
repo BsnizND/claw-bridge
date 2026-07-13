@@ -109,6 +109,7 @@ describe('app routes', () => {
       .field('shared_text', 'This is worth remembering')
       .field('shared_url', 'https://example.com/article')
       .field('shared_title', 'Example Article')
+      .field('session_key', 'agent:jay:lifeos-home:thread-1')
       .field('location_json', '{"latitude":33.6,"longitude":-111.9}');
 
     expect(res.status).toBe(202);
@@ -116,6 +117,7 @@ describe('app routes', () => {
     expect(acceptEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         source: 'ios_share_sheet',
+        session_key: 'agent:jay:lifeos-home:thread-1',
         raw_text: 'Shared from iOS share sheet: This is worth remembering',
         location: expect.objectContaining({ latitude: 33.6, longitude: -111.9 }),
         shared_item: expect.objectContaining({
@@ -132,6 +134,21 @@ describe('app routes', () => {
         raw_text: 'Shared from iOS share sheet: This is worth remembering'
       })
     );
+  });
+
+  it('rejects share session keys outside LifeOS Home before queueing', async () => {
+    for (const sessionKey of ['agent:jay:lifeos-home:', 'agent:jay:telegram:default:direct:brian']) {
+      const acceptEvent = vi.fn();
+      const res = await request(createApp(config(), { acceptEvent }))
+        .post('/shortcuts/share')
+        .set('Authorization', 'Bearer 0123456789abcdef01234567')
+        .field('shared_text', 'Keep this in the active conversation')
+        .field('session_key', sessionKey);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('session_key must start with agent:jay:lifeos-home:');
+      expect(acceptEvent).not.toHaveBeenCalled();
+    }
   });
 
   it('accepts share sheet file uploads', async () => {

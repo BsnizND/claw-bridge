@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { BridgeConfig, NormalizedSiriEvent, SharedItemMetadata, ShortcutMessageRequest } from './types.js';
 import { normalizeShortcutMessage } from './siri.js';
+import { optionalLifeOSHomeSessionKey } from './session.js';
 
 export interface UploadedShareFile {
   path: string;
@@ -69,6 +70,7 @@ export function normalizeShareSheetRequest(
   const title = asOptionalString(body.shared_title) ?? asOptionalString(body.title);
   const location = buildLocation(body);
   const rawText = buildSharedText(body, file, transcript);
+  const sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
 
   const shortcutBody: ShortcutMessageRequest = {
     message: rawText,
@@ -83,6 +85,7 @@ export function normalizeShareSheetRequest(
   };
 
   const event = normalizeShortcutMessage(config, shortcutBody);
+  if (sessionKey) event.session_key = sessionKey;
   const kind = inferSharedKind(file, sharedUrl, sharedText);
   event.shared_item = {
     kind,

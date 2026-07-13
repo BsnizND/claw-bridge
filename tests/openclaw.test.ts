@@ -236,11 +236,51 @@ describe('OpenClaw delivery', () => {
     const args = await readFile(argsPath, 'utf8');
     const cwd = await readFile(cwdPath, 'utf8');
     expect(args).toContain('--message');
+    expect(args).toContain('agent:openclaw:main');
     expect(args).toContain('voice message for openclaw');
     expect(args).toContain('drain this message');
     expect(args).toContain('--thinking');
     expect(args).toContain('minimal');
     expect(await realpath(cwd.trim())).toBe(await realpath(dir));
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('delivers a LifeOS capture to its captured conversation session', async () => {
+    const dir = join(tmpdir(), `claw-bridge-lifeos-session-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const lifeOSEvent = {
+      ...shareEvent(),
+      session_key: 'agent:jay:lifeos-home:thread-1'
+    };
+
+    await acceptForOpenClaw(config, lifeOSEvent);
+    const queued = await readFile(queuePath, 'utf8');
+    expect(queued).toContain('"session_key":"agent:jay:lifeos-home:thread-1"');
+
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('--session-key');
+    expect(args).toContain('agent:jay:lifeos-home:thread-1');
+    expect(args).not.toContain('agent:openclaw:main');
     await rm(dir, { recursive: true, force: true });
   });
 

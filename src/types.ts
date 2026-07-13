@@ -117,6 +117,7 @@ export interface NormalizedSiriEvent {
   raw_text: string;
   captured_at: string;
   request_id: string;
+  session_key?: string;
   locale?: string;
   device_name?: string;
   shortcut_name?: string;
