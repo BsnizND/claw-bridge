@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { BridgeConfig, NormalizedSiriEvent, ShortcutMessageRequest } from './types.js';
 import { normalizeShortcutMessage } from './siri.js';
+import { optionalLifeOSHomeSessionKey } from './session.js';
 import type { UploadedShareFile } from './share.js';
 import type { SourceContext } from './types.js';
 
@@ -89,6 +90,8 @@ export function normalizeWatchVoiceRequest(
   };
 
   const event = normalizeShortcutMessage(config, shortcutBody);
+  const sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
+  if (sessionKey) event.session_key = sessionKey;
   event.source_context = normalizeSourceContext(asOptionalString(body.source_context));
   event.shared_item = {
     kind: 'audio',

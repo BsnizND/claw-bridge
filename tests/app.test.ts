@@ -260,6 +260,7 @@ describe('app routes', () => {
       .field('request_id', 'watch-upload-request-id')
       .field('device_name', 'Apple Watch Ultra')
       .field('app_name', 'OpenClaw Watch')
+      .field('session_key', 'agent:jay:lifeos-home:watch-thread-1')
       .field('captured_at', '2026-06-14T20:12:00.000Z')
       .field('recording_duration_seconds', '2.4')
       .field('source_context', 'golf_mode')
@@ -279,6 +280,7 @@ describe('app routes', () => {
     expect(acceptEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         source: 'watch_app',
+        session_key: 'agent:jay:lifeos-home:watch-thread-1',
         raw_text: 'Apple Watch voice message attached.',
         request_id: 'watch-upload-request-id',
         captured_at: '2026-06-14T20:12:00.000Z',
@@ -313,6 +315,25 @@ describe('app routes', () => {
       })
     );
     expect(afterAccepted).toHaveBeenCalledWith(expect.objectContaining({ source: 'watch_app' }));
+  });
+
+  it('rejects Watch session keys outside LifeOS Home before queueing', async () => {
+    for (const sessionKey of ['agent:jay:lifeos-home:', 'agent:jay:telegram:default:direct:brian']) {
+      const acceptEvent = vi.fn();
+      const res = await request(createApp(config(), { acceptEvent }))
+        .post('/watch/voice')
+        .set('Authorization', 'Bearer 0123456789abcdef01234567')
+        .field('session_key', sessionKey)
+        .field('recording_duration_seconds', '2.0')
+        .attach('audio', Buffer.from('audio-ish'), {
+          filename: 'watch-message.m4a',
+          contentType: 'audio/mp4'
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('session_key must start with agent:jay:lifeos-home:');
+      expect(acceptEvent).not.toHaveBeenCalled();
+    }
   });
 
   it('rejects unsupported Watch source context values', async () => {
