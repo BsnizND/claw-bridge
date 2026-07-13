@@ -7,8 +7,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    CURRENT_PROJECT_VERSION: "33"
-    MARKETING_VERSION: "0.1.8"
+    CURRENT_PROJECT_VERSION: "35"
+    MARKETING_VERSION: "0.1.10"
     CODE_SIGN_STYLE: Automatic
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 schemes:
@@ -20,6 +20,9 @@ schemes:
       config: Debug
     archive:
       config: Release
+    test:
+      targets:
+        - OpenClawCompanionTests
   OpenClawWatchApp:
     build:
       targets:
@@ -52,7 +55,6 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
-        ClawBridgeDefaultBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         UILaunchScreen: {}
         NSLocalNetworkUsageDescription: Claw Bridge can relay Watch voice messages to your configured OpenClaw bridge.
         NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
@@ -120,7 +122,6 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ClawBridgeDefaultBaseURL: $(CLAW_BRIDGE_DEFAULT_BASE_URL)
-        ClawBridgeDefaultBearerToken: $(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)
         NSMicrophoneUsageDescription: Claw Bridge records audio only when you press the Watch push-to-talk control.
         NSLocationWhenInUseUsageDescription: Claw Bridge can attach your current location to Watch voice messages when you allow it.
         NSLocationTemporaryUsageDescriptionDictionary:
@@ -158,6 +159,20 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp.ClawBridgeComplicationExtension
+    configFiles:
+      Debug: Config/Signing.xcconfig
+      Release: Config/Signing.xcconfig
+  OpenClawCompanionTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/iOS
+    dependencies:
+      - target: OpenClawCompanion
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridgeTests
+        GENERATE_INFOPLIST_FILE: YES
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig

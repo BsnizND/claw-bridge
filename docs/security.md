@@ -8,6 +8,9 @@
 - Use `ALLOWED_SOURCES` to reject unexpected clients.
 - Prefer local binding (`HOST=127.0.0.1`) behind a reverse proxy.
 - Treat Apple Shortcut URLs and bearer tokens as secrets.
+- Enter native-app bearer tokens through the companion UI. They are persisted
+  in device-only Keychain on both iPhone and Watch, never in Info.plist defaults
+  or UserDefaults.
 - Rotate the token immediately if a shared Shortcut exposes it.
 - Store share-sheet uploads outside any public web root and avoid logging bearer tokens or transcript text.
 

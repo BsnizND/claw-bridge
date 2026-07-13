@@ -13,6 +13,7 @@
 		20C2A15BBEE79815185D546D /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
 		2B2CA0A4BA9CADE9BCD41D34 /* OpenClawWatchExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2B3F74B662069F061546E96B /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
+		3A3CAC623383F5FCE56C6301 /* BridgeConfigurationStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACD46CA10546F17C7926734A /* BridgeConfigurationStoreTests.swift */; };
 		3DF5F17DF9FE4FC80A962696 /* WalkieResponseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */; };
 		535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
 		59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */; };
@@ -24,6 +25,7 @@
 		7B32367AE0B5ED003C2855C7 /* WatchRelayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9A9D04AF925721C1C31773 /* WatchRelayController.swift */; };
 		7C52094C6F9DC3C6691E0395 /* WatchVoiceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */; };
 		7C859158C567E41BB54782E4 /* PublicAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */; };
+		859EDDBC08109DB915723EC8 /* BridgeCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */; };
 		909DAEBB5FC4C1EB7CA23DF4 /* WatchVoiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0F6EEF6953A2DDFA05D375 /* WatchVoiceController.swift */; };
 		A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */; };
 		A4135BBB6B29256A7F754B70 /* ClawBridgeComplicationExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -32,11 +34,19 @@
 		CB3F2EECA265D767E432D6A8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78A33A0012AD2147E3D18A3D /* Assets.xcassets */; };
 		D621D8A50C6516DA152405A1 /* GolfWorkoutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6F9D08DCAB2EA704AD0F06 /* GolfWorkoutController.swift */; };
 		DD737C5436275ACBD686C371 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
+		E2FE9F7EFF5590E43BA6DA6C /* BridgeCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */; };
 		E66EE11ACD383F65A4C8F1F9 /* WatchVoiceUploadClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F28727611FC800CFF3D1890 /* WatchVoiceUploadClient.swift */; };
 		FE82F2FB795AFA9A5F7867CE /* CompanionWalkieController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992030626503F9F333EC8065 /* CompanionWalkieController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		44F4727C232DCF3D70B3C07E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2E9ECAE42C555973C83C2305;
+			remoteInfo = OpenClawCompanion;
+		};
 		4F1238660FC6F948613562FE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 9F7212A425256BC0C5786F22 /* Project object */;
@@ -104,14 +114,17 @@
 		6B6F9D08DCAB2EA704AD0F06 /* GolfWorkoutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GolfWorkoutController.swift; sourceTree = "<group>"; };
 		78A33A0012AD2147E3D18A3D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7D88BB2DA0C02BAC80471FAA /* CompanionContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionContentView.swift; sourceTree = "<group>"; };
+		82EE61436B6A62250DB9F2C8 /* OpenClawCompanionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = OpenClawCompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		901185BE1C5614F08C8A3582 /* OpenClawWatchExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenClawWatchExtension.entitlements; sourceTree = "<group>"; };
 		992030626503F9F333EC8065 /* CompanionWalkieController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWalkieController.swift; sourceTree = "<group>"; };
 		A6F2F5ECBA37318CADCEA8E8 /* CompanionPushController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionPushController.swift; sourceTree = "<group>"; };
+		ACD46CA10546F17C7926734A /* BridgeConfigurationStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeConfigurationStoreTests.swift; sourceTree = "<group>"; };
 		B0474A2011A611051F38C899 /* OpenClawCompanion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OpenClawCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B56351101E3C6ED506D781F4 /* OpenClawCompanion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenClawCompanion.entitlements; sourceTree = "<group>"; };
 		BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkieResponseClient.swift; sourceTree = "<group>"; };
 		C0902589296DF3E5D94DAAC0 /* OpenClawCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawCompanionApp.swift; sourceTree = "<group>"; };
 		C72D6A7461AD8DD99EB7686A /* OpenClawWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenClawWatchApp.swift; sourceTree = "<group>"; };
+		DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeCredentialStore.swift; sourceTree = "<group>"; };
 		E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ClawBridgeComplicationExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = PublicAssets.xcassets; sourceTree = "<group>"; };
 		F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeConfiguration.swift; sourceTree = "<group>"; };
@@ -123,10 +136,20 @@
 			children = (
 				E0FEC191398F04AF9C16E920 /* ClawBridgeComplicationExtension.appex */,
 				B0474A2011A611051F38C899 /* OpenClawCompanion.app */,
+				82EE61436B6A62250DB9F2C8 /* OpenClawCompanionTests.xctest */,
 				55E294C3D5006316EBAD6E08 /* OpenClawWatchApp.app */,
 				6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3D3F4F20F40504C4EF205DE2 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				ACD46CA10546F17C7926734A /* BridgeConfigurationStoreTests.swift */,
+			);
+			name = iOS;
+			path = Tests/iOS;
 			sourceTree = "<group>";
 		};
 		5F85FFDE3359C44474F00CEE /* Resources */ = {
@@ -185,6 +208,7 @@
 				A8BD5BC5419A3D545E045EB7 /* Complication */,
 				F010BD58C75E502533C9BC0E /* Config */,
 				B45FDC9BD3808AE6182CDDEF /* iOS */,
+				3D3F4F20F40504C4EF205DE2 /* iOS */,
 				FA9E0E99F7CB48F03E55A960 /* Shared */,
 				7C834A31A2CDAEC473975D5D /* Watch */,
 				1297B0AD46B6EF332A37C444 /* Products */,
@@ -203,6 +227,7 @@
 			isa = PBXGroup;
 			children = (
 				F0F745D706D8BCE413E89DFA /* BridgeConfiguration.swift */,
+				DA42D8F16A0A81E0EF38AB98 /* BridgeCredentialStore.swift */,
 				EF0EC3306E4E4799275B48EF /* PublicAssets.xcassets */,
 				BA9925BC6A8D6D07E46D94C1 /* WalkieResponseClient.swift */,
 				5F05AF7FA1AC54D95DC72963 /* WatchVoiceModels.swift */,
@@ -252,6 +277,24 @@
 			productName = OpenClawWatchExtension;
 			productReference = 6A4D97F29EFB389FAB54B4C2 /* OpenClawWatchExtension.appex */;
 			productType = "com.apple.product-type.watchkit2-extension";
+		};
+		3F05CED2AB8C7C42F9757EB6 /* OpenClawCompanionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C07AEC323358036F6CB5368 /* Build configuration list for PBXNativeTarget "OpenClawCompanionTests" */;
+			buildPhases = (
+				48C66278296B0D37763A9C06 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4DDB1CA1495ADD0A7569291C /* PBXTargetDependency */,
+			);
+			name = OpenClawCompanionTests;
+			packageProductDependencies = (
+			);
+			productName = OpenClawCompanionTests;
+			productReference = 82EE61436B6A62250DB9F2C8 /* OpenClawCompanionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */ = {
 			isa = PBXNativeTarget;
@@ -306,6 +349,9 @@
 					3854F89796153526B83EE7AA = {
 						ProvisioningStyle = Automatic;
 					};
+					3F05CED2AB8C7C42F9757EB6 = {
+						ProvisioningStyle = Automatic;
+					};
 					780B2BAD3CC982CA5198A707 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -330,6 +376,7 @@
 			targets = (
 				E2C134C7EA2F1687801D073E /* ClawBridgeComplicationExtension */,
 				2E9ECAE42C555973C83C2305 /* OpenClawCompanion */,
+				3F05CED2AB8C7C42F9757EB6 /* OpenClawCompanionTests */,
 				780B2BAD3CC982CA5198A707 /* OpenClawWatchApp */,
 				3854F89796153526B83EE7AA /* OpenClawWatchExtension */,
 			);
@@ -372,11 +419,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		48C66278296B0D37763A9C06 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A3CAC623383F5FCE56C6301 /* BridgeConfigurationStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9D0D04837AF82767D99CC3E0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				59529EBEFD9A8A8B755050B1 /* BridgeConfiguration.swift in Sources */,
+				E2FE9F7EFF5590E43BA6DA6C /* BridgeCredentialStore.swift in Sources */,
 				A310703B6CC4C09799AFA3C5 /* CompanionContentView.swift in Sources */,
 				784B817649FA24FADEBDAB23 /* CompanionPushController.swift in Sources */,
 				C1AC74930EB6828864DC1426 /* CompanionRelayController.swift in Sources */,
@@ -402,6 +458,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				535BB2F5E18EB3C9C4B67A8A /* BridgeConfiguration.swift in Sources */,
+				859EDDBC08109DB915723EC8 /* BridgeCredentialStore.swift in Sources */,
 				D621D8A50C6516DA152405A1 /* GolfWorkoutController.swift in Sources */,
 				7320AEFB205EBAE8FE8A903B /* OpenClawWatchApp.swift in Sources */,
 				3DF5F17DF9FE4FC80A962696 /* WalkieResponseClient.swift in Sources */,
@@ -425,6 +482,11 @@
 			isa = PBXTargetDependency;
 			target = E2C134C7EA2F1687801D073E /* ClawBridgeComplicationExtension */;
 			targetProxy = 60A7D1FEE83809745B17A205 /* PBXContainerItemProxy */;
+		};
+		4DDB1CA1495ADD0A7569291C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2E9ECAE42C555973C83C2305 /* OpenClawCompanion */;
+			targetProxy = 44F4727C232DCF3D70B3C07E /* PBXContainerItemProxy */;
 		};
 		60BAA5BAD71C32752D0D1E0F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -470,7 +532,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -483,7 +545,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -506,6 +568,24 @@
 				TARGETED_DEVICE_FAMILY = 4;
 			};
 			name = Release;
+		};
+		21478F56CF9DAFEB443E6521 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridgeTests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenClawCompanion.app/OpenClawCompanion";
+			};
+			name = Debug;
 		};
 		6C6F2C9D3E14DA9E6B9BCFB2 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -578,7 +658,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -597,7 +677,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.1.8;
+				MARKETING_VERSION = 0.1.10;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -608,6 +688,24 @@
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Debug;
+		};
+		C18DF388A10FEC12B0F7B83D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridgeTests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OpenClawCompanion.app/OpenClawCompanion";
+			};
+			name = Release;
 		};
 		C1E1845664D8759023F1EA2F /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -721,6 +819,15 @@
 			buildConfigurations = (
 				A3F16741856A3364615090BC /* Debug */,
 				18E2AAFCFEFD3B829E4CC0D9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5C07AEC323358036F6CB5368 /* Build configuration list for PBXNativeTarget "OpenClawCompanionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21478F56CF9DAFEB443E6521 /* Debug */,
+				C18DF388A10FEC12B0F7B83D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -1,5 +1,5 @@
-// Copy this file to Bridge.local.xcconfig and replace the placeholders with
-// your private bridge defaults. Do not commit Bridge.local.xcconfig.
+// Copy this file to Bridge.local.xcconfig and set a non-secret bridge URL if
+// desired. Enter the bearer token in the iPhone app; it is stored in Keychain
+// and relayed to the Watch through WatchConnectivity.
 
 // CLAW_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
-// CLAW_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token

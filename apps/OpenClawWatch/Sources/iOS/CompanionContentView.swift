@@ -21,11 +21,17 @@ struct CompanionContentView: View {
 
                 Section {
                     Button("Save") {
-                        store.configuration = BridgeConfiguration(
-                            bridgeURL: URL(string: bridgeURLText.trimmingCharacters(in: .whitespacesAndNewlines)),
-                            bearerToken: tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
-                        )
-                        CompanionRelayController.shared.sendConfiguration(store.configuration)
+                        do {
+                            try store.updateConfiguration(
+                                BridgeConfiguration(
+                                    bridgeURL: URL(string: bridgeURLText.trimmingCharacters(in: .whitespacesAndNewlines)),
+                                    bearerToken: tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                )
+                            )
+                            CompanionRelayController.shared.sendConfiguration(store.configuration)
+                        } catch {
+                            tokenText = ""
+                        }
                     }
                     .disabled(bridgeURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || tokenText.isEmpty)
                 }
@@ -33,6 +39,12 @@ struct CompanionContentView: View {
                 Section("Status") {
                     Label(store.configuration.isComplete ? "Ready for Watch uploads" : "Bridge configuration required",
                           systemImage: store.configuration.isComplete ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+
+                    if let credentialErrorMessage = store.credentialErrorMessage {
+                        Text(credentialErrorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
                 }
 
                 Section("Watch Relay") {

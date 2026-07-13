@@ -313,7 +313,7 @@ The iOS companion app uses this authenticated endpoint after APNs registration:
   "id": "stable-app-device-id",
   "platform": "ios",
   "push_token": "hex-apns-device-token",
-  "app_version": "0.1.8",
+  "app_version": "0.1.10",
   "device_name": "iPhone"
 }
 ```

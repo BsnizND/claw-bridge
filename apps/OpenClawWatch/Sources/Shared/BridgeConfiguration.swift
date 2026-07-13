@@ -15,43 +15,129 @@ public struct BridgeConfiguration: Codable, Equatable, Sendable {
 }
 
 public final class BridgeConfigurationStore: ObservableObject {
-    @Published public var configuration: BridgeConfiguration {
-        didSet { save() }
-    }
+    @Published public private(set) var configuration: BridgeConfiguration
+    @Published public private(set) var credentialErrorMessage: String?
 
     private let defaults: UserDefaults
-    private let key = "openclaw.bridge.configuration"
+    private let credentialStore: BridgeCredentialStoring
+    private let legacyConfigurationKey = "openclaw.bridge.configuration"
+    private let bridgeURLKey = "openclaw.bridge.url"
+    private let migrationCompleteKey = "openclaw.bridge.credentials-migrated-to-keychain"
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        let bundled = Self.bundleDefaultConfiguration()
-        if bundled.isComplete {
-            configuration = bundled
-            return
-        }
-        if let data = defaults.data(forKey: key),
-           let decoded = try? JSONDecoder().decode(BridgeConfiguration.self, from: data) {
-            configuration = decoded.isComplete ? decoded : bundled
-        } else {
-            configuration = bundled
-        }
-    }
-
-    private func save() {
-        guard let data = try? JSONEncoder().encode(configuration) else { return }
-        defaults.set(data, forKey: key)
-    }
-
-    private static func bundleDefaultConfiguration() -> BridgeConfiguration {
-        let baseURLText = sanitizedBundleString("ClawBridgeDefaultBaseURL")
-        let token = sanitizedBundleString("ClawBridgeDefaultBearerToken")
-        return BridgeConfiguration(
-            bridgeURL: baseURLText.flatMap(URL.init(string:)),
-            bearerToken: token ?? ""
+    public convenience init(defaults: UserDefaults = .standard) {
+        self.init(
+            defaults: defaults,
+            credentialStore: KeychainBridgeCredentialStore(),
+            legacyBundleValue: Self.sanitizedMainBundleString
         )
     }
 
-    private static func sanitizedBundleString(_ key: String) -> String? {
+    init(
+        defaults: UserDefaults,
+        credentialStore: BridgeCredentialStoring,
+        legacyBundleValue: @escaping (String) -> String?
+    ) {
+        self.defaults = defaults
+        self.credentialStore = credentialStore
+
+        let legacy = Self.decodeLegacyConfiguration(defaults: defaults, key: legacyConfigurationKey)
+        let bridgeURL = Self.savedBridgeURL(defaults: defaults, key: bridgeURLKey)
+            ?? legacy?.bridgeURL
+            ?? legacyBundleValue("ClawBridgeDefaultBaseURL").flatMap(URL.init(string:))
+
+        if let bridgeURL {
+            defaults.set(bridgeURL.absoluteString, forKey: bridgeURLKey)
+        }
+
+        do {
+            let storedToken = try credentialStore.readBearerToken()
+            let token = try Self.migrateLegacyCredentialIfNeeded(
+                storedToken: storedToken,
+                legacy: legacy,
+                defaults: defaults,
+                migrationCompleteKey: migrationCompleteKey,
+                credentialStore: credentialStore,
+                legacyBundleValue: legacyBundleValue
+            )
+            configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: token ?? "")
+            credentialErrorMessage = nil
+            if token != nil || defaults.bool(forKey: migrationCompleteKey) {
+                defaults.removeObject(forKey: legacyConfigurationKey)
+            } else if legacy?.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+                defaults.removeObject(forKey: legacyConfigurationKey)
+            }
+        } catch {
+            configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: "")
+            credentialErrorMessage = error.localizedDescription
+        }
+    }
+
+    public func updateConfiguration(_ proposed: BridgeConfiguration) throws {
+        let token = proposed.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bridgeURL = proposed.bridgeURL
+
+        do {
+            if token.isEmpty {
+                try credentialStore.deleteBearerToken()
+            } else {
+                try credentialStore.writeBearerToken(token)
+            }
+            if let bridgeURL {
+                defaults.set(bridgeURL.absoluteString, forKey: bridgeURLKey)
+            } else {
+                defaults.removeObject(forKey: bridgeURLKey)
+            }
+            defaults.set(true, forKey: migrationCompleteKey)
+            defaults.removeObject(forKey: legacyConfigurationKey)
+            configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: token)
+            credentialErrorMessage = nil
+        } catch {
+            configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: "")
+            credentialErrorMessage = error.localizedDescription
+            throw error
+        }
+    }
+
+    private static func migrateLegacyCredentialIfNeeded(
+        storedToken: String?,
+        legacy: BridgeConfiguration?,
+        defaults: UserDefaults,
+        migrationCompleteKey: String,
+        credentialStore: BridgeCredentialStoring,
+        legacyBundleValue: (String) -> String?
+    ) throws -> String? {
+        if let storedToken {
+            defaults.set(true, forKey: migrationCompleteKey)
+            return storedToken
+        }
+        guard defaults.bool(forKey: migrationCompleteKey) == false else {
+            return nil
+        }
+
+        let legacyDefaultsToken = legacy?.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let candidate = legacyDefaultsToken?.isEmpty == false
+            ? legacyDefaultsToken
+            : legacyBundleValue("ClawBridgeDefaultBearerToken")
+        guard let candidate, candidate.isEmpty == false else {
+            return nil
+        }
+
+        try credentialStore.writeBearerToken(candidate)
+        defaults.set(true, forKey: migrationCompleteKey)
+        return candidate
+    }
+
+    private static func decodeLegacyConfiguration(defaults: UserDefaults, key: String) -> BridgeConfiguration? {
+        guard let data = defaults.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(BridgeConfiguration.self, from: data)
+    }
+
+    private static func savedBridgeURL(defaults: UserDefaults, key: String) -> URL? {
+        guard let value = defaults.string(forKey: key) else { return nil }
+        return URL(string: value)
+    }
+
+    private static func sanitizedMainBundleString(_ key: String) -> String? {
         guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String else {
             return nil
         }

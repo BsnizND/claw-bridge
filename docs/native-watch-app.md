@@ -116,10 +116,9 @@ xcodegen --spec apps/OpenClawWatch/project.yml --project apps/OpenClawWatch
 `Signing.local.xcconfig` is ignored by git. Do not commit team identifiers to
 the public repo.
 
-## Optional private bridge defaults
+## Optional bridge URL default
 
-Personal builds can prefill the companion and Watch apps with a private bridge
-base URL and bearer token:
+Personal builds can prefill the companion with a non-secret bridge base URL:
 
 ```bash
 cp apps/OpenClawWatch/Config/Bridge.local.example.xcconfig \
@@ -130,12 +129,17 @@ Then edit `Bridge.local.xcconfig`:
 
 ```text
 CLAW_BRIDGE_DEFAULT_BASE_URL = https:/$()/your-public-bridge.example.com
-CLAW_BRIDGE_DEFAULT_BEARER_TOKEN = replace-with-private-token
 ```
 
 Use the bridge base URL, not `/watch/voice`; the app appends `/watch/voice`
-internally. `Bridge.local.xcconfig` is ignored by git. Do not commit private
-hostnames or tokens.
+internally. Enter the bearer token in the iPhone companion app. The iPhone
+stores it in device-only Keychain and sends it to the Watch over
+WatchConnectivity; the Watch persists it in its own Keychain. The token is not
+compiled into either app's Info.plist.
+
+Upgrades migrate the legacy UserDefaults credential once and then remove the
+plaintext value. If Keychain migration fails, the app remains unconfigured and
+shows the failure instead of continuing with the plaintext credential.
 
 ## Server configuration
 

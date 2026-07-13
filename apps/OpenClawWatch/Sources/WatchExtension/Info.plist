@@ -20,8 +20,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ClawBridgeDefaultBaseURL</key>
 	<string>$(CLAW_BRIDGE_DEFAULT_BASE_URL)</string>
-	<key>ClawBridgeDefaultBearerToken</key>
-	<string>$(CLAW_BRIDGE_DEFAULT_BEARER_TOKEN)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>

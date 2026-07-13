@@ -237,11 +237,13 @@ final class CompanionRelayController: NSObject, ObservableObject {
             NSLog("Claw Bridge companion application context send skipped; activationState=\(WCSession.default.activationState.rawValue)")
             return
         }
-        var context: [String: Any] = [
-            "bearerToken": configuration.bearerToken
-        ]
+        var context: [String: Any] = [:]
         if let bridgeURL = configuration.bridgeURL?.absoluteString {
             context["bridgeURL"] = bridgeURL
+        }
+        let bearerToken = configuration.bearerToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        if bearerToken.isEmpty == false {
+            context["bearerToken"] = bearerToken
         }
         if let relaySnapshot {
             relaySnapshot.applicationContextFields.forEach { context[$0.key] = $0.value }

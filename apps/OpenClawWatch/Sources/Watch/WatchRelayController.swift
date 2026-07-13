@@ -240,12 +240,23 @@ extension WatchRelayController: WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         let bridgeURLText = applicationContext["bridgeURL"] as? String
-        let bearerToken = applicationContext["bearerToken"] as? String ?? ""
+        let bearerToken = applicationContext["bearerToken"] as? String
         let relaySnapshot = WatchRelayBridgeSnapshot(applicationContext: applicationContext)
         Task { @MainActor in
             guard let store else { return }
-            let bridgeURL = bridgeURLText.flatMap(URL.init(string:))
-            store.configuration = BridgeConfiguration(bridgeURL: bridgeURL, bearerToken: bearerToken)
+            if bridgeURLText != nil || bearerToken != nil {
+                let bridgeURL = bridgeURLText.flatMap(URL.init(string:)) ?? store.configuration.bridgeURL
+                do {
+                    try store.updateConfiguration(
+                        BridgeConfiguration(
+                            bridgeURL: bridgeURL,
+                            bearerToken: bearerToken ?? store.configuration.bearerToken
+                        )
+                    )
+                } catch {
+                    NSLog("Claw Bridge Watch configuration Keychain save failed: \(error.localizedDescription)")
+                }
+            }
             if let relaySnapshot {
                 applyBridgeSnapshot(relaySnapshot)
             }
