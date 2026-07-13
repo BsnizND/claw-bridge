@@ -734,7 +734,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Sources/Watch/OpenClawWatchExtension.entitlements;
 				INFOPLIST_FILE = Sources/WatchExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -770,7 +770,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 01ED1B3A17547DD342460148 /* Signing.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Sources/Watch/OpenClawWatchExtension.entitlements;
 				INFOPLIST_FILE = Sources/WatchExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

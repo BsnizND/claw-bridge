@@ -144,6 +144,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(CLAW_BRIDGE_BUNDLE_ID_PREFIX).ClawBridge.watchkitapp.watchkitextension
         CODE_SIGN_ENTITLEMENTS: Sources/Watch/OpenClawWatchExtension.entitlements
+        ASSETCATALOG_COMPILER_COMPLICATION_NAME: ""
     configFiles:
       Debug: Config/Signing.xcconfig
       Release: Config/Signing.xcconfig
