@@ -3,6 +3,7 @@ import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { loadConfig } from './config.js';
 import { drainOpenClawQueue } from './openclaw.js';
+import { recoverFreshOrphanedDrainLockForExclusiveOwner } from './queue.js';
 import { failAppVoiceReply, renderAppVoiceReply } from './voice-replies.js';
 
 const config = loadConfig();
@@ -10,6 +11,10 @@ const appDeviceStore = new AppDeviceStore(config.appDeviceDir);
 const appResponseStore = new AppResponseStore(config.appResponseDir, config.appResponseTtlMs);
 let draining = false;
 let drainStartedAt = 0;
+let markStartupRecoveryFinished: (() => void) | undefined;
+const startupRecoveryFinished = new Promise<void>((resolve) => {
+  markStartupRecoveryFinished = resolve;
+});
 
 const staleDrainAfterMs = Math.max(
   config.openclawCliDrainTimeoutMs + 10_000,
@@ -25,6 +30,7 @@ function scheduleDrain(reason: string) {
 }
 
 async function drainOnce(reason: string) {
+  await startupRecoveryFinished;
   if (draining) {
     const ageMs = Date.now() - drainStartedAt;
     if (ageMs <= staleDrainAfterMs) return;
@@ -66,10 +72,25 @@ const app = createApp(config, {
 
 app.listen(config.port, config.host, () => {
   console.log(`claw-bridge listening on http://${config.host}:${config.port}`);
-  if (config.queueDrainIntervalMs > 0) {
-    scheduleDrain('startup');
-    setInterval(() => {
-      void drainOnce('interval');
-    }, config.queueDrainIntervalMs);
-  }
+  void (async () => {
+    try {
+      const recovered = await recoverFreshOrphanedDrainLockForExclusiveOwner(config.queuePath);
+      if (recovered) {
+        console.log('recovered fresh orphaned openclaw queue drain lock');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`openclaw queue drain lock recovery failed: ${message}`);
+    } finally {
+      markStartupRecoveryFinished?.();
+      markStartupRecoveryFinished = undefined;
+    }
+
+    if (config.queueDrainIntervalMs > 0) {
+      scheduleDrain('startup');
+      setInterval(() => {
+        scheduleDrain('interval');
+      }, config.queueDrainIntervalMs);
+    }
+  })();
 });

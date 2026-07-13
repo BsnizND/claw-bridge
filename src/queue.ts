@@ -94,6 +94,46 @@ async function tryRemoveStaleLock(lockPath: string): Promise<void> {
   }
 }
 
+/**
+ * Recover a fresh lock left behind when the previous bridge process exited.
+ *
+ * The caller must already own the bridge's exclusive service boundary (the
+ * listening port) and must keep every in-process drain gated until this call
+ * completes. Ordinary drainers deliberately do not perform this recovery: a
+ * dead-owner check followed by unlink is otherwise vulnerable to removing a
+ * replacement lock acquired by a concurrent process.
+ */
+export async function recoverFreshOrphanedDrainLockForExclusiveOwner(queuePath: string): Promise<boolean> {
+  const lockPath = `${queuePath}.drain.lock`;
+  try {
+    const lockStat = await stat(lockPath);
+    if (Date.now() - lockStat.mtimeMs >= DRAIN_LOCK_STALE_MS) {
+      return false;
+    }
+
+    const lockContents = await readFile(lockPath, 'utf8');
+    const ownerPid = Number.parseInt(lockContents.trim().split(/\s+/, 1)[0] ?? '', 10);
+    if (!Number.isSafeInteger(ownerPid) || ownerPid <= 0) {
+      return false;
+    }
+
+    try {
+      process.kill(ownerPid, 0);
+      return false;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+        return false;
+      }
+    }
+
+    await unlink(lockPath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
 async function acquireDrainLock(queuePath: string) {
   const lockPath = `${queuePath}.drain.lock`;
   await mkdir(dirname(queuePath), { recursive: true });

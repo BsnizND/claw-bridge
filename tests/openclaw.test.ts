@@ -1,9 +1,23 @@
-import { chmod, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, realpath, rm, utimes, writeFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { acceptForOpenClaw, drainOpenClawQueue, extractReplyTextFromOpenClawOutput } from '../src/openclaw.js';
+import { recoverFreshOrphanedDrainLockForExclusiveOwner } from '../src/queue.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
+
+async function exitedProcessPid(): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    const child = spawn(process.execPath, ['-e', '']);
+    const pid = child.pid;
+    child.once('error', reject);
+    child.once('exit', () => {
+      if (pid === undefined) reject(new Error('child process did not expose a pid'));
+      else resolve(pid);
+    });
+  });
+}
 
 function event(text = 'remember dog food'): NormalizedSiriEvent {
   return {
@@ -361,6 +375,79 @@ describe('OpenClaw delivery', () => {
     expect(deliveredLines).toHaveLength(1);
     const archiveLines = (await readFile(archivePath, 'utf8')).split('\n').filter(Boolean);
     expect(archiveLines).toHaveLength(1);
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('recovers a fresh orphan before concurrent startup drains without double-delivery', async () => {
+    const dir = join(tmpdir(), `claw-bridge-dead-drain-lock-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const deliveredPath = join(dir, 'delivered.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf 'delivered\\n' >> '${deliveredPath}'\nsleep 0.2\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const exitedPid = await exitedProcessPid();
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawWorkdir: dir,
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, event('recover after process exit'));
+    await writeFile(`${queuePath}.drain.lock`, `${exitedPid} ${new Date().toISOString()}\n`, 'utf8');
+
+    expect(await recoverFreshOrphanedDrainLockForExclusiveOwner(queuePath)).toBe(true);
+    const results = await Promise.all([drainOpenClawQueue(config), drainOpenClawQueue(config)]);
+
+    expect(results.reduce((sum, result) => sum + result.delivered, 0)).toBe(1);
+    expect(results.filter((result) => result.skipped)).toHaveLength(1);
+    expect((await readFile(deliveredPath, 'utf8')).split('\n').filter(Boolean)).toHaveLength(1);
+    expect((await readFile(archivePath, 'utf8')).split('\n').filter(Boolean)).toHaveLength(1);
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('leaves old orphaned locks to the ordinary stale-lock recovery path', async () => {
+    const dir = join(tmpdir(), `claw-bridge-old-drain-lock-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const deliveredPath = join(dir, 'delivered.txt');
+    const lockPath = `${queuePath}.drain.lock`;
+    await writeFile(binPath, `#!/bin/sh\nprintf 'delivered\\n' >> '${deliveredPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawWorkdir: dir,
+      assistantId: 'openclaw',
+      openclawSessionKey: 'agent:openclaw:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, event('recover through ordinary stale path'));
+    const exitedPid = await exitedProcessPid();
+    await writeFile(lockPath, `${exitedPid} ${new Date().toISOString()}\n`, 'utf8');
+    const oldTimestamp = new Date(Date.now() - 31 * 60 * 1000);
+    await utimes(lockPath, oldTimestamp, oldTimestamp);
+
+    expect(await recoverFreshOrphanedDrainLockForExclusiveOwner(queuePath)).toBe(false);
+    expect(await readFile(lockPath, 'utf8')).toContain(String(exitedPid));
+    expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    expect((await readFile(deliveredPath, 'utf8')).trim()).toBe('delivered');
     await rm(dir, { recursive: true, force: true });
   });
 
