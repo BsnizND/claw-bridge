@@ -102,6 +102,15 @@ function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): Normal
     session_key: 'agent:jay:lifeos-home:current-conversation',
     device_name: 'Brian\u2019s iPhone',
     shortcut_name: 'LifeOS Voice Capture',
+    location: {
+      latitude: 33.6001,
+      longitude: -111.9002,
+      altitude: 420.5,
+      horizontal_accuracy: 7.5,
+      location_timestamp: '2026-07-13T20:11:58.000Z',
+      location_age_seconds: 2,
+      maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+    },
     shared_item: {
       kind: 'audio',
       filename: 'lifeos-capture.m4a',
@@ -117,6 +126,25 @@ function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): Normal
       size_bytes: 4321
     }
   };
+}
+
+async function writeMessageCapturingOpenClaw(binPath: string, messagePath: string): Promise<void> {
+  await writeFile(
+    binPath,
+    `#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--message" ]; then
+    shift
+    printf '%s' "$1" > '${messagePath}'
+    exit 0
+  fi
+  shift
+done
+exit 2
+`,
+    'utf8'
+  );
+  await chmod(binPath, 0o755);
 }
 
 function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedSiriEvent {
@@ -548,15 +576,14 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  it('passes Watch no-location capture receipts as metadata', async () => {
+  it('keeps Watch no-location receipts private while delivering only the transcript', async () => {
     const dir = join(tmpdir(), `claw-bridge-watch-receipt-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
     const binPath = join(dir, 'fake-openclaw');
-    const argsPath = join(dir, 'args.txt');
-    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
-    await chmod(binPath, 0o755);
+    const messagePath = join(dir, 'message.txt');
+    await writeMessageCapturingOpenClaw(binPath, messagePath);
 
     const config = {
       openclawAdapter: 'cli',
@@ -574,11 +601,80 @@ describe('OpenClaw delivery', () => {
     const drain = await drainOpenClawQueue(config);
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
-    const args = await readFile(argsPath, 'utf8');
-    expect(args).toContain('Sent via Apple Watch voice message: voice note without gps');
-    expect(args).toContain('Capture receipt:');
-    expect(args).toContain('No location reason: location_timeout');
-    expect(args).not.toContain('Location:');
+    expect(await readFile(messagePath, 'utf8')).toBe('voice note without gps');
+    const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
+      event: NormalizedSiriEvent;
+    };
+    expect(archiveRecord.event).toMatchObject({
+      capture_receipt: { no_location_reason: 'location_timeout' },
+      shared_item: {
+        kind: 'audio',
+        filename: 'Latest memo.m4a',
+        mime_type: 'audio/mp4',
+        file_path: '/tmp/Latest memo.m4a',
+        size_bytes: 1234
+      },
+      voice_memo: {
+        filename: 'Latest memo.m4a',
+        mime_type: 'audio/mp4',
+        file_path: '/tmp/Latest memo.m4a',
+        size_bytes: 1234
+      }
+    });
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('delivers ordinary Watch voice with one compact current-location line', async () => {
+    const dir = join(tmpdir(), `claw-bridge-watch-location-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const messagePath = join(dir, 'message.txt');
+    await writeMessageCapturingOpenClaw(binPath, messagePath);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawMessageStyle: 'compact',
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const event = {
+      ...watchEventWithoutLocation('Find coffee near me'),
+      location: {
+        latitude: 33.6001,
+        longitude: -111.9002,
+        altitude: 420.5,
+        horizontal_accuracy: 8,
+        location_timestamp: '2026-07-13T20:11:57.000Z',
+        location_age_seconds: 3,
+        maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+      },
+      capture_receipt: { audio_duration_seconds: 2.4 }
+    } satisfies NormalizedSiriEvent;
+
+    await acceptForOpenClaw(config, event);
+    expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    expect(await readFile(messagePath, 'utf8')).toBe(
+      'Find coffee near me\n\n' +
+      'Current location: 33.6001, -111.9002 (accuracy 8m; map https://maps.apple.com/?ll=33.6001,-111.9002)'
+    );
+
+    const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
+      event: NormalizedSiriEvent;
+    };
+    expect(archiveRecord.event).toMatchObject({
+      source: 'watch_app',
+      location: event.location,
+      capture_receipt: { audio_duration_seconds: 2.4 },
+      shared_item: { file_path: '/tmp/Latest memo.m4a' },
+      voice_memo: { file_path: '/tmp/Latest memo.m4a' }
+    });
     await rm(dir, { recursive: true, force: true });
   });
 
@@ -588,9 +684,8 @@ describe('OpenClaw delivery', () => {
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
     const binPath = join(dir, 'fake-openclaw');
-    const argsPath = join(dir, 'args.txt');
-    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
-    await chmod(binPath, 0o755);
+    const messagePath = join(dir, 'message.txt');
+    await writeMessageCapturingOpenClaw(binPath, messagePath);
 
     const config = {
       openclawAdapter: 'cli',
@@ -608,12 +703,11 @@ describe('OpenClaw delivery', () => {
     const drain = await drainOpenClawQueue(config);
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
-    const args = await readFile(argsPath, 'utf8');
-    expect(args).toContain('Sent from Golf Mode via Apple Watch voice message: hitting 7 iron from here');
-    expect(args).toContain('Source context: Golf Mode');
-    expect(args).toContain('Location: 33.5979, -111.7581');
-    expect(args).not.toContain('shot_type');
-    expect(args).not.toContain('club_recommendation');
+    expect(await readFile(messagePath, 'utf8')).toBe(
+      'hitting 7 iron from here\n\n' +
+      'Context: Golf mode.\n\n' +
+      'Current location: 33.5979, -111.7581 (accuracy 4m; map https://maps.apple.com/?ll=33.5979,-111.7581)'
+    );
     await rm(dir, { recursive: true, force: true });
   });
 
@@ -694,9 +788,8 @@ describe('OpenClaw delivery', () => {
       const queuePath = join(dir, 'queue.jsonl');
       const archivePath = join(dir, 'queue.archive.jsonl');
       const binPath = join(dir, 'fake-openclaw');
-      const argsPath = join(dir, 'args.txt');
-      await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
-      await chmod(binPath, 0o755);
+      const messagePath = join(dir, 'message.txt');
+      await writeMessageCapturingOpenClaw(binPath, messagePath);
 
       const config = {
         openclawAdapter: 'cli',
@@ -713,16 +806,10 @@ describe('OpenClaw delivery', () => {
       await acceptForOpenClaw(config, lifeOSAppVoiceEvent());
       expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
 
-      const args = await readFile(argsPath, 'utf8');
-      const argLines = args.trim().split('\n');
-      expect(argLines[argLines.indexOf('--message') + 1]).toBe('Remind me to order coffee filters');
-      expect(args).not.toContain('Sent via');
-      expect(args).not.toContain('Shared item:');
-      expect(args).not.toContain('Voice memo attached:');
-      expect(args).not.toContain('Filename:');
-      expect(args).not.toContain('MIME type:');
-      expect(args).not.toContain('File path:');
-      expect(args).not.toContain('Capture action:');
+      expect(await readFile(messagePath, 'utf8')).toBe(
+        'Remind me to order coffee filters\n\n' +
+        'Current location: 33.6001, -111.9002 (accuracy 7.5m; map https://maps.apple.com/?ll=33.6001,-111.9002)'
+      );
 
       const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
         event: NormalizedSiriEvent;
@@ -730,6 +817,15 @@ describe('OpenClaw delivery', () => {
       expect(archiveRecord.event).toMatchObject({
         source: 'lifeos_app_voice',
         raw_text: 'Remind me to order coffee filters',
+        location: {
+          latitude: 33.6001,
+          longitude: -111.9002,
+          altitude: 420.5,
+          horizontal_accuracy: 7.5,
+          location_timestamp: '2026-07-13T20:11:58.000Z',
+          location_age_seconds: 2,
+          maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+        },
         shared_item: {
           kind: 'audio',
           filename: 'lifeos-capture.m4a',

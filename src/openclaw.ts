@@ -154,6 +154,27 @@ function compactText(event: NormalizedSiriEvent): string {
     .replace(/^Shared audio from iOS share sheet\.\s*/i, '');
 }
 
+function formatCurrentLocation(event: NormalizedSiriEvent): string | undefined {
+  if (!event.location) return undefined;
+  const details = [
+    event.location.horizontal_accuracy !== undefined ? `accuracy ${event.location.horizontal_accuracy}m` : undefined,
+    event.location.maps_url ? `map ${event.location.maps_url}` : undefined
+  ].filter((part): part is string => Boolean(part));
+  const suffix = details.length ? ` (${details.join('; ')})` : '';
+  return `Current location: ${event.location.latitude}, ${event.location.longitude}${suffix}`;
+}
+
+function buildNativeVoiceMessage(event: NormalizedSiriEvent): string {
+  const transcript = event.voice_memo?.transcript?.trim() || compactText(event);
+  return [
+    transcript,
+    event.source === 'watch_app' && event.source_context === 'golf_mode' ? 'Context: Golf mode.' : undefined,
+    formatCurrentLocation(event)
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join('\n\n');
+}
+
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   const prefix = compactPrefix(config, event);
   const text = compactText(event);
@@ -171,7 +192,7 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
 }
 
 function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
-  if (event.source === 'lifeos_app_voice') return event.raw_text;
+  if (event.source === 'lifeos_app_voice' || event.source === 'watch_app') return buildNativeVoiceMessage(event);
   return config.openclawMessageStyle === 'compact' ? buildCompactMessage(config, event) : buildAssistantMessage(event);
 }
 

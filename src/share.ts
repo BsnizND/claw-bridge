@@ -34,6 +34,10 @@ function buildLocation(body: Record<string, unknown>): Record<string, unknown> |
     latitude,
     longitude,
     altitude: asOptionalString(body.altitude),
+    horizontal_accuracy: asOptionalString(body.horizontal_accuracy),
+    vertical_accuracy: asOptionalString(body.vertical_accuracy),
+    location_timestamp: asOptionalString(body.location_timestamp),
+    location_age_seconds: asOptionalString(body.location_age_seconds),
     maps_url: asOptionalString(body.maps_url)
   };
 }
@@ -94,6 +98,10 @@ export function normalizeShareSheetRequest(
 
   const event = normalizeShortcutMessage(config, shortcutBody);
   if (sessionKey) event.session_key = sessionKey;
+  const noLocationReason = asOptionalString(body.no_location_reason);
+  if (source === 'lifeos_app_voice' && !event.location && noLocationReason) {
+    event.capture_receipt = { no_location_reason: noLocationReason };
+  }
   event.shared_item = {
     kind,
     text: sharedText,

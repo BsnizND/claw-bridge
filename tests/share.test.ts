@@ -23,7 +23,15 @@ describe('share normalization', () => {
         source: 'lifeos_app_voice',
         shortcut_name: 'LifeOS Voice Capture',
         device_name: 'Brian\u2019s iPhone',
-        request_id: 'native-voice-id'
+        request_id: 'native-voice-id',
+        latitude: '33.6001',
+        longitude: '-111.9002',
+        altitude: '420.5',
+        horizontal_accuracy: '7.5',
+        vertical_accuracy: '12',
+        location_timestamp: '2026-07-13T19:59:58.000Z',
+        location_age_seconds: '2',
+        maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
       },
       audioFile,
       'Pick up oat milk after work'
@@ -33,6 +41,16 @@ describe('share normalization', () => {
       source: 'lifeos_app_voice',
       raw_text: 'Pick up oat milk after work',
       shortcut_name: 'LifeOS Voice Capture',
+      location: {
+        latitude: 33.6001,
+        longitude: -111.9002,
+        altitude: 420.5,
+        horizontal_accuracy: 7.5,
+        vertical_accuracy: 12,
+        location_timestamp: '2026-07-13T19:59:58.000Z',
+        location_age_seconds: 2,
+        maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+      },
       shared_item: {
         kind: 'audio',
         filename: 'native-capture.m4a',
@@ -59,5 +77,32 @@ describe('share normalization', () => {
         undefined
       )
     ).toThrow('lifeos_app_voice requires an audio transcript');
+  });
+
+  it('retains the reason privately when native voice has no location', () => {
+    const event = normalizeShareSheetRequest(
+      config,
+      {
+        source: 'lifeos_app_voice',
+        shortcut_name: 'LifeOS Voice Capture',
+        no_location_reason: 'permission_not_determined'
+      },
+      audioFile,
+      'Where should I stop for groceries?'
+    );
+
+    expect(event.location).toBeUndefined();
+    expect(event.capture_receipt).toEqual({ no_location_reason: 'permission_not_determined' });
+  });
+
+  it('rejects invalid native voice coordinates', () => {
+    expect(() =>
+      normalizeShareSheetRequest(
+        config,
+        { source: 'lifeos_app_voice', latitude: '133', longitude: '-111.9' },
+        audioFile,
+        'This location must not be accepted'
+      )
+    ).toThrow('location.latitude must be between -90 and 90');
   });
 });
