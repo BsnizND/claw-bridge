@@ -75,6 +75,23 @@ function shareEvent(text = 'Shared from iOS share sheet: screenshot OCR text'): 
   };
 }
 
+function lifeOSSaveUrlEvent(text = 'Why should I care about this?'): NormalizedSiriEvent {
+  return {
+    source: 'ios_share_sheet',
+    assistant: 'jay',
+    raw_text: text,
+    captured_at: '2026-07-13T19:44:17.466Z',
+    request_id: 'lifeos-save-request-id',
+    session_key: 'agent:jay:lifeos-home:current-conversation',
+    device_name: 'Brian’s iPhone',
+    shortcut_name: 'LifeOS Share Extension',
+    shared_item: {
+      kind: 'url',
+      url: 'https://x.com/example/status/123?s=12&t=tracking'
+    }
+  };
+}
+
 function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedSiriEvent {
   return {
     ...event(text),
@@ -640,6 +657,54 @@ describe('OpenClaw delivery', () => {
     expect(args).toContain('Sent via iOS share sheet: https://example.com/post');
     expect(args).not.toContain('Sent via iOS share sheet: Shared via iPhone share sheet:');
     expect(args).not.toContain('Wrong voice prefix:');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('preserves the explicit LifeOS URL save action and provenance in compact messages', async () => {
+    const dir = join(tmpdir(), `claw-bridge-lifeos-save-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawMessageStyle: 'compact',
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:main',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, lifeOSSaveUrlEvent());
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    let args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('LifeOS save request via iOS share sheet: Why should I care about this?');
+    expect(args).toContain('Capture action: Save to LifeOS');
+    expect(args).toContain('Captured at: 2026-07-13T19:44:17.466Z');
+    expect(args).toContain('Request id: lifeos-save-request-id');
+    expect(args).toContain('URL: https://x.com/example/status/123?s=12&t=tracking');
+    expect(args).not.toContain('Sent via iOS share sheet:');
+
+    await acceptForOpenClaw(config, {
+      ...lifeOSSaveUrlEvent('Direct Jay fallback'),
+      request_id: 'direct-jay-request-id',
+      session_key: undefined
+    });
+    const fallbackDrain = await drainOpenClawQueue(config);
+    expect(fallbackDrain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('Sent via iOS share sheet: Direct Jay fallback');
+    expect(args).not.toContain('LifeOS save request via iOS share sheet:');
+    expect(args).not.toContain('Capture action: Save to LifeOS');
     await rm(dir, { recursive: true, force: true });
   });
 
