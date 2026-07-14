@@ -378,6 +378,68 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('delivers through the already-running OpenClaw Gateway with native session ownership', async () => {
+    const dir = join(tmpdir(), `claw-bridge-gateway-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(
+      binPath,
+      `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\nprintf '{"result":{"reply":"gateway reply text"}}\\n'\n`,
+      'utf8'
+    );
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'gateway',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawWorkdir: dir,
+      openclawDeliverReply: true,
+      openclawReplyChannel: 'telegram',
+      openclawReplyTo: 'telegram:1234',
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const lifeOSEvent = {
+      ...shareEvent(),
+      assistant: 'jay',
+      request_id: 'gateway-idempotency-key',
+      session_key: 'agent:jay:lifeos-home:current-thread'
+    };
+
+    await acceptForOpenClaw(config, lifeOSEvent);
+    let replyText: string | undefined;
+    expect(
+      await drainOpenClawQueue(config, {
+        afterDelivered: async (_event, result) => {
+          replyText = result.replyText;
+        }
+      })
+    ).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+
+    expect(replyText).toBe('gateway reply text');
+    const args = (await readFile(argsPath, 'utf8')).trim().split('\n');
+    expect(args.slice(0, 3)).toEqual(['gateway', 'call', 'agent']);
+    expect(args).toContain('--expect-final');
+    const params = JSON.parse(args[args.indexOf('--params') + 1]) as Record<string, unknown>;
+    expect(params).toMatchObject({
+      agentId: 'jay',
+      sessionKey: 'agent:jay:lifeos-home:current-thread',
+      deliver: false,
+      idempotencyKey: 'gateway-idempotency-key'
+    });
+    expect(params).not.toHaveProperty('model');
+    expect(params).not.toHaveProperty('replyChannel');
+    expect(params).not.toHaveProperty('replyTo');
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('delivers a LifeOS capture to its captured conversation session', async () => {
     const dir = join(tmpdir(), `claw-bridge-lifeos-session-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
