@@ -22,6 +22,7 @@ export interface BridgeConfig {
   openclawReplyChannel?: string;
   openclawReplyTo?: string;
   openclawWorkdir?: string;
+  openclawSessionStorePath?: string;
   openclawSessionKey: string;
   openclawMessageStyle: OpenClawMessageStyle;
   voiceMessagePrefix?: string;
