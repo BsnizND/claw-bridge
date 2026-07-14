@@ -359,6 +359,14 @@ async function resolveMostRecentLifeOSHomeSessionKey(
   config: BridgeConfig,
   assistantId: string
 ): Promise<string> {
+  if (config.openclawSessionStorePath) {
+    const store = await readFile(config.openclawSessionStorePath, 'utf8');
+    const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
+    if (!sessionKey) {
+      throw new Error('No existing non-archived LifeOS Home session is available for this Watch capture');
+    }
+    return sessionKey;
+  }
   const args = ['sessions', '--agent', assistantId, '--json', '--limit', 'all'];
   return new Promise((resolve, reject) => {
     const child = spawn(config.openclawCliBin, args, {

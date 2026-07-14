@@ -32,6 +32,7 @@ describe('config', () => {
     expect(config.openclawCliDrainTimeoutMs).toBe(360000);
     expect(config.openclawDeliverReply).toBe(false);
     expect(config.openclawMessageStyle).toBe('detailed');
+    expect(config.openclawSessionStorePath).toBeUndefined();
     expect(config.queueArchivePath).toBe('./data/claw-bridge-queue.jsonl.archive');
     expect(config.allowedSources.has('ios_share_sheet')).toBe(true);
     expect(config.allowedSources.has('lifeos_app_voice')).toBe(true);
@@ -49,6 +50,16 @@ describe('config', () => {
     expect(config.apnsEnvironment).toBe('development');
     expect(config.audioTranscribeEnabled).toBe(false);
     expect(config.audioTranscribeEngine).toBe('openclaw');
+  });
+
+  it('loads a canonical OpenClaw session store path', () => {
+    const config = loadConfig({
+      CLAW_BRIDGE_TOKEN: '0123456789abcdef01234567',
+      OPENCLAW_SESSION_STORE_PATH: '/Users/example/.openclaw/agents/jay/sessions/sessions.json'
+    });
+    expect(config.openclawSessionStorePath).toBe(
+      '/Users/example/.openclaw/agents/jay/sessions/sessions.json'
+    );
   });
 
   it('loads app response, ElevenLabs, and APNs settings without requiring secrets by default', () => {

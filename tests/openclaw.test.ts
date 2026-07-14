@@ -683,8 +683,7 @@ describe('OpenClaw delivery', () => {
       binPath,
       `#!/bin/sh
 if [ "$1" = "sessions" ]; then
-  printf '%s\n' '{"path":"${sessionStorePath}","sessions":[]}'
-  exit 0
+  exit 41
 fi
 printf '%s\n' "$@" > '${argsPath}'
 `,
@@ -701,6 +700,7 @@ printf '%s\n' "$@" > '${argsPath}'
       openclawReplyTo: 'telegram:1234',
       openclawMessageStyle: 'compact',
       assistantId: 'jay',
+      openclawSessionStorePath: sessionStorePath,
       openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
       queuePath,
       queueArchivePath: archivePath,
