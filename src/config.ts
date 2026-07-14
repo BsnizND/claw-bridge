@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { BridgeConfig } from './types.js';
 
 const envSchema = z.object({
@@ -20,6 +22,9 @@ const envSchema = z.object({
   OPENCLAW_REPLY_TO: z.string().min(1).optional(),
   OPENCLAW_WORKDIR: z.string().min(1).optional(),
   OPENCLAW_SESSION_STORE_PATH: z.string().min(1).optional(),
+  OPENCLAW_GATEWAY_URL: z.string().url().default('ws://127.0.0.1:18789'),
+  OPENCLAW_DEVICE_IDENTITY_PATH: z.string().min(1).default(join(homedir(), '.openclaw', 'identity', 'device.json')),
+  OPENCLAW_DEVICE_AUTH_PATH: z.string().min(1).default(join(homedir(), '.openclaw', 'identity', 'device-auth.json')),
   OPENCLAW_SESSION_KEY: z.string().min(1).default('agent:openclaw:main'),
   OPENCLAW_MESSAGE_STYLE: z.enum(['detailed', 'compact']).default('detailed'),
   VOICE_MESSAGE_PREFIX: z.string().min(1).optional(),
@@ -109,6 +114,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
     openclawReplyTo: raw.OPENCLAW_REPLY_TO,
     openclawWorkdir: raw.OPENCLAW_WORKDIR,
     openclawSessionStorePath: raw.OPENCLAW_SESSION_STORE_PATH,
+    openclawGatewayUrl: raw.OPENCLAW_GATEWAY_URL,
+    openclawDeviceIdentityPath: raw.OPENCLAW_DEVICE_IDENTITY_PATH,
+    openclawDeviceAuthPath: raw.OPENCLAW_DEVICE_AUTH_PATH,
     openclawSessionKey: raw.OPENCLAW_SESSION_KEY,
     openclawMessageStyle: raw.OPENCLAW_MESSAGE_STYLE,
     voiceMessagePrefix: raw.VOICE_MESSAGE_PREFIX ?? raw.SIRI_MESSAGE_PREFIX,
