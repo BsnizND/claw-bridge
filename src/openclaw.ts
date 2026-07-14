@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { drainQueue, hasQueuedOrArchivedRequest, queueEvent } from './queue.js';
-import { optionalLifeOSHomeSessionKey } from './session.js';
+import { LIFEOS_HOME_SESSION_PREFIX, optionalLifeOSHomeSessionKey } from './session.js';
 
 export interface OpenClawDrainHooks {
   afterDelivered?: (event: NormalizedSiriEvent, result: DeliveryResult) => Promise<void>;
@@ -11,6 +12,8 @@ export interface OpenClawDrainHooks {
 class OpenClawDeliveryTimeoutError extends Error {
   retryable = false;
 }
+
+const OPENCLAW_SESSION_LOOKUP_TIMEOUT_MS = 5_000;
 
 function formatLocation(event: NormalizedSiriEvent): string[] {
   if (!event.location) {
@@ -312,6 +315,111 @@ export function extractReplyTextFromOpenClawOutput(stdout: string): string | und
   return undefined;
 }
 
+export function extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(stdout: string): string | undefined {
+  for (const candidate of parseJsonCandidates(stdout)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const object = candidate as Record<string, unknown>;
+    const sessions = Array.isArray(object.sessions)
+      ? object.sessions
+      : Object.entries(object).map(([key, value]) =>
+          value && typeof value === 'object' && !Array.isArray(value)
+            ? { ...(value as Record<string, unknown>), key }
+            : undefined
+        );
+
+    const mostRecent = sessions
+      .map((item) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) return undefined;
+        const session = item as Record<string, unknown>;
+        const key = stringValue(session.key) ?? stringValue(session.sessionKey);
+        if (!key?.startsWith(LIFEOS_HOME_SESSION_PREFIX)) return undefined;
+        if (stringValue(session.archivedAt)) return undefined;
+        const updatedAt = typeof session.updatedAt === 'number' && Number.isFinite(session.updatedAt)
+          ? session.updatedAt
+          : 0;
+        return { key, updatedAt };
+      })
+      .filter((item): item is { key: string; updatedAt: number } => Boolean(item))
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (mostRecent) return mostRecent.key;
+  }
+  return undefined;
+}
+
+function extractOpenClawSessionStorePath(stdout: string): string | undefined {
+  for (const candidate of parseJsonCandidates(stdout)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const path = stringValue((candidate as Record<string, unknown>).path);
+    if (path) return path;
+  }
+  return undefined;
+}
+
+async function resolveMostRecentLifeOSHomeSessionKey(
+  config: BridgeConfig,
+  assistantId: string
+): Promise<string> {
+  const args = ['sessions', '--agent', assistantId, '--json', '--limit', 'all'];
+  return new Promise((resolve, reject) => {
+    const child = spawn(config.openclawCliBin, args, {
+      cwd: config.openclawWorkdir,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const timeout = setTimeout(() => {
+      settled = true;
+      child.kill('SIGTERM');
+      reject(new Error(`OpenClaw LifeOS session lookup exceeded ${OPENCLAW_SESSION_LOOKUP_TIMEOUT_MS}ms`));
+    }, OPENCLAW_SESSION_LOOKUP_TIMEOUT_MS);
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (code !== 0) {
+        reject(new Error(`OpenClaw LifeOS session lookup exited ${code}: ${stderr || stdout}`.trim()));
+        return;
+      }
+      const storePath = extractOpenClawSessionStorePath(stdout);
+      if (!storePath) {
+        reject(new Error('OpenClaw LifeOS session lookup did not report its canonical session store'));
+        return;
+      }
+      void readFile(storePath, 'utf8')
+        .then((store) => {
+          const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
+          if (!sessionKey) {
+            reject(new Error('No existing non-archived LifeOS Home session is available for this Watch capture'));
+            return;
+          }
+          resolve(sessionKey);
+        })
+        .catch(reject);
+    });
+  });
+}
+
+async function attachMostRecentLifeOSSessionToWatchCapture(
+  config: BridgeConfig,
+  event: NormalizedSiriEvent
+): Promise<void> {
+  if (event.source !== 'watch_app' || optionalLifeOSHomeSessionKey(event.session_key)) return;
+  event.session_key = await resolveMostRecentLifeOSHomeSessionKey(config, event.assistant || config.assistantId);
+}
+
 async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
   const timeoutMs = config.openclawCliDrainTimeoutMs;
   const lifeOSSessionKey = optionalLifeOSHomeSessionKey(event.session_key);
@@ -416,6 +524,7 @@ export async function deliverQueuedEventToOpenClaw(
   config: BridgeConfig,
   event: NormalizedSiriEvent
 ): Promise<DeliveryResult> {
+  await attachMostRecentLifeOSSessionToWatchCapture(config, event);
   return config.openclawAdapter === 'http' ? await deliverViaHttp(config, event) : await deliverViaCli(config, event);
 }
 

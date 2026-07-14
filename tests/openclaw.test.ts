@@ -3,7 +3,12 @@ import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { acceptForOpenClaw, drainOpenClawQueue, extractReplyTextFromOpenClawOutput } from '../src/openclaw.js';
+import {
+  acceptForOpenClaw,
+  drainOpenClawQueue,
+  extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput,
+  extractReplyTextFromOpenClawOutput
+} from '../src/openclaw.js';
 import { recoverFreshOrphanedDrainLockForExclusiveOwner } from '../src/queue.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
 
@@ -166,6 +171,7 @@ function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedS
   return {
     ...event(text),
     source: 'watch_app',
+    session_key: 'agent:jay:lifeos-home:existing-watch-thread',
     raw_text: `Apple Watch voice message: ${text}`,
     capture_receipt: {
       no_location_reason: 'location_timeout'
@@ -234,6 +240,22 @@ describe('OpenClaw delivery', () => {
         })
       )
     ).toBe('hello from OpenClaw payloads');
+  });
+
+  it('selects the most recently updated LifeOS Home session from native OpenClaw output', () => {
+    expect(
+      extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(
+        JSON.stringify({
+          sessions: [
+            { key: 'agent:jay:lifeos-home:older', updatedAt: 100 },
+            { key: 'agent:jay:telegram:default:direct:brian', updatedAt: 900 },
+            { key: 'agent:jay:lifeos-home:archived', updatedAt: 400, archivedAt: '2026-07-14T00:00:00Z' },
+            { key: 'agent:jay:lifeos-home:newest', updatedAt: 300 },
+            { key: 'agent:jay:lifeos-home:middle', updatedAt: 200 }
+          ]
+        })
+      )
+    ).toBe('agent:jay:lifeos-home:newest');
   });
 
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
@@ -626,6 +648,127 @@ describe('OpenClaw delivery', () => {
     expect(args).not.toContain('--reply-channel');
     expect(args).not.toContain('--reply-to');
     expect(args).not.toContain('telegram:1234');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('routes a Watch capture without a session to the most recent LifeOS Home thread', async () => {
+    const dir = join(tmpdir(), `claw-bridge-watch-recent-lifeos-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    const sessionStorePath = join(dir, 'sessions.json');
+    await writeFile(
+      sessionStorePath,
+      JSON.stringify({
+        'agent:jay:lifeos-home:older': { updatedAt: 100 },
+        'agent:jay:telegram:default:direct:brian': { updatedAt: 900 },
+        'agent:jay:lifeos-home:archived': { updatedAt: 500, archivedAt: '2026-07-14T00:00:00Z' },
+        'agent:jay:lifeos-home:current': { updatedAt: 300 }
+      }),
+      'utf8'
+    );
+    await writeFile(
+      binPath,
+      `#!/bin/sh
+if [ "$1" = "sessions" ]; then
+  printf '%s\n' '{"path":"${sessionStorePath}","sessions":[]}'
+  exit 0
+fi
+printf '%s\n' "$@" > '${argsPath}'
+`,
+      'utf8'
+    );
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawDeliverReply: true,
+      openclawReplyChannel: 'telegram',
+      openclawReplyTo: 'telegram:1234',
+      openclawMessageStyle: 'compact',
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const watchEvent = {
+      ...watchEventWithoutLocation('keep this in the current thread'),
+      request_id: 'watch-recent-lifeos-request-id',
+      session_key: undefined
+    };
+
+    await acceptForOpenClaw(config, watchEvent);
+    expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('--session-key');
+    expect(args).toContain('agent:jay:lifeos-home:current');
+    expect(args).not.toContain('agent:jay:lifeos-home:older');
+    expect(args).not.toContain('--deliver');
+    expect(args).not.toContain('telegram:1234');
+    const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
+      event: NormalizedSiriEvent;
+    };
+    expect(archiveRecord.event.session_key).toBe('agent:jay:lifeos-home:current');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('keeps a Watch capture queued rather than falling back when no LifeOS Home thread exists', async () => {
+    const dir = join(tmpdir(), `claw-bridge-watch-no-lifeos-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const agentAttemptPath = join(dir, 'agent-attempted.txt');
+    const sessionStorePath = join(dir, 'sessions.json');
+    await writeFile(
+      sessionStorePath,
+      JSON.stringify({
+        'agent:jay:telegram:default:direct:brian': { updatedAt: 900 },
+        'agent:jay:lifeos-home:archived': { updatedAt: 800, archivedAt: '2026-07-14T00:00:00Z' }
+      }),
+      'utf8'
+    );
+    await writeFile(
+      binPath,
+      `#!/bin/sh
+if [ "$1" = "sessions" ]; then
+  printf '%s\n' '{"path":"${sessionStorePath}","sessions":[]}'
+  exit 0
+fi
+printf 'unexpected' > '${agentAttemptPath}'
+`,
+      'utf8'
+    );
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const watchEvent = {
+      ...watchEventWithoutLocation('do not create a fallback thread'),
+      request_id: 'watch-no-lifeos-request-id',
+      session_key: undefined
+    };
+
+    await acceptForOpenClaw(config, watchEvent);
+    expect(await drainOpenClawQueue(config)).toEqual({ delivered: 0, failed: 0, pending: 1, archived: 0 });
+    expect(await readFile(queuePath, 'utf8')).toContain(
+      'No existing non-archived LifeOS Home session is available for this Watch capture'
+    );
+    await expect(readFile(agentAttemptPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
     await rm(dir, { recursive: true, force: true });
   });
 
