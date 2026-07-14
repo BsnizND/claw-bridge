@@ -48,6 +48,7 @@ describe('config', () => {
     expect(config.appDeviceDir).toBe('./data/app-devices');
     expect(config.apnsEnvironment).toBe('development');
     expect(config.audioTranscribeEnabled).toBe(false);
+    expect(config.audioTranscribeEngine).toBe('openclaw');
   });
 
   it('loads app response, ElevenLabs, and APNs settings without requiring secrets by default', () => {
@@ -124,9 +125,10 @@ describe('config', () => {
       WATCH_MIN_AUDIO_SECONDS: '1.75',
       WATCH_MAX_AUDIO_SECONDS: '180',
       AUDIO_TRANSCRIBE_ENABLED: 'true',
-      AUDIO_TRANSCRIBE_CLI_BIN: '/opt/homebrew/bin/openclaw',
+      AUDIO_TRANSCRIBE_ENGINE: 'local_whisper',
+      AUDIO_TRANSCRIBE_CLI_BIN: '/opt/homebrew/bin/whisper',
       AUDIO_TRANSCRIBE_TIMEOUT_MS: '600000',
-      AUDIO_TRANSCRIBE_MODEL: 'openai-whisper/whisper-1',
+      AUDIO_TRANSCRIBE_MODEL: 'large-v3-turbo',
       AUDIO_TRANSCRIBE_LANGUAGE: 'en'
     });
     expect(config.shareUploadDir).toBe('/tmp/share-uploads');
@@ -134,9 +136,10 @@ describe('config', () => {
     expect(config.watchMinAudioSeconds).toBe(1.75);
     expect(config.watchMaxAudioSeconds).toBe(180);
     expect(config.audioTranscribeEnabled).toBe(true);
-    expect(config.audioTranscribeCliBin).toBe('/opt/homebrew/bin/openclaw');
+    expect(config.audioTranscribeEngine).toBe('local_whisper');
+    expect(config.audioTranscribeCliBin).toBe('/opt/homebrew/bin/whisper');
     expect(config.audioTranscribeTimeoutMs).toBe(600000);
-    expect(config.audioTranscribeModel).toBe('openai-whisper/whisper-1');
+    expect(config.audioTranscribeModel).toBe('large-v3-turbo');
     expect(config.audioTranscribeLanguage).toBe('en');
   });
 
