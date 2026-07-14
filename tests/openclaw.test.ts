@@ -1,5 +1,6 @@
 import { chmod, mkdir, readFile, realpath, rm, utimes, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import { generateKeyPairSync } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
@@ -383,20 +384,62 @@ describe('OpenClaw delivery', () => {
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
     const archivePath = join(dir, 'queue.archive.jsonl');
-    const binPath = join(dir, 'fake-openclaw');
-    const argsPath = join(dir, 'args.txt');
-    await writeFile(
-      binPath,
-      `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\nprintf '{"result":{"reply":"gateway reply text"}}\\n'\n`,
-      'utf8'
-    );
-    await chmod(binPath, 0o755);
+    const identityPath = join(dir, 'device.json');
+    const authPath = join(dir, 'device-auth.json');
+    const keys = generateKeyPairSync('ed25519');
+    await writeFile(identityPath, JSON.stringify({
+      deviceId: 'test-device',
+      publicKeyPem: keys.publicKey.export({ type: 'spki', format: 'pem' }),
+      privateKeyPem: keys.privateKey.export({ type: 'pkcs8', format: 'pem' })
+    }));
+    await writeFile(authPath, JSON.stringify({
+      tokens: { operator: { token: 'paired-device-token', scopes: ['operator.read', 'operator.write'] } }
+    }));
+
+    const sent: Array<{ method: string; params: Record<string, unknown> }> = [];
+    const originalWebSocket = globalThis.WebSocket;
+    class FakeWebSocket {
+      private listeners = new Map<string, Array<(event: { data?: string; code?: number; reason?: string }) => void>>();
+
+      constructor() {
+        queueMicrotask(() => this.emit('message', {
+          data: JSON.stringify({ type: 'event', event: 'connect.challenge', payload: { nonce: 'test-nonce' } })
+        }));
+      }
+
+      addEventListener(type: string, listener: (event: { data?: string; code?: number; reason?: string }) => void) {
+        this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+      }
+
+      send(raw: string) {
+        const frame = JSON.parse(raw) as { id: string; method: string; params: Record<string, unknown> };
+        sent.push({ method: frame.method, params: frame.params });
+        const payload = frame.method === 'agent'
+          ? { runId: 'gateway-run-1', status: 'accepted' }
+          : frame.method === 'agent.wait'
+            ? { runId: 'gateway-run-1', status: 'ok' }
+            : frame.method === 'chat.history'
+              ? { messages: [{ role: 'assistant', content: [{ type: 'text', text: 'gateway reply text' }] }] }
+              : { ok: true };
+        queueMicrotask(() => this.emit('message', {
+          data: JSON.stringify({ type: 'res', id: frame.id, ok: true, payload })
+        }));
+      }
+
+      close() {}
+
+      private emit(type: string, event: { data?: string; code?: number; reason?: string }) {
+        for (const listener of this.listeners.get(type) ?? []) listener(event);
+      }
+    }
+    globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
 
     const config = {
       openclawAdapter: 'gateway',
-      openclawCliBin: binPath,
       openclawCliDrainTimeoutMs: 1000,
-      openclawWorkdir: dir,
+      openclawGatewayUrl: 'ws://127.0.0.1:18789',
+      openclawDeviceIdentityPath: identityPath,
+      openclawDeviceAuthPath: authPath,
       openclawDeliverReply: true,
       openclawReplyChannel: 'telegram',
       openclawReplyTo: 'telegram:1234',
@@ -413,30 +456,32 @@ describe('OpenClaw delivery', () => {
       session_key: 'agent:jay:lifeos-home:current-thread'
     };
 
-    await acceptForOpenClaw(config, lifeOSEvent);
-    let replyText: string | undefined;
-    expect(
-      await drainOpenClawQueue(config, {
-        afterDelivered: async (_event, result) => {
-          replyText = result.replyText;
-        }
-      })
-    ).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    try {
+      await acceptForOpenClaw(config, lifeOSEvent);
+      let replyText: string | undefined;
+      expect(
+        await drainOpenClawQueue(config, {
+          afterDelivered: async (_event, result) => {
+            replyText = result.replyText;
+          }
+        })
+      ).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+      expect(replyText).toBe('gateway reply text');
+    } finally {
+      globalThis.WebSocket = originalWebSocket;
+    }
 
-    expect(replyText).toBe('gateway reply text');
-    const args = (await readFile(argsPath, 'utf8')).trim().split('\n');
-    expect(args.slice(0, 3)).toEqual(['gateway', 'call', 'agent']);
-    expect(args).toContain('--expect-final');
-    const params = JSON.parse(args[args.indexOf('--params') + 1]) as Record<string, unknown>;
-    expect(params).toMatchObject({
+    const agentRequest = sent.find((item) => item.method === 'agent');
+    expect(agentRequest?.params).toMatchObject({
       agentId: 'jay',
       sessionKey: 'agent:jay:lifeos-home:current-thread',
       deliver: false,
       idempotencyKey: 'gateway-idempotency-key'
     });
-    expect(params).not.toHaveProperty('model');
-    expect(params).not.toHaveProperty('replyChannel');
-    expect(params).not.toHaveProperty('replyTo');
+    expect(agentRequest?.params).not.toHaveProperty('model');
+    expect(agentRequest?.params).not.toHaveProperty('replyChannel');
+    expect(agentRequest?.params).not.toHaveProperty('replyTo');
+    expect(sent.map((item) => item.method)).toEqual(['connect', 'agent', 'agent.wait', 'chat.history']);
     await rm(dir, { recursive: true, force: true });
   });
 

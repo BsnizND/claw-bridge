@@ -333,6 +333,8 @@ Important settings:
 - `OPENCLAW_ASSISTANT_ID`: assistant id to receive messages.
 - `OPENCLAW_SESSION_KEY`: default OpenClaw session key for CLI or Gateway delivery.
 - `OPENCLAW_SESSION_STORE_PATH`: optional canonical OpenClaw session index used to route delayed Watch captures to the newest LifeOS conversation without a per-message CLI lookup.
+- `OPENCLAW_GATEWAY_URL`: native OpenClaw Gateway WebSocket URL; defaults to the local Gateway at `ws://127.0.0.1:18789`.
+- `OPENCLAW_DEVICE_IDENTITY_PATH` / `OPENCLAW_DEVICE_AUTH_PATH`: paired OpenClaw device credentials used for native Gateway authentication.
 - `OPENCLAW_WORKDIR`: optional directory to use when spawning the OpenClaw CLI.
 - `OPENCLAW_ADAPTER`: `gateway` uses OpenClaw's already-running Gateway for low-latency native session delivery; `cli` runs the full agent command; `http` uses a configured ingest endpoint.
 - `OPENCLAW_CLI_DRAIN_TIMEOUT_MS`: maximum time to wait for one CLI agent turn. CLI timeouts are archived as failed instead of retried because a timed-out agent run may already have delivered text or used tools.

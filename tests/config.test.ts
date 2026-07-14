@@ -33,6 +33,9 @@ describe('config', () => {
     expect(config.openclawDeliverReply).toBe(false);
     expect(config.openclawMessageStyle).toBe('detailed');
     expect(config.openclawSessionStorePath).toBeUndefined();
+    expect(config.openclawGatewayUrl).toBe('ws://127.0.0.1:18789');
+    expect(config.openclawDeviceIdentityPath).toContain('.openclaw/identity/device.json');
+    expect(config.openclawDeviceAuthPath).toContain('.openclaw/identity/device-auth.json');
     expect(config.queueArchivePath).toBe('./data/claw-bridge-queue.jsonl.archive');
     expect(config.allowedSources.has('ios_share_sheet')).toBe(true);
     expect(config.allowedSources.has('lifeos_app_voice')).toBe(true);

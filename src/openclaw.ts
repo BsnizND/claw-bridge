@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
+import { deliverViaOpenClawGateway } from './openclaw-gateway.js';
 import { drainQueue, hasQueuedOrArchivedRequest, queueEvent } from './queue.js';
 import { LIFEOS_HOME_SESSION_PREFIX, optionalLifeOSHomeSessionKey } from './session.js';
 
@@ -520,58 +521,19 @@ async function deliverViaGateway(config: BridgeConfig, event: NormalizedSiriEven
   if (params.deliver && config.openclawReplyChannel) params.replyChannel = config.openclawReplyChannel;
   if (params.deliver && config.openclawReplyTo) params.replyTo = config.openclawReplyTo;
 
-  const args = [
-    'gateway',
-    'call',
-    'agent',
-    '--params',
-    JSON.stringify(params),
-    '--expect-final',
-    '--json',
-    '--timeout',
-    String(timeoutMs)
-  ];
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(config.openclawCliBin, args, {
-      cwd: config.openclawWorkdir,
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
-    let stdout = '';
-    let stderr = '';
-    let settled = false;
-    const timeout = setTimeout(() => {
-      settled = true;
-      child.kill('SIGTERM');
-      reject(
-        new OpenClawDeliveryTimeoutError(
-          `OpenClaw gateway delivery exceeded ${timeoutMs}ms; not retrying because the agent attempt may have side effects`
-        )
-      );
-    }, timeoutMs + 2000);
-    child.stdout.on('data', (chunk) => {
-      stdout += String(chunk);
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += String(chunk);
-    });
-    child.on('error', (error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      reject(error);
-    });
-    child.on('close', (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      if (code === 0) {
-        resolve({ ok: true, replyText: extractReplyTextFromOpenClawOutput(stdout), appResponseId: event.app_response?.id });
-      } else {
-        reject(new Error(`OpenClaw gateway call exited ${code}: ${stderr || stdout}`.trim()));
-      }
-    });
+  const history = await deliverViaOpenClawGateway({
+    gatewayUrl: config.openclawGatewayUrl,
+    deviceIdentityPath: config.openclawDeviceIdentityPath,
+    deviceAuthPath: config.openclawDeviceAuthPath,
+    timeoutMs,
+    agentParams: params,
+    sessionKey: String(params.sessionKey)
   });
+  return {
+    ok: true,
+    replyText: extractReplyTextFromOpenClawOutput(JSON.stringify(history)),
+    appResponseId: event.app_response?.id
+  };
 }
 
 async function deliverViaHttp(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
