@@ -62,6 +62,14 @@ describe('config', () => {
     );
   });
 
+  it('loads the native OpenClaw gateway adapter', () => {
+    const config = loadConfig({
+      CLAW_BRIDGE_TOKEN: '0123456789abcdef01234567',
+      OPENCLAW_ADAPTER: 'gateway'
+    });
+    expect(config.openclawAdapter).toBe('gateway');
+  });
+
   it('loads app response, ElevenLabs, and APNs settings without requiring secrets by default', () => {
     const config = loadConfig({
       CLAW_BRIDGE_TOKEN: '0123456789abcdef01234567',

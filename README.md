@@ -331,10 +331,10 @@ Important settings:
 
 - `CLAW_BRIDGE_TOKEN`: long random shared secret used by the Shortcut.
 - `OPENCLAW_ASSISTANT_ID`: assistant id to receive messages.
-- `OPENCLAW_SESSION_KEY`: OpenClaw session key for CLI delivery.
+- `OPENCLAW_SESSION_KEY`: default OpenClaw session key for CLI or Gateway delivery.
 - `OPENCLAW_SESSION_STORE_PATH`: optional canonical OpenClaw session index used to route delayed Watch captures to the newest LifeOS conversation without a per-message CLI lookup.
 - `OPENCLAW_WORKDIR`: optional directory to use when spawning the OpenClaw CLI.
-- `OPENCLAW_ADAPTER`: `cli` or `http`.
+- `OPENCLAW_ADAPTER`: `gateway` uses OpenClaw's already-running Gateway for low-latency native session delivery; `cli` runs the full agent command; `http` uses a configured ingest endpoint.
 - `OPENCLAW_CLI_DRAIN_TIMEOUT_MS`: maximum time to wait for one CLI agent turn. CLI timeouts are archived as failed instead of retried because a timed-out agent run may already have delivered text or used tools.
 - `OPENCLAW_DELIVER_REPLY`: set to `true` when OpenClaw should deliver the assistant reply back to a channel.
 - `OPENCLAW_REPLY_CHANNEL` / `OPENCLAW_REPLY_TO`: reply route for `OPENCLAW_DELIVER_REPLY`.

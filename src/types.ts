@@ -1,4 +1,4 @@
-export type OpenClawAdapter = 'cli' | 'http';
+export type OpenClawAdapter = 'cli' | 'gateway' | 'http';
 export type OpenClawMessageStyle = 'detailed' | 'compact';
 export type AppResponseMode = 'voice';
 export type AppResponseStatus = 'pending' | 'rendering' | 'ready' | 'failed' | 'expired';

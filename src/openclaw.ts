@@ -504,6 +504,76 @@ async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): 
   });
 }
 
+async function deliverViaGateway(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
+  const timeoutMs = config.openclawCliDrainTimeoutMs;
+  const lifeOSSessionKey = optionalLifeOSHomeSessionKey(event.session_key);
+  const params: Record<string, unknown> = {
+    message: buildOpenClawMessage(config, event),
+    agentId: event.assistant || config.assistantId,
+    sessionKey: lifeOSSessionKey ?? config.openclawSessionKey,
+    timeout: Math.ceil(timeoutMs / 1000),
+    deliver: Boolean(config.openclawDeliverReply && !lifeOSSessionKey),
+    cleanupBundleMcpOnRunEnd: true,
+    idempotencyKey: event.request_id
+  };
+  if (config.openclawCliThinking) params.thinking = config.openclawCliThinking;
+  if (params.deliver && config.openclawReplyChannel) params.replyChannel = config.openclawReplyChannel;
+  if (params.deliver && config.openclawReplyTo) params.replyTo = config.openclawReplyTo;
+
+  const args = [
+    'gateway',
+    'call',
+    'agent',
+    '--params',
+    JSON.stringify(params),
+    '--expect-final',
+    '--json',
+    '--timeout',
+    String(timeoutMs)
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(config.openclawCliBin, args, {
+      cwd: config.openclawWorkdir,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const timeout = setTimeout(() => {
+      settled = true;
+      child.kill('SIGTERM');
+      reject(
+        new OpenClawDeliveryTimeoutError(
+          `OpenClaw gateway delivery exceeded ${timeoutMs}ms; not retrying because the agent attempt may have side effects`
+        )
+      );
+    }, timeoutMs + 2000);
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (code === 0) {
+        resolve({ ok: true, replyText: extractReplyTextFromOpenClawOutput(stdout), appResponseId: event.app_response?.id });
+      } else {
+        reject(new Error(`OpenClaw gateway call exited ${code}: ${stderr || stdout}`.trim()));
+      }
+    });
+  });
+}
+
 async function deliverViaHttp(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
   if (!config.openclawIngestUrl || !config.openclawIngestToken) {
     throw new Error('OpenClaw HTTP ingest is not configured');
@@ -536,7 +606,9 @@ export async function deliverQueuedEventToOpenClaw(
   event: NormalizedSiriEvent
 ): Promise<DeliveryResult> {
   await attachMostRecentLifeOSSessionToWatchCapture(config, event);
-  return config.openclawAdapter === 'http' ? await deliverViaHttp(config, event) : await deliverViaCli(config, event);
+  if (config.openclawAdapter === 'http') return deliverViaHttp(config, event);
+  if (config.openclawAdapter === 'gateway') return deliverViaGateway(config, event);
+  return deliverViaCli(config, event);
 }
 
 export async function drainOpenClawQueue(config: BridgeConfig, hooks: OpenClawDrainHooks = {}) {
