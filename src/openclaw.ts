@@ -154,25 +154,51 @@ function compactText(event: NormalizedSiriEvent): string {
     .replace(/^Shared audio from iOS share sheet\.\s*/i, '');
 }
 
-function formatCurrentLocation(event: NormalizedSiriEvent): string | undefined {
-  if (!event.location) return undefined;
-  const details = [
-    event.location.horizontal_accuracy !== undefined ? `accuracy ${event.location.horizontal_accuracy}m` : undefined,
-    event.location.maps_url ? `map ${event.location.maps_url}` : undefined
-  ].filter((part): part is string => Boolean(part));
-  const suffix = details.length ? ` (${details.join('; ')})` : '';
-  return `Current location: ${event.location.latitude}, ${event.location.longitude}${suffix}`;
-}
-
 function buildNativeVoiceMessage(event: NormalizedSiriEvent): string {
   const transcript = event.voice_memo?.transcript?.trim() || compactText(event);
-  return [
-    transcript,
-    event.source === 'watch_app' && event.source_context === 'golf_mode' ? 'Context: Golf mode.' : undefined,
-    formatCurrentLocation(event)
-  ]
-    .filter((part): part is string => Boolean(part))
-    .join('\n\n');
+  const durationMs = event.voice_memo?.duration_seconds !== undefined
+    ? Math.round(event.voice_memo.duration_seconds * 1000)
+    : event.capture_receipt?.audio_duration_seconds !== undefined
+      ? Math.round(event.capture_receipt.audio_duration_seconds * 1000)
+      : null;
+  const contextEnvelope = {
+    schemaVersion: 'lifeos_model_context.v1',
+    createdAt: event.captured_at,
+    appSurface: 'ios_lifeos',
+    source: {
+      kind: 'voice',
+      durationMs,
+      transcript,
+      captureId: event.request_id,
+      captureSurface: event.source === 'watch_app' ? 'watch' : 'iphone',
+      context: event.source_context ?? null
+    },
+    timezone: null,
+    localDateTime: null,
+    location: event.location
+      ? {
+          status: 'present',
+          latitude: event.location.latitude,
+          longitude: event.location.longitude,
+          accuracyMeters: event.location.horizontal_accuracy ?? null,
+          altitudeMeters: event.location.altitude ?? null,
+          capturedAt: event.location.location_timestamp ?? event.captured_at,
+          ageMs: event.location.location_age_seconds !== undefined
+            ? Math.round(event.location.location_age_seconds * 1000)
+            : null,
+          mapsUrl: event.location.maps_url ?? null,
+          freshness: 'current'
+        }
+      : {
+          status: 'unavailable',
+          reason: event.capture_receipt?.no_location_reason ?? null
+        },
+    thingInView: null,
+    attachments: event.voice_memo
+      ? [{ kind: 'audio', mimeType: event.voice_memo.mime_type ?? 'audio/mp4', durationMs }]
+      : []
+  };
+  return `${transcript}\n\n<lifeos_client_context_envelope>\n${JSON.stringify(contextEnvelope)}\n</lifeos_client_context_envelope>`;
 }
 
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {

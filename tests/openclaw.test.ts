@@ -122,9 +122,24 @@ function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): Normal
       transcript: text,
       filename: 'lifeos-capture.m4a',
       mime_type: 'audio/mp4',
+      duration_seconds: 12.4,
       file_path: '/private/lifeos/audio/lifeos-capture.m4a',
       size_bytes: 4321
     }
+  };
+}
+
+function parseNativeVoiceDelivery(message: string): {
+  transcript: string;
+  context: Record<string, unknown>;
+} {
+  const match = message.match(
+    /^([\s\S]*?)\n\n<lifeos_client_context_envelope>\n([\s\S]*?)\n<\/lifeos_client_context_envelope>$/,
+  );
+  if (!match) throw new Error(`Missing native voice context envelope: ${message}`);
+  return {
+    transcript: match[1],
+    context: JSON.parse(match[2]) as Record<string, unknown>,
   };
 }
 
@@ -639,7 +654,14 @@ describe('OpenClaw delivery', () => {
     const drain = await drainOpenClawQueue(config);
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
-    expect(await readFile(messagePath, 'utf8')).toBe('voice note without gps');
+    const delivered = parseNativeVoiceDelivery(await readFile(messagePath, 'utf8'));
+    expect(delivered.transcript).toBe('voice note without gps');
+    expect(delivered.context).toMatchObject({
+      schemaVersion: 'lifeos_model_context.v1',
+      appSurface: 'ios_lifeos',
+      source: { kind: 'voice', captureSurface: 'watch', transcript: 'voice note without gps' },
+      location: { status: 'unavailable', reason: 'location_timeout' }
+    });
     const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
       event: NormalizedSiriEvent;
     };
@@ -698,10 +720,18 @@ describe('OpenClaw delivery', () => {
 
     await acceptForOpenClaw(config, event);
     expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
-    expect(await readFile(messagePath, 'utf8')).toBe(
-      'Find coffee near me\n\n' +
-      'Current location: 33.6001, -111.9002 (accuracy 8m; map https://maps.apple.com/?ll=33.6001,-111.9002)'
-    );
+    const delivered = parseNativeVoiceDelivery(await readFile(messagePath, 'utf8'));
+    expect(delivered.transcript).toBe('Find coffee near me');
+    expect(delivered.context).toMatchObject({
+      source: { kind: 'voice', durationMs: 2400, captureSurface: 'watch' },
+      location: {
+        status: 'present',
+        latitude: 33.6001,
+        longitude: -111.9002,
+        accuracyMeters: 8,
+        mapsUrl: 'https://maps.apple.com/?ll=33.6001,-111.9002'
+      }
+    });
 
     const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
       event: NormalizedSiriEvent;
@@ -741,11 +771,12 @@ describe('OpenClaw delivery', () => {
     const drain = await drainOpenClawQueue(config);
 
     expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
-    expect(await readFile(messagePath, 'utf8')).toBe(
-      'hitting 7 iron from here\n\n' +
-      'Context: Golf mode.\n\n' +
-      'Current location: 33.5979, -111.7581 (accuracy 4m; map https://maps.apple.com/?ll=33.5979,-111.7581)'
-    );
+    const delivered = parseNativeVoiceDelivery(await readFile(messagePath, 'utf8'));
+    expect(delivered.transcript).toBe('hitting 7 iron from here');
+    expect(delivered.context).toMatchObject({
+      source: { kind: 'voice', captureSurface: 'watch', context: 'golf_mode' },
+      location: { status: 'present', latitude: 33.5979, longitude: -111.7581, accuracyMeters: 4 }
+    });
     await rm(dir, { recursive: true, force: true });
   });
 
@@ -844,10 +875,28 @@ describe('OpenClaw delivery', () => {
       await acceptForOpenClaw(config, lifeOSAppVoiceEvent());
       expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
 
-      expect(await readFile(messagePath, 'utf8')).toBe(
-        'Remind me to order coffee filters\n\n' +
-        'Current location: 33.6001, -111.9002 (accuracy 7.5m; map https://maps.apple.com/?ll=33.6001,-111.9002)'
-      );
+      const delivered = parseNativeVoiceDelivery(await readFile(messagePath, 'utf8'));
+      expect(delivered.transcript).toBe('Remind me to order coffee filters');
+      expect(delivered.context).toMatchObject({
+        schemaVersion: 'lifeos_model_context.v1',
+        createdAt: '2026-07-13T20:12:00.000Z',
+        appSurface: 'ios_lifeos',
+        source: {
+          kind: 'voice',
+          durationMs: 12400,
+          transcript: 'Remind me to order coffee filters',
+          captureId: 'lifeos-app-voice-request-id',
+          captureSurface: 'iphone'
+        },
+        location: {
+          status: 'present',
+          latitude: 33.6001,
+          longitude: -111.9002,
+          accuracyMeters: 7.5
+        },
+        attachments: [{ kind: 'audio', mimeType: 'audio/mp4', durationMs: 12400 }]
+      });
+      expect(await readFile(messagePath, 'utf8')).not.toContain('Current location:');
 
       const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
         event: NormalizedSiriEvent;
