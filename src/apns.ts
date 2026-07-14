@@ -39,6 +39,42 @@ export async function sendAppResponseNotification(
   device: AppDeviceRegistration,
   response: AppResponseRecord
 ): Promise<ApnsSendResult> {
+  return sendNotification(config, device, {
+    aps: {
+      alert: {
+        title: 'Jay replied',
+        body: 'Tap to play the voice reply.'
+      },
+      sound: 'default'
+    },
+    response_id: response.id
+  });
+}
+
+export async function sendLifeOSReplyNotification(
+  config: BridgeConfig,
+  device: AppDeviceRegistration,
+  sessionKey: string,
+  replyText: string
+): Promise<ApnsSendResult> {
+  const body = replyText.replace(/\s+/g, ' ').trim();
+  return sendNotification(config, device, {
+    aps: {
+      alert: {
+        title: 'Jay',
+        body: body.length > 180 ? `${body.slice(0, 177).trimEnd()}...` : body
+      },
+      sound: 'default'
+    },
+    session_key: sessionKey
+  });
+}
+
+async function sendNotification(
+  config: BridgeConfig,
+  device: AppDeviceRegistration,
+  payloadValue: Record<string, unknown>
+): Promise<ApnsSendResult> {
   if (!apnsConfigured(config)) {
     throw new Error('APNs is not configured');
   }
@@ -48,16 +84,7 @@ export async function sendAppResponseNotification(
   const token = await providerToken(config);
   const client = connect(apnsHost(config.apnsEnvironment));
   try {
-    const payload = JSON.stringify({
-      aps: {
-        alert: {
-          title: 'Jay replied',
-          body: 'Tap to play the voice reply.'
-        },
-        sound: 'default'
-      },
-      response_id: response.id
-    });
+    const payload = JSON.stringify(payloadValue);
     return await new Promise<ApnsSendResult>((resolve, reject) => {
       const req = client.request({
         ':method': 'POST',

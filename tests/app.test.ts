@@ -62,6 +62,9 @@ describe('app routes', () => {
       app_version: '1.0',
       device_name: 'iPhone'
     });
+    expect(await new AppDeviceStore(deviceDir).list('ios')).toEqual([
+      expect.objectContaining({ id: 'ios-test-device', platform: 'ios' })
+    ]);
   });
 
   it('accepts and normalizes authorized shortcut messages', async () => {

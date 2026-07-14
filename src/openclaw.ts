@@ -288,12 +288,13 @@ export function extractReplyTextFromOpenClawOutput(stdout: string): string | und
 
 async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): Promise<DeliveryResult> {
   const timeoutMs = config.openclawCliDrainTimeoutMs;
+  const lifeOSSessionKey = optionalLifeOSHomeSessionKey(event.session_key);
   const args = [
     'agent',
     '--agent',
     event.assistant || config.assistantId,
     '--session-key',
-    optionalLifeOSHomeSessionKey(event.session_key) ?? config.openclawSessionKey,
+    lifeOSSessionKey ?? config.openclawSessionKey,
     '--message',
     buildOpenClawMessage(config, event),
     '--json',
@@ -303,7 +304,10 @@ async function deliverViaCli(config: BridgeConfig, event: NormalizedSiriEvent): 
   if (config.openclawCliThinking) {
     args.push('--thinking', config.openclawCliThinking);
   }
-  if (config.openclawDeliverReply) {
+  // A LifeOS capture already names its originating conversation. Keep Jay's
+  // reply in that session so the app can project it instead of also sending it
+  // through the bridge's configured fallback channel (currently Telegram).
+  if (config.openclawDeliverReply && !lifeOSSessionKey) {
     args.push('--deliver');
     if (config.openclawReplyChannel) {
       args.push('--reply-channel', config.openclawReplyChannel);

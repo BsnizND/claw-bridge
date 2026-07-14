@@ -576,6 +576,44 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('keeps replies for LifeOS captures in their originating LifeOS session', async () => {
+    const dir = join(tmpdir(), `claw-bridge-lifeos-session-reply-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawDeliverReply: true,
+      openclawReplyChannel: 'telegram',
+      openclawReplyTo: 'telegram:1234',
+      openclawMessageStyle: 'compact',
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+
+    await acceptForOpenClaw(config, lifeOSAppVoiceEvent());
+    const drain = await drainOpenClawQueue(config);
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('agent:jay:lifeos-home:current-conversation');
+    expect(args).not.toContain('--deliver');
+    expect(args).not.toContain('--reply-channel');
+    expect(args).not.toContain('--reply-to');
+    expect(args).not.toContain('telegram:1234');
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('keeps Watch no-location receipts private while delivering only the transcript', async () => {
     const dir = join(tmpdir(), `claw-bridge-watch-receipt-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
