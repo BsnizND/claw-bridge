@@ -31,6 +31,7 @@ describe('share normalization', () => {
         vertical_accuracy: '12',
         location_timestamp: '2026-07-13T19:59:58.000Z',
         location_age_seconds: '2',
+        recording_duration_seconds: '12.4',
         maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
       },
       audioFile,
@@ -63,7 +64,8 @@ describe('share normalization', () => {
         filename: 'native-capture.m4a',
         mime_type: 'audio/mp4',
         file_path: '/private/lifeos/audio/native-capture.m4a',
-        size_bytes: 2048
+        size_bytes: 2048,
+        duration_seconds: 12.4
       }
     });
   });

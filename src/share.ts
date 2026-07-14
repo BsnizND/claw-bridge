@@ -114,12 +114,14 @@ export function normalizeShareSheetRequest(
   };
 
   if (file && kind === 'audio') {
+    const durationSeconds = Number(asOptionalString(body.recording_duration_seconds) ?? asOptionalString(body.duration_seconds));
     event.voice_memo = {
       transcript,
       filename: file.originalname,
       mime_type: file.mimetype,
       file_path: file.path,
-      size_bytes: file.size
+      size_bytes: file.size,
+      duration_seconds: Number.isFinite(durationSeconds) && durationSeconds >= 0 ? durationSeconds : undefined
     };
   }
 
