@@ -1,8 +1,9 @@
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
-import { apnsConfigured, sendAppResponseNotification } from './apns.js';
+import { apnsConfigured, sendAppResponseNotification, sendLifeOSReplyNotification } from './apns.js';
 import { synthesizeElevenLabsSpeech } from './elevenlabs.js';
+import { optionalLifeOSHomeSessionKey } from './session.js';
 
 export async function renderAppVoiceReply(
   config: BridgeConfig,
@@ -63,4 +64,21 @@ export async function failAppVoiceReply(
   if (!responseId) return;
   const message = error instanceof Error ? error.message : String(error);
   await store.fail(responseId, message);
+}
+
+export async function notifyLifeOSReply(
+  config: BridgeConfig,
+  event: NormalizedSiriEvent,
+  result: DeliveryResult,
+  deviceStore: AppDeviceStore
+): Promise<void> {
+  if (event.app_response?.id || !apnsConfigured(config)) return;
+  const sessionKey = optionalLifeOSHomeSessionKey(event.session_key);
+  const replyText = result.replyText?.trim();
+  if (!sessionKey || !replyText) return;
+
+  const devices = await deviceStore.list('ios');
+  await Promise.allSettled(
+    devices.map((device) => sendLifeOSReplyNotification(config, device, sessionKey, replyText))
+  );
 }

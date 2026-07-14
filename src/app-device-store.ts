@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AppDeviceRegistration, AppPlatform } from './types.js';
 
@@ -59,6 +59,27 @@ export class AppDeviceStore {
       throw error;
     }
     return JSON.parse(raw) as AppDeviceRegistration;
+  }
+
+  async list(platform?: AppPlatform): Promise<AppDeviceRegistration[]> {
+    let names: string[];
+    try {
+      names = await readdir(this.deviceDir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+    const records = await Promise.all(
+      names
+        .filter((name) => name.endsWith('.json'))
+        .map(async (name) => {
+          const raw = await readFile(join(this.deviceDir, name), 'utf8');
+          return JSON.parse(raw) as AppDeviceRegistration;
+        })
+    );
+    return records
+      .filter((record) => !platform || record.platform === platform)
+      .sort((left, right) => right.updated_at.localeCompare(left.updated_at));
   }
 
   private recordPath(id: string): string {

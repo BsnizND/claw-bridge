@@ -4,7 +4,7 @@ import { AppResponseStore } from './app-response-store.js';
 import { loadConfig } from './config.js';
 import { drainOpenClawQueue } from './openclaw.js';
 import { recoverFreshOrphanedDrainLockForExclusiveOwner } from './queue.js';
-import { failAppVoiceReply, renderAppVoiceReply } from './voice-replies.js';
+import { failAppVoiceReply, notifyLifeOSReply, renderAppVoiceReply } from './voice-replies.js';
 
 const config = loadConfig();
 const appDeviceStore = new AppDeviceStore(config.appDeviceDir);
@@ -43,6 +43,7 @@ async function drainOnce(reason: string) {
     const result = await drainOpenClawQueue(config, {
       afterDelivered: async (event, delivery) => {
         await renderAppVoiceReply(config, appResponseStore, event, delivery, appDeviceStore);
+        await notifyLifeOSReply(config, event, delivery, appDeviceStore);
       },
       afterFailed: async (event, error) => {
         await failAppVoiceReply(appResponseStore, event, error);
