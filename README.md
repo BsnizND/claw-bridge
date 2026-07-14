@@ -346,6 +346,7 @@ Important settings:
 - `SHARE_UPLOAD_DIR`: directory where share-sheet uploads are stored.
 - `SHARE_MAX_UPLOAD_BYTES`: maximum accepted upload size.
 - `AUDIO_TRANSCRIBE_ENABLED`: when `true`, transcribe shared audio before delivery.
+- `AUDIO_TRANSCRIBE_ENGINE`: `local_whisper` runs the local Whisper CLI; `openclaw` preserves the OpenClaw capability path.
 - `AUDIO_TRANSCRIBE_CLI_BIN`: CLI used for transcription; defaults to `openclaw`.
 - `AUDIO_TRANSCRIBE_MODEL` / `AUDIO_TRANSCRIBE_LANGUAGE`: optional transcription hints.
 - `APP_RESPONSE_DIR`: directory for Walkie response metadata and generated audio.

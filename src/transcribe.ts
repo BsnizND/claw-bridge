@@ -1,4 +1,7 @@
 import { spawn } from 'node:child_process';
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { BridgeConfig } from './types.js';
 
 interface OpenClawTranscription {
@@ -28,22 +31,14 @@ export function isAudioMimeType(mimeType: string | undefined): boolean {
   return Boolean(mimeType?.toLowerCase().startsWith('audio/'));
 }
 
-export async function transcribeAudioFile(config: BridgeConfig, filePath: string): Promise<string | undefined> {
-  if (!config.audioTranscribeEnabled) {
-    return undefined;
-  }
-
-  const args = ['infer', 'audio', 'transcribe', '--file', filePath, '--json'];
-  if (config.audioTranscribeModel) {
-    args.push('--model', config.audioTranscribeModel);
-  }
-  if (config.audioTranscribeLanguage) {
-    args.push('--language', config.audioTranscribeLanguage);
-  }
-
+async function runTranscriber(
+  config: BridgeConfig,
+  args: string[]
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(config.audioTranscribeCliBin, args, {
       cwd: config.openclawWorkdir,
+      detached: true,
       stdio: ['ignore', 'pipe', 'pipe']
     });
     let stdout = '';
@@ -51,7 +46,13 @@ export async function transcribeAudioFile(config: BridgeConfig, filePath: string
     let settled = false;
     const timeout = setTimeout(() => {
       settled = true;
-      child.kill('SIGTERM');
+      if (child.pid) {
+        try {
+          process.kill(-child.pid, 'SIGTERM');
+        } catch {
+          child.kill('SIGTERM');
+        }
+      }
       reject(new Error(`audio transcription exceeded ${config.audioTranscribeTimeoutMs}ms`));
     }, config.audioTranscribeTimeoutMs);
     child.stdout.on('data', (chunk) => {
@@ -71,10 +72,51 @@ export async function transcribeAudioFile(config: BridgeConfig, filePath: string
       settled = true;
       clearTimeout(timeout);
       if (code === 0) {
-        resolve(parseTranscript(stdout));
+        resolve({ stdout, stderr });
       } else {
         reject(new Error(`audio transcription exited ${code}: ${stderr || stdout}`.trim()));
       }
     });
   });
+}
+
+async function transcribeWithOpenClaw(config: BridgeConfig, filePath: string): Promise<string | undefined> {
+  const args = ['infer', 'audio', 'transcribe', '--file', filePath, '--json'];
+  if (config.audioTranscribeModel) args.push('--model', config.audioTranscribeModel);
+  if (config.audioTranscribeLanguage) args.push('--language', config.audioTranscribeLanguage);
+  const { stdout } = await runTranscriber(config, args);
+  return parseTranscript(stdout);
+}
+
+async function transcribeWithLocalWhisper(config: BridgeConfig, filePath: string): Promise<string | undefined> {
+  const outputDirectory = await mkdtemp(join(tmpdir(), 'claw-bridge-whisper-'));
+  try {
+    const args = [
+      filePath,
+      '--model',
+      config.audioTranscribeModel ?? 'turbo',
+      '--output_format',
+      'json',
+      '--output_dir',
+      outputDirectory,
+      '--verbose',
+      'False'
+    ];
+    if (config.audioTranscribeLanguage) args.push('--language', config.audioTranscribeLanguage);
+    await runTranscriber(config, args);
+    const outputName = (await readdir(outputDirectory)).find((name) => name.endsWith('.json'));
+    if (!outputName) return undefined;
+    const output = JSON.parse(await readFile(join(outputDirectory, outputName), 'utf8')) as OpenClawTranscription;
+    return typeof output.text === 'string' && output.text.trim() ? output.text.trim() : undefined;
+  } finally {
+    await rm(outputDirectory, { recursive: true, force: true });
+  }
+}
+
+export async function transcribeAudioFile(config: BridgeConfig, filePath: string): Promise<string | undefined> {
+  if (!config.audioTranscribeEnabled) return undefined;
+  if (config.audioTranscribeEngine === 'local_whisper') {
+    return transcribeWithLocalWhisper(config, filePath);
+  }
+  return transcribeWithOpenClaw(config, filePath);
 }

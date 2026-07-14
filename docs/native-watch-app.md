@@ -191,8 +191,11 @@ enable server-side transcription:
 
 ```text
 AUDIO_TRANSCRIBE_ENABLED=true
-AUDIO_TRANSCRIBE_CLI_BIN=openclaw
+AUDIO_TRANSCRIBE_ENGINE=local_whisper
+AUDIO_TRANSCRIBE_CLI_BIN=/opt/homebrew/bin/whisper
 AUDIO_TRANSCRIBE_TIMEOUT_MS=300000
+AUDIO_TRANSCRIBE_MODEL=large-v3-turbo
+AUDIO_TRANSCRIBE_LANGUAGE=en
 ```
 
 The bridge must be reachable from the Watch or from the iPhone companion relay.

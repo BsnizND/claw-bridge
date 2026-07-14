@@ -49,6 +49,7 @@ export interface BridgeConfig {
   apnsBundleId?: string;
   apnsEnvironment: 'development' | 'production';
   audioTranscribeEnabled: boolean;
+  audioTranscribeEngine: 'openclaw' | 'local_whisper';
   audioTranscribeCliBin: string;
   audioTranscribeTimeoutMs: number;
   audioTranscribeModel?: string;
