@@ -416,7 +416,10 @@ async function attachMostRecentLifeOSSessionToWatchCapture(
   config: BridgeConfig,
   event: NormalizedSiriEvent
 ): Promise<void> {
-  if (event.source !== 'watch_app' || optionalLifeOSHomeSessionKey(event.session_key)) return;
+  if (event.source !== 'watch_app') return;
+  // A Watch recording can sit on-device for hours before the paired iPhone
+  // relays it. Route at delivery time so an old captured session key cannot
+  // reopen a stale LifeOS conversation.
   event.session_key = await resolveMostRecentLifeOSHomeSessionKey(config, event.assistant || config.assistantId);
 }
 
