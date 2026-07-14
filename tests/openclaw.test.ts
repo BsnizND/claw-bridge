@@ -149,9 +149,19 @@ function parseNativeVoiceDelivery(message: string): {
 }
 
 async function writeMessageCapturingOpenClaw(binPath: string, messagePath: string): Promise<void> {
+  const sessionStorePath = `${messagePath}.sessions.json`;
+  await writeFile(
+    sessionStorePath,
+    JSON.stringify({ 'agent:jay:lifeos-home:current-conversation': { updatedAt: 100 } }),
+    'utf8'
+  );
   await writeFile(
     binPath,
     `#!/bin/sh
+if [ "$1" = "sessions" ]; then
+  printf '%s\n' '{"path":"${sessionStorePath}","sessions":[]}'
+  exit 0
+fi
 while [ "$#" -gt 0 ]; do
   if [ "$1" = "--message" ]; then
     shift
@@ -651,7 +661,7 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  it('routes a Watch capture without a session to the most recent LifeOS Home thread', async () => {
+  it('routes a delayed Watch capture to the most recent LifeOS Home thread', async () => {
     const dir = join(tmpdir(), `claw-bridge-watch-recent-lifeos-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
     const queuePath = join(dir, 'queue.jsonl');
@@ -699,7 +709,7 @@ printf '%s\n' "$@" > '${argsPath}'
     const watchEvent = {
       ...watchEventWithoutLocation('keep this in the current thread'),
       request_id: 'watch-recent-lifeos-request-id',
-      session_key: undefined
+      session_key: 'agent:jay:lifeos-home:stale-captured-thread'
     };
 
     await acceptForOpenClaw(config, watchEvent);
@@ -709,6 +719,7 @@ printf '%s\n' "$@" > '${argsPath}'
     expect(args).toContain('--session-key');
     expect(args).toContain('agent:jay:lifeos-home:current');
     expect(args).not.toContain('agent:jay:lifeos-home:older');
+    expect(args).not.toContain('agent:jay:lifeos-home:stale-captured-thread');
     expect(args).not.toContain('--deliver');
     expect(args).not.toContain('telegram:1234');
     const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
