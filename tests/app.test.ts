@@ -67,6 +67,29 @@ describe('app routes', () => {
     ]);
   });
 
+  it('registers the LifeOS Mac app for push delivery', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-mac-device-test-${Date.now()}`);
+    const app = createApp(config(), { appDeviceStore: new AppDeviceStore(deviceDir) });
+    const res = await request(app)
+      .post('/app/devices/register')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        id: 'macos-test-device',
+        platform: 'macos',
+        push_token: 'b'.repeat(64),
+        app_version: '1.0',
+        device_name: "Brian's Mac"
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toEqual({ ok: true, device_id: 'macos-test-device', platform: 'macos' });
+    expect(await new AppDeviceStore(deviceDir).get('macos-test-device')).toMatchObject({
+      id: 'macos-test-device',
+      platform: 'macos',
+      push_token: 'b'.repeat(64)
+    });
+  });
+
   it('accepts and normalizes authorized shortcut messages', async () => {
     const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'accepted-id' });
     const afterAccepted = vi.fn();

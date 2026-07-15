@@ -2,7 +2,7 @@ export type OpenClawAdapter = 'cli' | 'gateway' | 'http';
 export type OpenClawMessageStyle = 'detailed' | 'compact';
 export type AppResponseMode = 'voice';
 export type AppResponseStatus = 'pending' | 'rendering' | 'ready' | 'failed' | 'expired';
-export type AppPlatform = 'ios' | 'watchos';
+export type AppPlatform = 'ios' | 'watchos' | 'macos';
 export type AppNotificationStatus = 'not_requested' | 'not_configured' | 'sent' | 'failed';
 
 export interface BridgeConfig {

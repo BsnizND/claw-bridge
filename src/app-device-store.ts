@@ -18,7 +18,7 @@ function safePushToken(token: string): string {
 }
 
 function safePlatform(platform: string): AppPlatform {
-  if (platform === 'ios' || platform === 'watchos') return platform;
+  if (platform === 'ios' || platform === 'watchos' || platform === 'macos') return platform;
   throw new Error('invalid app platform');
 }
 

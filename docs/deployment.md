@@ -120,6 +120,9 @@ transcription is disabled, OpenClaw receives an attached audio item with the
 stored file path and metadata.
 
 Include `watch_app` in `ALLOWED_SOURCES` when using the native Watch app.
+Include `macos_app` when using native text, clipboard, or file capture from
+LifeOS for Mac. Mac voice capture continues to use `lifeos_app_voice` so every
+Apple voice surface follows the same local-Whisper transcription lane.
 
 ## Systemd example
 
