@@ -349,9 +349,13 @@ Important settings:
 - `SHARE_UPLOAD_DIR`: directory where share-sheet uploads are stored.
 - `SHARE_MAX_UPLOAD_BYTES`: maximum accepted upload size.
 - `AUDIO_TRANSCRIBE_ENABLED`: when `true`, transcribe shared audio before delivery.
-- `AUDIO_TRANSCRIBE_ENGINE`: `local_whisper` runs the local Whisper CLI; `openclaw` preserves the OpenClaw capability path.
+- `AUDIO_TRANSCRIBE_ENGINE`: `local_whisper` runs Whisper locally; `openclaw` preserves the OpenClaw capability path.
 - `AUDIO_TRANSCRIBE_CLI_BIN`: CLI used for transcription; defaults to `openclaw`.
 - `AUDIO_TRANSCRIBE_MODEL` / `AUDIO_TRANSCRIBE_LANGUAGE`: optional transcription hints.
+- `AUDIO_TRANSCRIBE_PERSISTENT`: keep one local Whisper model warm instead of reloading it for every capture.
+- `AUDIO_TRANSCRIBE_PYTHON_BIN`: Python interpreter containing `openai-whisper`; required for persistent mode.
+- `AUDIO_TRANSCRIBE_DEVICE`: inference device for persistent mode, such as `mps` on Apple silicon.
+- `AUDIO_TRANSCRIBE_WORKER_PATH`: optional explicit path to `scripts/whisper-worker.py`.
 - `APP_RESPONSE_DIR`: directory for Walkie response metadata and generated audio.
 - `APP_RESPONSE_TTL_MS`: response lifetime before pending replies expire.
 - `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID`: required for real Walkie voice replies.

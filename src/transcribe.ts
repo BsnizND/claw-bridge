@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { transcribeWithPersistentWhisper } from './persistent-whisper.js';
 import type { BridgeConfig } from './types.js';
 
 interface OpenClawTranscription {
@@ -89,6 +90,9 @@ async function transcribeWithOpenClaw(config: BridgeConfig, filePath: string): P
 }
 
 async function transcribeWithLocalWhisper(config: BridgeConfig, filePath: string): Promise<string | undefined> {
+  if (config.audioTranscribePersistent) {
+    return transcribeWithPersistentWhisper(config, filePath);
+  }
   const outputDirectory = await mkdtemp(join(tmpdir(), 'claw-bridge-whisper-'));
   try {
     const args = [

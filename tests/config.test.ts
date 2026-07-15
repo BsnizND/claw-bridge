@@ -53,6 +53,7 @@ describe('config', () => {
     expect(config.apnsEnvironment).toBe('development');
     expect(config.audioTranscribeEnabled).toBe(false);
     expect(config.audioTranscribeEngine).toBe('openclaw');
+    expect(config.audioTranscribePersistent).toBe(false);
   });
 
   it('loads a canonical OpenClaw session store path', () => {
@@ -150,8 +151,12 @@ describe('config', () => {
       AUDIO_TRANSCRIBE_ENGINE: 'local_whisper',
       AUDIO_TRANSCRIBE_CLI_BIN: '/opt/homebrew/bin/whisper',
       AUDIO_TRANSCRIBE_TIMEOUT_MS: '600000',
-      AUDIO_TRANSCRIBE_MODEL: 'large-v3-turbo',
-      AUDIO_TRANSCRIBE_LANGUAGE: 'en'
+      AUDIO_TRANSCRIBE_MODEL: 'small.en',
+      AUDIO_TRANSCRIBE_LANGUAGE: 'en',
+      AUDIO_TRANSCRIBE_PERSISTENT: 'true',
+      AUDIO_TRANSCRIBE_PYTHON_BIN: '/opt/homebrew/opt/openai-whisper/libexec/bin/python',
+      AUDIO_TRANSCRIBE_DEVICE: 'mps',
+      AUDIO_TRANSCRIBE_WORKER_PATH: '/opt/claw-bridge/whisper-worker.py'
     });
     expect(config.shareUploadDir).toBe('/tmp/share-uploads');
     expect(config.shareMaxUploadBytes).toBe(1048576);
@@ -161,8 +166,22 @@ describe('config', () => {
     expect(config.audioTranscribeEngine).toBe('local_whisper');
     expect(config.audioTranscribeCliBin).toBe('/opt/homebrew/bin/whisper');
     expect(config.audioTranscribeTimeoutMs).toBe(600000);
-    expect(config.audioTranscribeModel).toBe('large-v3-turbo');
+    expect(config.audioTranscribeModel).toBe('small.en');
     expect(config.audioTranscribeLanguage).toBe('en');
+    expect(config.audioTranscribePersistent).toBe(true);
+    expect(config.audioTranscribePythonBin).toBe('/opt/homebrew/opt/openai-whisper/libexec/bin/python');
+    expect(config.audioTranscribeDevice).toBe('mps');
+    expect(config.audioTranscribeWorkerPath).toBe('/opt/claw-bridge/whisper-worker.py');
+  });
+
+  it('requires a local Python runtime for persistent Whisper', () => {
+    expect(() =>
+      loadConfig({
+        CLAW_BRIDGE_TOKEN: '0123456789abcdef01234567',
+        AUDIO_TRANSCRIBE_ENGINE: 'local_whisper',
+        AUDIO_TRANSCRIBE_PERSISTENT: 'true'
+      })
+    ).toThrow('AUDIO_TRANSCRIBE_PYTHON_BIN');
   });
 
   it('loads an explicit queue archive path', () => {

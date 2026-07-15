@@ -58,6 +58,10 @@ export interface BridgeConfig {
   audioTranscribeTimeoutMs: number;
   audioTranscribeModel?: string;
   audioTranscribeLanguage?: string;
+  audioTranscribePersistent: boolean;
+  audioTranscribePythonBin?: string;
+  audioTranscribeDevice?: string;
+  audioTranscribeWorkerPath?: string;
 }
 
 export interface ShortcutMessageRequest {

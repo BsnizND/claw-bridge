@@ -57,7 +57,11 @@ const envSchema = z.object({
   AUDIO_TRANSCRIBE_CLI_BIN: z.string().min(1).default('openclaw'),
   AUDIO_TRANSCRIBE_TIMEOUT_MS: z.coerce.number().int().positive().default(300000),
   AUDIO_TRANSCRIBE_MODEL: z.string().min(1).optional(),
-  AUDIO_TRANSCRIBE_LANGUAGE: z.string().min(1).optional()
+  AUDIO_TRANSCRIBE_LANGUAGE: z.string().min(1).optional(),
+  AUDIO_TRANSCRIBE_PERSISTENT: z.coerce.boolean().default(false),
+  AUDIO_TRANSCRIBE_PYTHON_BIN: z.string().min(1).optional(),
+  AUDIO_TRANSCRIBE_DEVICE: z.string().min(1).optional(),
+  AUDIO_TRANSCRIBE_WORKER_PATH: z.string().min(1).optional()
 });
 
 export function parseAllowedSources(value: string): Set<string> {
@@ -89,6 +93,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
   }
   if (raw.OPENCLAW_DELIVER_REPLY && (!raw.OPENCLAW_REPLY_CHANNEL || !raw.OPENCLAW_REPLY_TO)) {
     throw new Error('OPENCLAW_REPLY_CHANNEL and OPENCLAW_REPLY_TO are required when OPENCLAW_DELIVER_REPLY=true');
+  }
+  if (raw.AUDIO_TRANSCRIBE_PERSISTENT && raw.AUDIO_TRANSCRIBE_ENGINE !== 'local_whisper') {
+    throw new Error('AUDIO_TRANSCRIBE_PERSISTENT=true requires AUDIO_TRANSCRIBE_ENGINE=local_whisper');
+  }
+  if (raw.AUDIO_TRANSCRIBE_PERSISTENT && !raw.AUDIO_TRANSCRIBE_PYTHON_BIN) {
+    throw new Error('AUDIO_TRANSCRIBE_PYTHON_BIN is required when AUDIO_TRANSCRIBE_PERSISTENT=true');
   }
 
   const allowedSources = parseAllowedSources(raw.ALLOWED_SOURCES);
@@ -148,6 +158,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BridgeConfig {
     audioTranscribeCliBin: raw.AUDIO_TRANSCRIBE_CLI_BIN,
     audioTranscribeTimeoutMs: raw.AUDIO_TRANSCRIBE_TIMEOUT_MS,
     audioTranscribeModel: raw.AUDIO_TRANSCRIBE_MODEL,
-    audioTranscribeLanguage: raw.AUDIO_TRANSCRIBE_LANGUAGE
+    audioTranscribeLanguage: raw.AUDIO_TRANSCRIBE_LANGUAGE,
+    audioTranscribePersistent: raw.AUDIO_TRANSCRIBE_PERSISTENT,
+    audioTranscribePythonBin: raw.AUDIO_TRANSCRIBE_PYTHON_BIN,
+    audioTranscribeDevice: raw.AUDIO_TRANSCRIBE_DEVICE,
+    audioTranscribeWorkerPath: raw.AUDIO_TRANSCRIBE_WORKER_PATH
   };
 }
