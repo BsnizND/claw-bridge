@@ -203,7 +203,9 @@ async function removeUploadedFile(file: UploadedShareFile | undefined) {
 
 function appPlatform(value: unknown) {
   const platform = queryValue(value)?.toLowerCase();
-  return platform === 'ios' || platform === 'watchos' ? platform : undefined;
+  return platform === 'ios' || platform === 'watchos' || platform === 'macos'
+    ? platform
+    : undefined;
 }
 
 async function attachVoiceResponseIfRequested(

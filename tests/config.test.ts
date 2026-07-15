@@ -40,6 +40,7 @@ describe('config', () => {
     expect(config.allowedSources.has('ios_share_sheet')).toBe(true);
     expect(config.allowedSources.has('lifeos_app_voice')).toBe(true);
     expect(config.allowedSources.has('watch_app')).toBe(true);
+    expect(config.allowedSources.has('macos_app')).toBe(true);
     expect(config.shareUploadDir).toBe('./data/uploads');
     expect(config.shareMaxUploadBytes).toBe(50 * 1024 * 1024);
     expect(config.watchMinAudioSeconds).toBe(1.5);
