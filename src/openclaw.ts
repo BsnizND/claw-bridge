@@ -364,7 +364,7 @@ async function resolveMostRecentLifeOSHomeSessionKey(
     const store = await readFile(config.openclawSessionStorePath, 'utf8');
     const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
     if (!sessionKey) {
-      throw new Error('No existing non-archived LifeOS Home session is available for this Watch capture');
+      throw new Error('No existing non-archived LifeOS Home session is available for this native LifeOS capture');
     }
     return sessionKey;
   }
@@ -411,7 +411,7 @@ async function resolveMostRecentLifeOSHomeSessionKey(
         .then((store) => {
           const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
           if (!sessionKey) {
-            reject(new Error('No existing non-archived LifeOS Home session is available for this Watch capture'));
+            reject(new Error('No existing non-archived LifeOS Home session is available for this native LifeOS capture'));
             return;
           }
           resolve(sessionKey);
@@ -421,14 +421,17 @@ async function resolveMostRecentLifeOSHomeSessionKey(
   });
 }
 
-async function attachMostRecentLifeOSSessionToWatchCapture(
+async function attachMostRecentLifeOSSessionToNativeCapture(
   config: BridgeConfig,
   event: NormalizedSiriEvent
 ): Promise<void> {
-  if (event.source !== 'watch_app') return;
-  // A Watch recording can sit on-device for hours before the paired iPhone
-  // relays it. Route at delivery time so an old captured session key cannot
-  // reopen a stale LifeOS conversation.
+  const hasExplicitLifeOSSession = Boolean(optionalLifeOSHomeSessionKey(event.session_key));
+  const shouldResolveLatest = event.source === 'watch_app'
+    || (event.source === 'lifeos_app_voice' && !hasExplicitLifeOSSession);
+  if (!shouldResolveLatest) return;
+  // Watch may relay later, so it always resolves at delivery time. iPhone
+  // voice preserves an explicit active LifeOS thread, but a missing session
+  // must resolve to LifeOS rather than fall through to Telegram.
   event.session_key = await resolveMostRecentLifeOSHomeSessionKey(config, event.assistant || config.assistantId);
 }
 
@@ -567,7 +570,7 @@ export async function deliverQueuedEventToOpenClaw(
   config: BridgeConfig,
   event: NormalizedSiriEvent
 ): Promise<DeliveryResult> {
-  await attachMostRecentLifeOSSessionToWatchCapture(config, event);
+  await attachMostRecentLifeOSSessionToNativeCapture(config, event);
   if (config.openclawAdapter === 'http') return deliverViaHttp(config, event);
   if (config.openclawAdapter === 'gateway') return deliverViaGateway(config, event);
   return deliverViaCli(config, event);
