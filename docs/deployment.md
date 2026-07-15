@@ -74,9 +74,12 @@ For server-side Voice Memo transcription, enable:
 AUDIO_TRANSCRIBE_ENABLED=true
 AUDIO_TRANSCRIBE_ENGINE=local_whisper
 AUDIO_TRANSCRIBE_CLI_BIN=/opt/homebrew/bin/whisper
-AUDIO_TRANSCRIBE_TIMEOUT_MS=300000
-AUDIO_TRANSCRIBE_MODEL=large-v3-turbo
+AUDIO_TRANSCRIBE_TIMEOUT_MS=25000
+AUDIO_TRANSCRIBE_MODEL=small.en
 AUDIO_TRANSCRIBE_LANGUAGE=en
+AUDIO_TRANSCRIBE_PERSISTENT=true
+AUDIO_TRANSCRIBE_PYTHON_BIN=/opt/homebrew/opt/openai-whisper/libexec/bin/python
+AUDIO_TRANSCRIBE_DEVICE=mps
 ```
 
 The default transcription command is:

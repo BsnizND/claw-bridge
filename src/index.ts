@@ -4,6 +4,7 @@ import { AppResponseStore } from './app-response-store.js';
 import { loadConfig } from './config.js';
 import { drainOpenClawQueue } from './openclaw.js';
 import { recoverFreshOrphanedDrainLockForExclusiveOwner } from './queue.js';
+import { warmPersistentWhisper } from './persistent-whisper.js';
 import { failAppVoiceReply, notifyLifeOSReply, renderAppVoiceReply } from './voice-replies.js';
 
 const config = loadConfig();
@@ -70,6 +71,17 @@ const app = createApp(config, {
     scheduleDrain(`accepted:${event.request_id}`);
   }
 });
+
+void warmPersistentWhisper(config)
+  .then((ready) => {
+    if (ready) {
+      console.log(`local Whisper ready model=${ready.model} device=${ready.device} loadMs=${ready.load_ms}`);
+    }
+  })
+  .catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`local Whisper warmup failed: ${message}`);
+  });
 
 app.listen(config.port, config.host, () => {
   console.log(`claw-bridge listening on http://${config.host}:${config.port}`);
