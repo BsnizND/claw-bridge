@@ -90,6 +90,72 @@ describe('app routes', () => {
     });
   });
 
+  it('sends a completed LifeOS reply to registered iOS devices', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-notification-device-test-${Date.now()}`);
+    const deviceStore = new AppDeviceStore(deviceDir);
+    await deviceStore.upsert({
+      id: 'ios-notification-test-device',
+      platform: 'ios',
+      push_token: 'c'.repeat(64)
+    });
+    const sendReplyNotification = vi.fn().mockResolvedValue({
+      ok: true,
+      statusCode: 200,
+      apnsId: 'apns-test-id'
+    });
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        appDeviceStore: deviceStore,
+        sendLifeOSReplyNotification: sendReplyNotification
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        session_key: 'agent:jay:lifeos-home:notification-test',
+        reply_text: 'Hello from Jay.'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toEqual({ ok: true, registered: 1, sent: 1, failed: 0 });
+    expect(sendReplyNotification).toHaveBeenCalledWith(
+      testConfig,
+      expect.objectContaining({ id: 'ios-notification-test-device', platform: 'ios' }),
+      'agent:jay:lifeos-home:notification-test',
+      'Hello from Jay.'
+    );
+  });
+
+  it('rejects invalid or unauthorized LifeOS reply notification requests', async () => {
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+    const app = createApp(testConfig);
+
+    const unauthorized = await request(app)
+      .post('/app/notifications/lifeos-reply')
+      .send({ session_key: 'agent:jay:lifeos-home:test', reply_text: 'Hello' });
+    expect(unauthorized.status).toBe(401);
+
+    const invalid = await request(app)
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({ session_key: 'agent:jay:telegram:not-lifeos', reply_text: 'Hello' });
+    expect(invalid.status).toBe(400);
+  });
+
   it('accepts and normalizes authorized shortcut messages', async () => {
     const acceptEvent = vi.fn().mockResolvedValue({ ok: true, queued: true, id: 'accepted-id' });
     const afterAccepted = vi.fn();

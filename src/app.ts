@@ -7,10 +7,18 @@ import { promisify } from 'node:util';
 import express from 'express';
 import multer from 'multer';
 import pino from 'pino';
-import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent, ShortcutMessageRequest } from './types.js';
+import type {
+  AppDeviceRegistration,
+  BridgeConfig,
+  DeliveryResult,
+  NormalizedSiriEvent,
+  ShortcutMessageRequest
+} from './types.js';
 import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
+import { apnsConfigured, sendLifeOSReplyNotification, type ApnsSendResult } from './apns.js';
 import { acceptForOpenClaw } from './openclaw.js';
+import { optionalLifeOSHomeSessionKey } from './session.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
 import { isAudioMimeType, transcribeAudioFile } from './transcribe.js';
@@ -23,6 +31,12 @@ export interface AppDependencies {
   afterAccepted?: (event: NormalizedSiriEvent) => void;
   appDeviceStore?: AppDeviceStore;
   appResponseStore?: AppResponseStore;
+  sendLifeOSReplyNotification?: (
+    config: BridgeConfig,
+    device: AppDeviceRegistration,
+    sessionKey: string,
+    replyText: string
+  ) => Promise<ApnsSendResult>;
 }
 
 function isAuthorized(config: BridgeConfig, header: string | undefined): boolean {
@@ -252,6 +266,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
   const responseStore =
     deps.appResponseStore ??
     new AppResponseStore(config.appResponseDir ?? `${config.shareUploadDir}/../app-responses`, config.appResponseTtlMs ?? 86400000);
+  const sendReplyNotification = deps.sendLifeOSReplyNotification ?? sendLifeOSReplyNotification;
   mkdirSync(config.shareUploadDir, { recursive: true });
   const upload = multer({
     storage: multer.diskStorage({
@@ -310,6 +325,53 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       logger.warn({ error: message }, 'app device registration rejected');
       res.status(400).json({ ok: false, error: message });
     }
+  });
+
+  app.post('/app/notifications/lifeos-reply', async (req, res) => {
+    if (!isAuthorized(config, req.header('authorization'))) {
+      res.status(401).json({ ok: false, error: 'unauthorized' });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    let sessionKey: string | undefined;
+    try {
+      sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
+    } catch {
+      res.status(400).json({
+        ok: false,
+        error: 'a valid LifeOS session_key and non-empty reply_text are required'
+      });
+      return;
+    }
+    const replyText = queryValue(body.reply_text);
+    if (!sessionKey || !replyText) {
+      res.status(400).json({
+        ok: false,
+        error: 'a valid LifeOS session_key and non-empty reply_text are required'
+      });
+      return;
+    }
+    if (!apnsConfigured(config)) {
+      res.status(503).json({ ok: false, error: 'APNs is not configured' });
+      return;
+    }
+
+    const devices = await deviceStore.list('ios');
+    const results = await Promise.allSettled(
+      devices.map((device) => sendReplyNotification(config, device, sessionKey, replyText))
+    );
+    const sent = results.filter(
+      (result) => result.status === 'fulfilled' && result.value.ok
+    ).length;
+    const failed = results.length - sent;
+    logger.info({ sessionKey, registered: devices.length, sent, failed }, 'LifeOS reply notification completed');
+    res.status(failed > 0 ? 502 : 202).json({
+      ok: failed === 0,
+      registered: devices.length,
+      sent,
+      failed
+    });
   });
 
   app.post('/shortcuts/message', async (req, res) => {
