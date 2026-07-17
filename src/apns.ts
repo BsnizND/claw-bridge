@@ -2,6 +2,7 @@ import { connect } from 'node:http2';
 import { readFile } from 'node:fs/promises';
 import { sign } from 'node:crypto';
 import type { AppDeviceRegistration, AppResponseRecord, BridgeConfig } from './types.js';
+import { buildLifeOSNotificationPreview } from './notification-preview.js';
 
 export interface ApnsSendResult {
   ok: boolean;
@@ -57,7 +58,7 @@ export async function sendLifeOSReplyNotification(
   sessionKey: string,
   replyText: string
 ): Promise<ApnsSendResult> {
-  const body = replyText.replace(/\s+/g, ' ').trim();
+  const body = buildLifeOSNotificationPreview(replyText);
   return sendNotification(config, device, {
     aps: {
       alert: {

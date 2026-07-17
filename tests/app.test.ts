@@ -134,6 +134,47 @@ describe('app routes', () => {
     );
   });
 
+  it('never forwards structured card code to the APNs sender', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-notification-card-test-${Date.now()}`);
+    const deviceStore = new AppDeviceStore(deviceDir);
+    await deviceStore.upsert({
+      id: 'ios-notification-card-test-device',
+      platform: 'ios',
+      push_token: 'd'.repeat(64)
+    });
+    const sendReplyNotification = vi.fn().mockResolvedValue({ ok: true, statusCode: 200 });
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        appDeviceStore: deviceStore,
+        sendLifeOSReplyNotification: sendReplyNotification
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        session_key: 'agent:jay:lifeos-home:notification-test',
+        reply_text:
+          'It will be partly cloudy and 83° today.\n' +
+          '<lifeos_ui_composition>{"schema":"lifeos_ui_composition.v1","blocks":[]}</lifeos_ui_composition>'
+      });
+
+    expect(res.status).toBe(202);
+    expect(sendReplyNotification).toHaveBeenCalledWith(
+      testConfig,
+      expect.objectContaining({ id: 'ios-notification-card-test-device' }),
+      'agent:jay:lifeos-home:notification-test',
+      'It will be partly cloudy and 83° today.'
+    );
+  });
+
   it('rejects invalid or unauthorized LifeOS reply notification requests', async () => {
     const testConfig = {
       ...config(),

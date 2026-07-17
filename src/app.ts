@@ -23,6 +23,7 @@ import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
 import { isAudioMimeType, transcribeAudioFile } from './transcribe.js';
 import { normalizeWatchVoiceRequest } from './watch.js';
+import { buildLifeOSNotificationPreview } from './notification-preview.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -344,14 +345,15 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       });
       return;
     }
-    const replyText = queryValue(body.reply_text);
-    if (!sessionKey || !replyText) {
+    const rawReplyText = queryValue(body.reply_text);
+    if (!sessionKey || !rawReplyText) {
       res.status(400).json({
         ok: false,
         error: 'a valid LifeOS session_key and non-empty reply_text are required'
       });
       return;
     }
+    const replyText = buildLifeOSNotificationPreview(rawReplyText);
     if (!apnsConfigured(config)) {
       res.status(503).json({ ok: false, error: 'APNs is not configured' });
       return;
