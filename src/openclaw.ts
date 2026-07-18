@@ -356,7 +356,7 @@ function extractOpenClawSessionStorePath(stdout: string): string | undefined {
   return undefined;
 }
 
-async function resolveMostRecentLifeOSHomeSessionKey(
+export async function resolveMostRecentLifeOSHomeSessionKey(
   config: BridgeConfig,
   assistantId: string
 ): Promise<string> {

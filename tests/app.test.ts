@@ -125,12 +125,62 @@ describe('app routes', () => {
       });
 
     expect(res.status).toBe(202);
-    expect(res.body).toEqual({ ok: true, registered: 1, sent: 1, failed: 0 });
+    expect(res.body).toEqual({
+      ok: true,
+      session_key: 'agent:jay:lifeos-home:notification-test',
+      registered: 1,
+      sent: 1,
+      failed: 0
+    });
     expect(sendReplyNotification).toHaveBeenCalledWith(
       testConfig,
       expect.objectContaining({ id: 'ios-notification-test-device', platform: 'ios' }),
       'agent:jay:lifeos-home:notification-test',
       'Hello from Jay.'
+    );
+  });
+
+  it('resolves the current LifeOS conversation before delivering a proactive notification', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-current-notification-${Date.now()}`);
+    const deviceStore = new AppDeviceStore(deviceDir);
+    await deviceStore.upsert({
+      id: 'ios-current-notification-device',
+      platform: 'ios',
+      push_token: 'e'.repeat(64)
+    });
+    const sendReplyNotification = vi.fn().mockResolvedValue({ ok: true, statusCode: 200 });
+    const resolveCurrent = vi.fn().mockResolvedValue(
+      'agent:jay:lifeos-home:most-recent-conversation'
+    );
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        appDeviceStore: deviceStore,
+        sendLifeOSReplyNotification: sendReplyNotification,
+        resolveMostRecentLifeOSHomeSessionKey: resolveCurrent
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({ session_key: 'current', reply_text: 'A timely source-backed update.' });
+
+    expect(res.status).toBe(202);
+    expect(res.body.session_key).toBe(
+      'agent:jay:lifeos-home:most-recent-conversation'
+    );
+    expect(resolveCurrent).toHaveBeenCalledWith(testConfig, testConfig.assistantId);
+    expect(sendReplyNotification).toHaveBeenCalledWith(
+      testConfig,
+      expect.objectContaining({ id: 'ios-current-notification-device' }),
+      'agent:jay:lifeos-home:most-recent-conversation',
+      'A timely source-backed update.'
     );
   });
 

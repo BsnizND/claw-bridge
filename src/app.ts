@@ -17,7 +17,7 @@ import type {
 import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { apnsConfigured, sendLifeOSReplyNotification, type ApnsSendResult } from './apns.js';
-import { acceptForOpenClaw } from './openclaw.js';
+import { acceptForOpenClaw, resolveMostRecentLifeOSHomeSessionKey } from './openclaw.js';
 import { optionalLifeOSHomeSessionKey } from './session.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
@@ -38,6 +38,10 @@ export interface AppDependencies {
     sessionKey: string,
     replyText: string
   ) => Promise<ApnsSendResult>;
+  resolveMostRecentLifeOSHomeSessionKey?: (
+    config: BridgeConfig,
+    assistantId: string
+  ) => Promise<string>;
 }
 
 function isAuthorized(config: BridgeConfig, header: string | undefined): boolean {
@@ -335,18 +339,34 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     }
 
     const body = req.body as Record<string, unknown>;
-    let sessionKey: string | undefined;
-    try {
-      sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
-    } catch {
+    const rawReplyText = queryValue(body.reply_text);
+    const rawSessionTarget = queryValue(body.session_key);
+    if (!rawSessionTarget || !rawReplyText) {
       res.status(400).json({
         ok: false,
         error: 'a valid LifeOS session_key and non-empty reply_text are required'
       });
       return;
     }
-    const rawReplyText = queryValue(body.reply_text);
-    if (!sessionKey || !rawReplyText) {
+    if (!apnsConfigured(config)) {
+      res.status(503).json({ ok: false, error: 'APNs is not configured' });
+      return;
+    }
+
+    let sessionKey: string;
+    try {
+      sessionKey = rawSessionTarget === 'current'
+        ? await (deps.resolveMostRecentLifeOSHomeSessionKey ?? resolveMostRecentLifeOSHomeSessionKey)(
+            config,
+            config.assistantId
+          )
+        : optionalLifeOSHomeSessionKey(rawSessionTarget) ?? '';
+      if (!sessionKey) throw new Error('missing LifeOS session key');
+    } catch (error) {
+      logger.warn(
+        { error: error instanceof Error ? error.message : String(error), rawSessionTarget },
+        'LifeOS reply notification target resolution failed'
+      );
       res.status(400).json({
         ok: false,
         error: 'a valid LifeOS session_key and non-empty reply_text are required'
@@ -354,10 +374,6 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       return;
     }
     const replyText = buildLifeOSNotificationPreview(rawReplyText);
-    if (!apnsConfigured(config)) {
-      res.status(503).json({ ok: false, error: 'APNs is not configured' });
-      return;
-    }
 
     const devices = await deviceStore.list('ios');
     const results = await Promise.allSettled(
@@ -370,6 +386,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     logger.info({ sessionKey, registered: devices.length, sent, failed }, 'LifeOS reply notification completed');
     res.status(failed > 0 ? 502 : 202).json({
       ok: failed === 0,
+      session_key: sessionKey,
       registered: devices.length,
       sent,
       failed
