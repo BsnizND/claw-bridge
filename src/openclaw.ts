@@ -538,13 +538,17 @@ async function attachMostRecentLifeOSSessionToNativeCapture(
   config: BridgeConfig,
   event: NormalizedSiriEvent
 ): Promise<void> {
-  const hasExplicitLifeOSSession = Boolean(optionalLifeOSHomeSessionKey(event.session_key));
+  const explicitLifeOSSession = optionalLifeOSHomeSessionKey(event.session_key);
+  const hasEligibleExplicitLifeOSSession = Boolean(
+    explicitLifeOSSession && isEligibleDirectLifeOSHomeSessionKey(explicitLifeOSSession)
+  );
   const shouldResolveLatest = event.source === 'watch_app'
-    || (event.source === 'lifeos_app_voice' && !hasExplicitLifeOSSession);
+    || (event.source === 'ios_share_sheet' && Boolean(explicitLifeOSSession) && !hasEligibleExplicitLifeOSSession)
+    || (event.source === 'lifeos_app_voice' && !hasEligibleExplicitLifeOSSession);
   if (!shouldResolveLatest) return;
-  // Watch may relay later, so it always resolves at delivery time. iPhone
-  // voice preserves an explicit active LifeOS thread, but a missing session
-  // must resolve to LifeOS rather than fall through to Telegram.
+  // Watch always resolves at delivery time. Share-sheet and iPhone captures
+  // preserve an explicit eligible direct conversation, but must replace an
+  // absent app-voice target or any QA, heartbeat, or internal session.
   event.session_key = await resolveMostRecentLifeOSHomeSessionKey(config, event.assistant || config.assistantId);
 }
 

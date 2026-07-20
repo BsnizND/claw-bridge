@@ -953,6 +953,62 @@ printf '%s\n' "$@" > '${argsPath}'
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('routes a delayed share-sheet capture away from a stale QA thread', async () => {
+    const dir = join(tmpdir(), `claw-bridge-share-current-lifeos-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const binPath = join(dir, 'fake-openclaw');
+    const argsPath = join(dir, 'args.txt');
+    const sessionStorePath = join(dir, 'sessions.json');
+    const currentTranscriptPath = join(dir, 'current.jsonl');
+    await writeFile(
+      currentTranscriptPath,
+      `${directLifeOSUserMessage('2026-07-19T19:00:00Z', 'Current')}\n`,
+      'utf8'
+    );
+    await writeFile(
+      sessionStorePath,
+      JSON.stringify({
+        'agent:jay:lifeos-home:current': { updatedAt: 300, sessionFile: currentTranscriptPath },
+        'agent:jay:lifeos-home:qa:expertise-phoenix': { updatedAt: 900 }
+      }),
+      'utf8'
+    );
+    await writeFile(binPath, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsPath}'\n`, 'utf8');
+    await chmod(binPath, 0o755);
+
+    const config = {
+      openclawAdapter: 'cli',
+      openclawCliBin: binPath,
+      openclawCliDrainTimeoutMs: 1000,
+      openclawDeliverReply: true,
+      assistantId: 'jay',
+      openclawSessionStorePath: sessionStorePath,
+      openclawSessionKey: 'agent:jay:telegram:default:direct:brian',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const delayedShare = {
+      ...lifeOSSaveUrlEvent(),
+      request_id: 'share-current-lifeos-request-id',
+      session_key: 'agent:jay:lifeos-home:qa:expertise-phoenix'
+    };
+
+    await acceptForOpenClaw(config, delayedShare);
+    expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+
+    const args = await readFile(argsPath, 'utf8');
+    expect(args).toContain('agent:jay:lifeos-home:current');
+    expect(args).not.toContain('agent:jay:lifeos-home:qa:expertise-phoenix');
+    const archiveRecord = JSON.parse((await readFile(archivePath, 'utf8')).trim()) as {
+      event: NormalizedSiriEvent;
+    };
+    expect(archiveRecord.event.session_key).toBe('agent:jay:lifeos-home:current');
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('routes iPhone LifeOS voice to the most recent LifeOS Home thread instead of Telegram', async () => {
     const dir = join(tmpdir(), `claw-bridge-iphone-recent-lifeos-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
