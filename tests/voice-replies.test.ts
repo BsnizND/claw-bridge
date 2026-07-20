@@ -1,26 +1,34 @@
-import { mkdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppResponseStore } from '../src/app-response-store.js';
-import { synthesizeElevenLabsSpeech } from '../src/elevenlabs.js';
+import { synthesizeSpeechViaOpenClawGateway } from '../src/openclaw-gateway.js';
 import { failAppVoiceReply, renderAppVoiceReply } from '../src/voice-replies.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
 
-const originalFetch = globalThis.fetch;
+vi.mock('../src/openclaw-gateway.js', () => ({
+  synthesizeSpeechViaOpenClawGateway: vi.fn()
+}));
 
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-  vi.restoreAllMocks();
+const synthesizeSpeech = vi.mocked(synthesizeSpeechViaOpenClawGateway);
+
+beforeEach(() => {
+  synthesizeSpeech.mockReset();
+  synthesizeSpeech.mockResolvedValue({
+    audio: Buffer.from('audio'),
+    provider: 'openai',
+    mimeType: 'audio/mpeg',
+    fileExtension: 'mp3'
+  });
 });
 
 function baseConfig(): BridgeConfig {
   return {
-    elevenLabsApiKey: 'test-key',
-    elevenLabsVoiceId: 'test-voice',
-    elevenLabsModelId: 'eleven_multilingual_v2',
-    elevenLabsOutputFormat: 'mp3_44100_128',
-    elevenLabsBaseUrl: 'https://example.test'
+    openclawGatewayUrl: 'ws://127.0.0.1:18789',
+    openclawDeviceIdentityPath: '/tmp/device.json',
+    openclawDeviceAuthPath: '/tmp/device-auth.json',
+    openclawCliDrainTimeoutMs: 120000
   } as BridgeConfig;
 }
 
@@ -35,41 +43,7 @@ function event(responseId: string): NormalizedSiriEvent {
   };
 }
 
-describe('ElevenLabs voice replies', () => {
-  it('synthesizes speech through the configured ElevenLabs endpoint', async () => {
-    const dir = join(tmpdir(), `claw-bridge-tts-test-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(Buffer.from('audio'), {
-        status: 200,
-        headers: { 'content-type': 'audio/mpeg' }
-      })
-    );
-
-    const result = await synthesizeElevenLabsSpeech(baseConfig(), 'hello Jay', join(dir, 'reply.mp3'));
-
-    expect(result.byteLength).toBe(5);
-    expect(await readFile(result.audioPath, 'utf8')).toBe('audio');
-    expect(fetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        href: 'https://example.test/v1/text-to-speech/test-voice/stream?output_format=mp3_44100_128'
-      }),
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'xi-api-key': 'test-key'
-        }),
-        body: expect.stringContaining('hello Jay')
-      })
-    );
-  });
-
-  it('fails closed when ElevenLabs credentials are missing', async () => {
-    await expect(synthesizeElevenLabsSpeech({ ...baseConfig(), elevenLabsApiKey: undefined }, 'hello', '/tmp/nope.mp3')).rejects.toThrow(
-      'ELEVENLABS_API_KEY'
-    );
-  });
-
+describe('OpenClaw-native voice replies', () => {
   it('marks app response records ready after rendering', async () => {
     const dir = join(tmpdir(), `claw-bridge-render-test-${Date.now()}`);
     const store = new AppResponseStore(dir, 60000);
@@ -80,13 +54,6 @@ describe('ElevenLabs voice replies', () => {
       captured_at: new Date().toISOString(),
       request_id: 'voice-reply-request'
     });
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(Buffer.from('audio'), {
-        status: 200,
-        headers: { 'content-type': 'audio/mpeg' }
-      })
-    );
-
     await renderAppVoiceReply(baseConfig(), store, event(pending.id), { ok: true, replyText: 'Jay reply' });
 
     const ready = await store.get(pending.id);
@@ -95,6 +62,14 @@ describe('ElevenLabs voice replies', () => {
       reply_text: 'Jay reply',
       audio_mime_type: 'audio/mpeg',
       audio_size_bytes: 5
+    });
+    expect(await readFile(store.audioPath(pending.id, 'mp3'), 'utf8')).toBe('audio');
+    expect(synthesizeSpeech).toHaveBeenCalledWith({
+      gatewayUrl: 'ws://127.0.0.1:18789',
+      deviceIdentityPath: '/tmp/device.json',
+      deviceAuthPath: '/tmp/device-auth.json',
+      timeoutMs: 120000,
+      text: 'Jay reply'
     });
   });
 
@@ -109,13 +84,6 @@ describe('ElevenLabs voice replies', () => {
       request_id: 'voice-reply-request',
       app_response: { id: 'pending', mode: 'voice', app_device_id: 'ios-test-device', app_platform: 'ios' }
     });
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response(Buffer.from('audio'), {
-        status: 200,
-        headers: { 'content-type': 'audio/mpeg' }
-      })
-    );
-
     await renderAppVoiceReply(baseConfig(), store, event(pending.id), { ok: true, replyText: 'Jay reply' });
 
     const ready = await store.get(pending.id);

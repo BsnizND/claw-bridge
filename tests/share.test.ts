@@ -32,6 +32,9 @@ describe('share normalization', () => {
         location_timestamp: '2026-07-13T19:59:58.000Z',
         location_age_seconds: '2',
         recording_duration_seconds: '12.4',
+        capture_surface: 'mac',
+        talk_back: 'true',
+        source_context: 'golf_mode',
         maps_url: 'https://maps.apple.com/?ll=33.6001,-111.9002'
       },
       audioFile,
@@ -42,6 +45,9 @@ describe('share normalization', () => {
       source: 'lifeos_app_voice',
       raw_text: 'Pick up oat milk after work',
       shortcut_name: 'LifeOS Voice Capture',
+      capture_surface: 'mac',
+      talk_back: true,
+      source_context: 'golf_mode',
       location: {
         latitude: 33.6001,
         longitude: -111.9002,
@@ -79,6 +85,17 @@ describe('share normalization', () => {
         undefined
       )
     ).toThrow('lifeos_app_voice requires an audio transcript');
+  });
+
+  it('fails closed on an unknown native capture surface', () => {
+    expect(() =>
+      normalizeShareSheetRequest(
+        config,
+        { source: 'lifeos_app_voice', capture_surface: 'desktop' },
+        audioFile,
+        'This should not guess its source surface'
+      )
+    ).toThrow('unsupported capture_surface: desktop');
   });
 
   it('retains the reason privately when native voice has no location', () => {

@@ -41,11 +41,6 @@ export interface BridgeConfig {
   watchMaxAudioSeconds: number;
   appResponseDir: string;
   appResponseTtlMs: number;
-  elevenLabsApiKey?: string;
-  elevenLabsVoiceId?: string;
-  elevenLabsModelId: string;
-  elevenLabsOutputFormat: string;
-  elevenLabsBaseUrl: string;
   appDeviceDir: string;
   apnsTeamId?: string;
   apnsKeyId?: string;
@@ -119,6 +114,7 @@ export interface CaptureReceiptMetadata {
 }
 
 export type SourceContext = 'golf_mode';
+export type CaptureSurface = 'iphone' | 'watch' | 'mac' | 'web';
 
 export interface NormalizedSiriEvent {
   source: string;
@@ -135,6 +131,8 @@ export interface NormalizedSiriEvent {
   shared_item?: SharedItemMetadata;
   capture_receipt?: CaptureReceiptMetadata;
   source_context?: SourceContext;
+  capture_surface?: CaptureSurface;
+  talk_back?: boolean;
   app_response?: AppResponseRequest;
 }
 

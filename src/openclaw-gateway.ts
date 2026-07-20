@@ -31,8 +31,15 @@ export interface OpenClawGatewayDeliveryParams {
   deviceIdentityPath: string;
   deviceAuthPath: string;
   timeoutMs: number;
-  agentParams: Record<string, unknown>;
+  chatParams: Record<string, unknown>;
   sessionKey: string;
+}
+
+export interface OpenClawGatewaySpeechResult {
+  audio: Buffer;
+  provider: string;
+  mimeType: string;
+  fileExtension: string;
 }
 
 export interface OpenClawGatewaySessionRequestParams {
@@ -128,12 +135,22 @@ async function withOpenClawGateway<T>(
     method: string,
     requestParams: Record<string, unknown>,
     timeoutMs?: number
-  ) => Promise<unknown>) => Promise<T>
+  ) => Promise<unknown>, waitForEvent: (
+    predicate: (event: GatewayEvent) => boolean,
+    timeoutMs?: number
+  ) => Promise<GatewayEvent>) => Promise<T>
 ): Promise<T> {
   const { identity, auth } = await loadGatewayIdentity(params.deviceIdentityPath, params.deviceAuthPath);
   const socket = new WebSocket(params.gatewayUrl);
   const pending = new Map<string, {
     resolve: (value: unknown) => void;
+    reject: (error: Error) => void;
+    timer: NodeJS.Timeout;
+  }>();
+  const eventBacklog: GatewayEvent[] = [];
+  const eventWaiters = new Set<{
+    predicate: (event: GatewayEvent) => boolean;
+    resolve: (event: GatewayEvent) => void;
     reject: (error: Error) => void;
     timer: NodeJS.Timeout;
   }>();
@@ -160,6 +177,28 @@ async function withOpenClawGateway<T>(
     });
   };
 
+  const waitForEvent = (
+    predicate: (event: GatewayEvent) => boolean,
+    timeoutMs = params.timeoutMs
+  ): Promise<GatewayEvent> => {
+    const existingIndex = eventBacklog.findIndex(predicate);
+    if (existingIndex >= 0) {
+      return Promise.resolve(eventBacklog.splice(existingIndex, 1)[0]);
+    }
+    return new Promise((resolve, reject) => {
+      const waiter = {
+        predicate,
+        resolve,
+        reject,
+        timer: setTimeout(() => {
+          eventWaiters.delete(waiter);
+          reject(new Error(`OpenClaw Gateway event wait exceeded ${timeoutMs}ms`));
+        }, timeoutMs)
+      };
+      eventWaiters.add(waiter);
+    });
+  };
+
   const failAll = (error: Error) => {
     connectedReject(error);
     for (const item of pending.values()) {
@@ -167,6 +206,11 @@ async function withOpenClawGateway<T>(
       item.reject(error);
     }
     pending.clear();
+    for (const waiter of eventWaiters) {
+      clearTimeout(waiter.timer);
+      waiter.reject(error);
+    }
+    eventWaiters.clear();
   };
 
   socket.addEventListener('message', (event) => {
@@ -179,6 +223,21 @@ async function withOpenClawGateway<T>(
     if (frame.type === 'event' && frame.event === 'connect.challenge') {
       const nonce = requireString(asRecord(frame.payload).nonce, 'OpenClaw Gateway challenge nonce');
       void request('connect', buildConnectParams(identity, auth, nonce), 5000).then(() => connectedResolve(), connectedReject);
+      return;
+    }
+    if (frame.type === 'event') {
+      let matched = false;
+      for (const waiter of eventWaiters) {
+        if (!waiter.predicate(frame)) continue;
+        matched = true;
+        eventWaiters.delete(waiter);
+        clearTimeout(waiter.timer);
+        waiter.resolve(frame);
+      }
+      if (!matched) {
+        eventBacklog.push(frame);
+        if (eventBacklog.length > 200) eventBacklog.shift();
+      }
       return;
     }
     if (frame.type !== 'res') return;
@@ -195,7 +254,7 @@ async function withOpenClawGateway<T>(
   try {
     await connected;
     clearTimeout(connectTimeout);
-    return await operation(request);
+    return await operation(request, waitForEvent);
   } finally {
     clearTimeout(connectTimeout);
     socket.close();
@@ -220,18 +279,66 @@ export async function injectAssistantMessageIntoOpenClawSession(
 }
 
 export async function deliverViaOpenClawGateway(params: OpenClawGatewayDeliveryParams): Promise<unknown> {
-  return withOpenClawGateway(params, async (request) => {
-    const accepted = asRecord(await request('agent', params.agentParams));
-    const runId = requireString(accepted.runId, 'OpenClaw Gateway agent run id');
-    const wait = asRecord(await request(
-      'agent.wait',
-      { runId, timeoutMs: params.timeoutMs },
-      params.timeoutMs + 2000
-    ));
-    const status = typeof wait.status === 'string' ? wait.status : 'ok';
-    if (status === 'timeout' || status === 'pending' || status === 'error') {
-      throw new Error(`OpenClaw Gateway agent run ended with status ${status}${wait.error ? `: ${String(wait.error)}` : ''}`);
+  return withOpenClawGateway(params, async (request, waitForEvent) => {
+    const accepted = asRecord(await request('chat.send', params.chatParams));
+    const runId = requireString(accepted.runId, 'OpenClaw Gateway chat run id');
+    const status = typeof accepted.status === 'string' ? accepted.status.trim().toLowerCase() : 'started';
+    if (status === 'timeout' || status === 'error' || status === 'aborted') {
+      throw new Error(`OpenClaw Gateway chat.send ended with status ${status}`);
+    }
+    if (status !== 'ok') {
+      const terminal = await waitForEvent((event) => {
+        if (event.event !== 'chat') return false;
+        const payload = asRecord(event.payload);
+        return payload.runId === runId && ['final', 'aborted', 'error'].includes(String(payload.state));
+      }, params.timeoutMs);
+      const payload = asRecord(terminal.payload);
+      const terminalState = String(payload.state);
+      if (terminalState !== 'final') {
+        throw new Error(
+          `OpenClaw Gateway chat run ended with state ${terminalState}${payload.errorMessage ? `: ${String(payload.errorMessage)}` : ''}`
+        );
+      }
     }
     return await request('chat.history', { sessionKey: params.sessionKey, limit: 50 }, 5000);
   });
+}
+
+export async function synthesizeSpeechViaOpenClawGateway(
+  params: OpenClawGatewaySessionRequestParams & { text: string }
+): Promise<OpenClawGatewaySpeechResult> {
+  return withOpenClawGateway(params, async (request) => {
+    const result = asRecord(await request('tts.speak', { text: params.text }, Math.max(params.timeoutMs, 60_000)));
+    const audioBase64 = requireString(result.audioBase64, 'OpenClaw Gateway TTS audio');
+    const provider = requireString(result.provider, 'OpenClaw Gateway TTS provider');
+    const mimeType = requireString(result.mimeType, 'OpenClaw Gateway TTS MIME type');
+    const audio = Buffer.from(audioBase64, 'base64');
+    if (audio.length === 0) throw new Error('OpenClaw Gateway TTS returned empty audio');
+    return {
+      audio,
+      provider,
+      mimeType,
+      fileExtension: normalizeSpeechFileExtension(result.fileExtension, mimeType)
+    };
+  });
+}
+
+function normalizeSpeechFileExtension(value: unknown, mimeType: string): string {
+  if (typeof value === 'string') {
+    const extension = value.trim().replace(/^\./, '').toLowerCase();
+    if (/^[a-z0-9]{2,8}$/.test(extension)) return extension;
+  }
+  const byMimeType: Record<string, string> = {
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/mp4': 'm4a',
+    'audio/aac': 'aac',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/ogg': 'ogg',
+    'audio/opus': 'opus'
+  };
+  const extension = byMimeType[mimeType.toLowerCase()];
+  if (!extension) throw new Error(`OpenClaw Gateway TTS returned unsupported MIME type ${mimeType}`);
+  return extension;
 }
