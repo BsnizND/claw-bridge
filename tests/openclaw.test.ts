@@ -8,7 +8,8 @@ import {
   acceptForOpenClaw,
   drainOpenClawQueue,
   extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput,
-  extractReplyTextFromOpenClawOutput
+  extractReplyTextFromOpenClawOutput,
+  resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath
 } from '../src/openclaw.js';
 import { recoverFreshOrphanedDrainLockForExclusiveOwner } from '../src/queue.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
@@ -151,9 +152,20 @@ function parseNativeVoiceDelivery(message: string): {
 
 async function writeMessageCapturingOpenClaw(binPath: string, messagePath: string): Promise<void> {
   const sessionStorePath = `${messagePath}.sessions.json`;
+  const sessionTranscriptPath = `${messagePath}.session.jsonl`;
+  await writeFile(
+    sessionTranscriptPath,
+    `${directLifeOSUserMessage('2026-07-19T19:00:00Z', 'Existing direct LifeOS turn')}\n`,
+    'utf8'
+  );
   await writeFile(
     sessionStorePath,
-    JSON.stringify({ 'agent:jay:lifeos-home:current-conversation': { updatedAt: 100 } }),
+    JSON.stringify({
+      'agent:jay:lifeos-home:current-conversation': {
+        updatedAt: 100,
+        sessionFile: sessionTranscriptPath
+      }
+    }),
     'utf8'
   );
   await writeFile(
@@ -176,6 +188,17 @@ exit 2
     'utf8'
   );
   await chmod(binPath, 0o755);
+}
+
+function directLifeOSUserMessage(timestamp: string, text: string): string {
+  return JSON.stringify({
+    type: 'message',
+    timestamp,
+    message: {
+      role: 'user',
+      content: `${text}\n\n<lifeos_client_context_envelope>\n{}\n</lifeos_client_context_envelope>`
+    }
+  });
 }
 
 function watchEventWithoutLocation(text = 'voice note without gps'): NormalizedSiriEvent {
@@ -278,11 +301,71 @@ describe('OpenClaw delivery', () => {
             { key: 'agent:jay:lifeos-home:qa:expertise-phoenix', updatedAt: 500 },
             { key: 'agent:jay:lifeos-home:qa-trip-proof', updatedAt: 450 },
             { key: 'agent:jay:lifeos-home:surface-now:daily', updatedAt: 400 },
-            { key: 'agent:jay:lifeos-home:surface-now-daily', updatedAt: 350 }
+            { key: 'agent:jay:lifeos-home:surface-now-daily', updatedAt: 350 },
+            { key: 'agent:jay:lifeos-home:user-conversation:heartbeat', updatedAt: 600 },
+            { key: 'agent:jay:lifeos-home:stream-proof-latest', updatedAt: 700 },
+            { key: 'agent:jay:lifeos-home:internal-delivery-check', updatedAt: 800 }
           ]
         })
       )
     ).toBe('agent:jay:lifeos-home:user-conversation');
+  });
+
+  it('routes current by the freshest direct Brian-authored LifeOS message, not session activity', async () => {
+    const dir = join(tmpdir(), `claw-bridge-current-thread-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const storePath = join(dir, 'sessions.json');
+    const olderDirectPath = join(dir, 'older-direct.jsonl');
+    const newestDirectPath = join(dir, 'newest-direct.jsonl');
+    const internalPath = join(dir, 'internal.jsonl');
+    await writeFile(olderDirectPath, `${directLifeOSUserMessage('2026-07-19T18:00:00Z', 'Older direct message')}\n`, 'utf8');
+    await writeFile(newestDirectPath, `${directLifeOSUserMessage('2026-07-19T19:00:00Z', 'Newest direct message')}\n`, 'utf8');
+    await writeFile(internalPath, `${JSON.stringify({
+      type: 'message',
+      timestamp: '2026-07-19T20:00:00Z',
+      message: { role: 'user', content: '[Inter-session message] internal handoff' }
+    })}\n`, 'utf8');
+    await writeFile(storePath, JSON.stringify({
+      'agent:jay:lifeos-home:older-direct': {
+        updatedAt: 900,
+        sessionFile: olderDirectPath
+      },
+      'agent:jay:lifeos-home:newest-direct': {
+        updatedAt: 100,
+        sessionFile: newestDirectPath
+      },
+      'agent:jay:lifeos-home:background-only': {
+        updatedAt: 1000,
+        sessionFile: internalPath
+      },
+      'agent:jay:lifeos-home:newest-direct:heartbeat': {
+        updatedAt: 1100,
+        sessionFile: newestDirectPath
+      }
+    }), 'utf8');
+
+    await expect(resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(storePath))
+      .resolves.toBe('agent:jay:lifeos-home:newest-direct');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('fails closed when no LifeOS session contains a direct client message', async () => {
+    const dir = join(tmpdir(), `claw-bridge-current-thread-empty-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const storePath = join(dir, 'sessions.json');
+    const transcriptPath = join(dir, 'internal.jsonl');
+    await writeFile(transcriptPath, `${JSON.stringify({
+      type: 'message',
+      timestamp: '2026-07-19T20:00:00Z',
+      message: { role: 'user', content: 'Internal request without LifeOS client context' }
+    })}\n`, 'utf8');
+    await writeFile(storePath, JSON.stringify({
+      'agent:jay:lifeos-home:internal': { updatedAt: 1000, sessionFile: transcriptPath }
+    }), 'utf8');
+
+    await expect(resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(storePath))
+      .rejects.toThrow(/direct Brian-authored LifeOS Home conversation/u);
+    await rm(dir, { recursive: true, force: true });
   });
 
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
@@ -792,13 +875,17 @@ describe('OpenClaw delivery', () => {
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
     const sessionStorePath = join(dir, 'sessions.json');
+    const olderTranscriptPath = join(dir, 'older.jsonl');
+    const currentTranscriptPath = join(dir, 'current.jsonl');
+    await writeFile(olderTranscriptPath, `${directLifeOSUserMessage('2026-07-19T18:00:00Z', 'Older')}\n`, 'utf8');
+    await writeFile(currentTranscriptPath, `${directLifeOSUserMessage('2026-07-19T19:00:00Z', 'Current')}\n`, 'utf8');
     await writeFile(
       sessionStorePath,
       JSON.stringify({
-        'agent:jay:lifeos-home:older': { updatedAt: 100 },
+        'agent:jay:lifeos-home:older': { updatedAt: 100, sessionFile: olderTranscriptPath },
         'agent:jay:telegram:default:direct:brian': { updatedAt: 900 },
         'agent:jay:lifeos-home:archived': { updatedAt: 500, archivedAt: '2026-07-14T00:00:00Z' },
-        'agent:jay:lifeos-home:current': { updatedAt: 300 }
+        'agent:jay:lifeos-home:current': { updatedAt: 300, sessionFile: currentTranscriptPath }
       }),
       'utf8'
     );
@@ -860,12 +947,16 @@ printf '%s\n' "$@" > '${argsPath}'
     const binPath = join(dir, 'fake-openclaw');
     const argsPath = join(dir, 'args.txt');
     const sessionStorePath = join(dir, 'sessions.json');
+    const olderTranscriptPath = join(dir, 'older.jsonl');
+    const currentTranscriptPath = join(dir, 'current.jsonl');
+    await writeFile(olderTranscriptPath, `${directLifeOSUserMessage('2026-07-19T18:00:00Z', 'Older')}\n`, 'utf8');
+    await writeFile(currentTranscriptPath, `${directLifeOSUserMessage('2026-07-19T19:00:00Z', 'Current')}\n`, 'utf8');
     await writeFile(
       sessionStorePath,
       JSON.stringify({
-        'agent:jay:lifeos-home:older': { updatedAt: 100 },
+        'agent:jay:lifeos-home:older': { updatedAt: 100, sessionFile: olderTranscriptPath },
         'agent:jay:telegram:default:direct:brian': { updatedAt: 900 },
-        'agent:jay:lifeos-home:current': { updatedAt: 300 }
+        'agent:jay:lifeos-home:current': { updatedAt: 300, sessionFile: currentTranscriptPath }
       }),
       'utf8'
     );
@@ -963,7 +1054,7 @@ printf 'unexpected' > '${agentAttemptPath}'
     await acceptForOpenClaw(config, watchEvent);
     expect(await drainOpenClawQueue(config)).toEqual({ delivered: 0, failed: 0, pending: 1, archived: 0 });
     expect(await readFile(queuePath, 'utf8')).toContain(
-      'No existing non-archived LifeOS Home session is available for this native LifeOS capture'
+      'No existing direct Brian-authored LifeOS Home conversation is available'
     );
     await expect(readFile(agentAttemptPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
     await rm(dir, { recursive: true, force: true });
