@@ -97,7 +97,9 @@ async function acceptSilentVoiceCapture(
   );
   res.status(202).json({
     ok: true,
-    queued: false,
+    // Existing iPhone and Watch clients use queued=true as the terminal receipt
+    // that removes a durable local outbox item. No Jay event is created here.
+    queued: true,
     id: requestId,
     ignored: 'no_speech',
     spoken: 'No speech detected'

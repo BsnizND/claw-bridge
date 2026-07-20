@@ -484,7 +484,7 @@ describe('app routes', () => {
     expect(res.status).toBe(202);
     expect(res.body).toMatchObject({
       ok: true,
-      queued: false,
+      queued: true,
       id: 'silent-lifeos-voice-request',
       ignored: 'no_speech',
       spoken: 'No speech detected'
@@ -527,7 +527,7 @@ describe('app routes', () => {
     expect(res.status).toBe(202);
     expect(res.body).toMatchObject({
       ok: true,
-      queued: false,
+      queued: true,
       id: 'silent-watch-voice-request',
       ignored: 'no_speech',
       spoken: 'No speech detected'
