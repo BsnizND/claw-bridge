@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { deliverViaOpenClawGateway } from './openclaw-gateway.js';
 import { drainQueue, hasQueuedOrArchivedRequest, queueEvent } from './queue.js';
@@ -336,13 +337,7 @@ export function extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(stdout: 
         const session = item as Record<string, unknown>;
         const key = stringValue(session.key) ?? stringValue(session.sessionKey);
         if (!key?.startsWith(LIFEOS_HOME_SESSION_PREFIX)) return undefined;
-        const suffix = key.slice(LIFEOS_HOME_SESSION_PREFIX.length).toLowerCase();
-        if (
-          suffix.startsWith('qa:') ||
-          suffix.startsWith('qa-') ||
-          suffix.startsWith('surface-now:') ||
-          suffix.startsWith('surface-now-')
-        ) return undefined;
+        if (!isEligibleDirectLifeOSHomeSessionKey(key)) return undefined;
         if (stringValue(session.archivedAt)) return undefined;
         const updatedAt = typeof session.updatedAt === 'number' && Number.isFinite(session.updatedAt)
           ? session.updatedAt
@@ -354,6 +349,127 @@ export function extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(stdout: 
     if (mostRecent) return mostRecent.key;
   }
   return undefined;
+}
+
+function isEligibleDirectLifeOSHomeSessionKey(key: string): boolean {
+  if (!key.startsWith(LIFEOS_HOME_SESSION_PREFIX)) return false;
+  const suffix = key.slice(LIFEOS_HOME_SESSION_PREFIX.length).toLowerCase();
+  if (!suffix) return false;
+  return !(
+    suffix.startsWith('qa:') ||
+    suffix.startsWith('qa-') ||
+    suffix.includes(':heartbeat') ||
+    suffix.startsWith('heartbeat:') ||
+    suffix.startsWith('heartbeat-') ||
+    suffix.startsWith('surface-now:') ||
+    suffix.startsWith('surface-now-') ||
+    suffix.includes('stream-proof') ||
+    suffix.includes('internal-delivery')
+  );
+}
+
+function messageText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return '';
+      return stringValue((item as Record<string, unknown>).text) ?? '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+function timestampMs(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.abs(value) >= 1_000_000_000_000 ? value : value * 1000;
+  }
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function sessionTranscriptPath(
+  sessionStorePath: string,
+  session: Record<string, unknown>
+): string | undefined {
+  const sessionFile = stringValue(session.sessionFile);
+  if (sessionFile) return isAbsolute(sessionFile) ? sessionFile : resolve(dirname(sessionStorePath), sessionFile);
+  const sessionId = stringValue(session.sessionId);
+  return sessionId ? resolve(dirname(sessionStorePath), `${sessionId}.jsonl`) : undefined;
+}
+
+async function latestDirectLifeOSUserMessageAt(transcriptPath: string): Promise<number | undefined> {
+  let transcript: string;
+  try {
+    transcript = await readFile(transcriptPath, 'utf8');
+  } catch {
+    return undefined;
+  }
+
+  let latest: number | undefined;
+  for (const line of transcript.split('\n')) {
+    if (!line.trim()) continue;
+    let row: Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(line) as unknown;
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
+      row = parsed as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    if (row.type !== 'message') continue;
+    const rawMessage = row.message;
+    if (!rawMessage || typeof rawMessage !== 'object' || Array.isArray(rawMessage)) continue;
+    const message = rawMessage as Record<string, unknown>;
+    if (message.role !== 'user') continue;
+    const text = messageText(message.content).trim();
+    if (
+      !text ||
+      text.startsWith('[Inter-session message]') ||
+      text.includes('<internal_runtime_context>') ||
+      !text.includes('<lifeos_client_context_envelope>')
+    ) continue;
+    const observedAt = timestampMs(message.timestamp) ?? timestampMs(row.timestamp);
+    if (observedAt !== undefined && (latest === undefined || observedAt > latest)) latest = observedAt;
+  }
+  return latest;
+}
+
+export async function resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(
+  sessionStorePath: string
+): Promise<string> {
+  const rawStore = await readFile(sessionStorePath, 'utf8');
+  const parsed = JSON.parse(rawStore) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('OpenClaw LifeOS session store is invalid');
+  }
+
+  const candidates = await Promise.all(
+    Object.entries(parsed as Record<string, unknown>).map(async ([key, rawSession]) => {
+      if (
+        !isEligibleDirectLifeOSHomeSessionKey(key) ||
+        !rawSession ||
+        typeof rawSession !== 'object' ||
+        Array.isArray(rawSession)
+      ) return undefined;
+      const session = rawSession as Record<string, unknown>;
+      if (session.archivedAt) return undefined;
+      const transcriptPath = sessionTranscriptPath(sessionStorePath, session);
+      if (!transcriptPath) return undefined;
+      const lastDirectUserAt = await latestDirectLifeOSUserMessageAt(transcriptPath);
+      if (lastDirectUserAt === undefined) return undefined;
+      return { key, lastDirectUserAt };
+    })
+  );
+
+  const selected = candidates
+    .filter((candidate): candidate is { key: string; lastDirectUserAt: number } => Boolean(candidate))
+    .sort((a, b) => b.lastDirectUserAt - a.lastDirectUserAt)[0];
+  if (!selected) {
+    throw new Error('No existing direct Brian-authored LifeOS Home conversation is available');
+  }
+  return selected.key;
 }
 
 function extractOpenClawSessionStorePath(stdout: string): string | undefined {
@@ -370,12 +486,7 @@ export async function resolveMostRecentLifeOSHomeSessionKey(
   assistantId: string
 ): Promise<string> {
   if (config.openclawSessionStorePath) {
-    const store = await readFile(config.openclawSessionStorePath, 'utf8');
-    const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
-    if (!sessionKey) {
-      throw new Error('No existing non-archived LifeOS Home session is available for this native LifeOS capture');
-    }
-    return sessionKey;
+    return resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(config.openclawSessionStorePath);
   }
   const args = ['sessions', '--agent', assistantId, '--json', '--limit', 'all'];
   return new Promise((resolve, reject) => {
@@ -416,15 +527,8 @@ export async function resolveMostRecentLifeOSHomeSessionKey(
         reject(new Error('OpenClaw LifeOS session lookup did not report its canonical session store'));
         return;
       }
-      void readFile(storePath, 'utf8')
-        .then((store) => {
-          const sessionKey = extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(store);
-          if (!sessionKey) {
-            reject(new Error('No existing non-archived LifeOS Home session is available for this native LifeOS capture'));
-            return;
-          }
-          resolve(sessionKey);
-        })
+      void resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(storePath)
+        .then(resolve)
         .catch(reject);
     });
   });
