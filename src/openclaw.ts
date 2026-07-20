@@ -208,6 +208,41 @@ function buildNativeVoiceMessage(event: NormalizedSiriEvent): string {
   return `${transcript}\n\n<lifeos_client_context_envelope>\n${JSON.stringify(contextEnvelope)}\n</lifeos_client_context_envelope>`;
 }
 
+function buildNativeMacTextMessage(event: NormalizedSiriEvent): string {
+  const text = event.shared_item?.text?.trim() || event.raw_text.trim();
+  const contextEnvelope = {
+    schemaVersion: 'lifeos_model_context.v1',
+    createdAt: event.captured_at,
+    appSurface: 'ios_lifeos',
+    source: {
+      kind: 'typed_text'
+    },
+    timezone: null,
+    localDateTime: null,
+    location: event.location
+      ? {
+          status: 'present',
+          latitude: event.location.latitude,
+          longitude: event.location.longitude,
+          accuracyMeters: event.location.horizontal_accuracy ?? null,
+          altitudeMeters: event.location.altitude ?? null,
+          capturedAt: event.location.location_timestamp ?? event.captured_at,
+          ageMs: event.location.location_age_seconds !== undefined
+            ? Math.round(event.location.location_age_seconds * 1000)
+            : null,
+          mapsUrl: event.location.maps_url ?? null,
+          freshness: 'current'
+        }
+      : {
+          status: 'unavailable',
+          reason: event.capture_receipt?.no_location_reason ?? null
+        },
+    thingInView: null,
+    attachments: []
+  };
+  return `${text}\n\n<lifeos_client_context_envelope>\n${JSON.stringify(contextEnvelope)}\n</lifeos_client_context_envelope>`;
+}
+
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   const prefix = compactPrefix(config, event);
   const text = compactText(event);
@@ -226,6 +261,7 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
 
 function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   if (event.source === 'lifeos_app_voice' || event.source === 'watch_app') return buildNativeVoiceMessage(event);
+  if (event.source === 'macos_app' && event.shared_item?.kind === 'text') return buildNativeMacTextMessage(event);
   return config.openclawMessageStyle === 'compact' ? buildCompactMessage(config, event) : buildAssistantMessage(event);
 }
 
