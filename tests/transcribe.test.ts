@@ -100,4 +100,39 @@ lines.on('close', () => process.exit(0));
     expect(await transcribeAudioFile(config, '/tmp/second.m4a')).toBe('warm local transcript');
     await rm(dir, { recursive: true, force: true });
   });
+
+  it('treats a persistent Whisper empty transcript as silence instead of a transport failure', async () => {
+    const dir = join(tmpdir(), `claw-bridge-persistent-whisper-silence-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const workerPath = join(dir, 'fake-worker.mjs');
+    await writeFile(
+      workerPath,
+      `import readline from 'node:readline';
+process.stdout.write(JSON.stringify({type:'ready', model:'small.en', device:'mps', load_ms:12}) + '\\n');
+const lines = readline.createInterface({input: process.stdin});
+lines.on('line', (line) => {
+  const request = JSON.parse(line);
+  process.stdout.write(JSON.stringify({type:'result', id:request.id, text:'', duration_ms:42}) + '\\n');
+});
+lines.on('close', () => process.exit(0));
+`,
+      'utf8'
+    );
+
+    const config = {
+      audioTranscribeEnabled: true,
+      audioTranscribeEngine: 'local_whisper',
+      audioTranscribeCliBin: '/unused/whisper',
+      audioTranscribeTimeoutMs: 1000,
+      audioTranscribeModel: 'small.en',
+      audioTranscribeLanguage: 'en',
+      audioTranscribePersistent: true,
+      audioTranscribePythonBin: process.execPath,
+      audioTranscribeDevice: 'mps',
+      audioTranscribeWorkerPath: workerPath
+    } as BridgeConfig;
+
+    await expect(transcribeAudioFile(config, '/tmp/silent.m4a')).resolves.toBeUndefined();
+    await rm(dir, { recursive: true, force: true });
+  });
 });
