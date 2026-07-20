@@ -271,8 +271,7 @@ export async function injectAssistantMessageIntoOpenClawSession(
     const result = asRecord(await request('chat.inject', {
       sessionKey: params.sessionKey,
       agentId: 'jay',
-      message: params.message,
-      label: 'LifeOS proactive update'
+      message: params.message
     }, 5000));
     return requireString(result.messageId, 'OpenClaw injected message id');
   });
