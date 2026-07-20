@@ -174,8 +174,10 @@ function buildNativeVoiceMessage(event: NormalizedSiriEvent): string {
       durationMs,
       transcript,
       captureId: event.request_id,
-      captureSurface: event.source === 'watch_app' ? 'watch' : 'iphone',
-      context: event.source_context ?? null
+      captureSurface: event.source === 'watch_app' ? 'watch' : event.capture_surface ?? 'iphone',
+      context: event.source_context ?? null,
+      talkBack: event.talk_back === true || Boolean(event.app_response),
+      activeMode: event.source_context === 'golf_mode'
     },
     timezone: null,
     localDateTime: null,
@@ -522,21 +524,18 @@ async function deliverViaGateway(config: BridgeConfig, event: NormalizedSiriEven
     message: buildOpenClawMessage(config, event),
     agentId: event.assistant || config.assistantId,
     sessionKey: lifeOSSessionKey ?? config.openclawSessionKey,
-    timeout: Math.ceil(timeoutMs / 1000),
+    timeoutMs,
     deliver: Boolean(config.openclawDeliverReply && !lifeOSSessionKey),
-    cleanupBundleMcpOnRunEnd: true,
     idempotencyKey: event.request_id
   };
   if (config.openclawCliThinking) params.thinking = config.openclawCliThinking;
-  if (params.deliver && config.openclawReplyChannel) params.replyChannel = config.openclawReplyChannel;
-  if (params.deliver && config.openclawReplyTo) params.replyTo = config.openclawReplyTo;
 
   const history = await deliverViaOpenClawGateway({
     gatewayUrl: config.openclawGatewayUrl,
     deviceIdentityPath: config.openclawDeviceIdentityPath,
     deviceAuthPath: config.openclawDeviceAuthPath,
     timeoutMs,
-    agentParams: params,
+    chatParams: params,
     sessionKey: String(params.sessionKey)
   });
   return {

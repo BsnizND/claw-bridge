@@ -8,9 +8,9 @@ configured chat channel.
 
 It also includes an optional Walkie mode. In Walkie mode the Watch or iPhone
 still sends through the same bridge/OpenClaw path, but asks the bridge to return
-the assistant reply as ElevenLabs-rendered audio. The bridge must still deliver
-the text reply through the configured chat route; the app response is an
-additional playback surface, not a replacement for the chat thread.
+the assistant reply through OpenClaw's native `tts.speak` service. The text
+reply remains in the canonical chat session; app playback is an additional
+surface, not a replacement for the chat thread.
 
 ## What it does
 
@@ -210,12 +210,10 @@ For Walkie voice replies, also configure:
 ```text
 APP_RESPONSE_DIR=./data/app-responses
 APP_DEVICE_DIR=./data/app-devices
-ELEVENLABS_API_KEY=replace-with-elevenlabs-api-key
-ELEVENLABS_VOICE_ID=replace-with-elevenlabs-voice-id
 ```
 
 The bridge fails closed if Walkie mode is requested and no final OpenClaw reply
-text or ElevenLabs configuration is available.
+text or playable OpenClaw Gateway TTS result is available.
 
 ## Permissions
 

@@ -89,7 +89,7 @@ Over time, the assistant has more of your actual context: the links you saved, t
 - Durable JSONL queue for pending work, with delivered/failed outcomes archived separately.
 - Background delivery to OpenClaw through CLI or HTTP ingest.
 - Optional OpenClaw reply delivery back to a messaging channel, such as an existing Telegram chat.
-- Optional Walkie voice replies for the iOS/watchOS apps, backed by ElevenLabs audio and authenticated response polling.
+- Optional Walkie voice replies for the iOS/watchOS apps, backed by OpenClaw Gateway TTS and authenticated response polling.
 - Optional structured location context, including latitude, longitude, altitude, accuracy, and a map URL.
 - Optional voice memo metadata/transcript context for Shortcuts that can provide an audio transcript.
 - Optional server-side audio transcription for shared Voice Memos/audio files.
@@ -168,7 +168,7 @@ Body:
 
 For app Walkie mode, include `response_mode: "voice"` or `walkie_mode: true`.
 The bridge returns a `response_id` plus authenticated status/audio URLs. The app
-polls the status URL, then plays the ElevenLabs-rendered reply when it is ready.
+polls the status URL, then plays the OpenClaw-rendered reply when it is ready.
 
 ### `POST /shortcuts/share`
 
@@ -358,8 +358,6 @@ Important settings:
 - `AUDIO_TRANSCRIBE_WORKER_PATH`: optional explicit path to `scripts/whisper-worker.py`.
 - `APP_RESPONSE_DIR`: directory for Walkie response metadata and generated audio.
 - `APP_RESPONSE_TTL_MS`: response lifetime before pending replies expire.
-- `ELEVENLABS_API_KEY` / `ELEVENLABS_VOICE_ID`: required for real Walkie voice replies.
-- `ELEVENLABS_MODEL_ID`, `ELEVENLABS_OUTPUT_FORMAT`, `ELEVENLABS_BASE_URL`: optional ElevenLabs TTS tuning. Defaults to `eleven_v3`, ElevenLabs' latest expressive TTS model.
 - `APP_DEVICE_DIR`: directory for registered iOS/watchOS app device tokens.
 - `APNS_TEAM_ID`, `APNS_KEY_ID`, `APNS_PRIVATE_KEY_PATH`, `APNS_BUNDLE_ID`, `APNS_ENVIRONMENT`: optional APNs provider settings for notification tap-to-play.
 
@@ -367,20 +365,9 @@ Legacy `SIRI_BRIDGE_TOKEN`, `SIRI_BRIDGE_URL`, and `SIRI_MESSAGE_PREFIX`
 names are still accepted where they existed before, but new installs should use
 the `CLAW_BRIDGE_*` and `VOICE_MESSAGE_PREFIX` names.
 
-### ElevenLabs Smoke Test
-
-After setting `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in the process
-environment, run:
-
-```bash
-npm run smoke:elevenlabs
-```
-
-The smoke test prints redacted JSON evidence with provider, MIME type, byte
-length, SHA-256, model, output format, and elapsed time. It does not print the
-API key or voice ID. By default it deletes the generated audio file; set
-`ELEVENLABS_SMOKE_KEEP_AUDIO=1` only when you intentionally want to keep the
-temporary MP3 path for manual listening.
+Walkie playback uses the same OpenClaw Gateway identity and auth paths as
+native chat delivery. Provider choice and voice configuration remain owned by
+OpenClaw's `messages.tts` configuration.
 
 ## Shortcut setup
 

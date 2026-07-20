@@ -108,6 +108,8 @@ function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): Normal
     session_key: 'agent:jay:lifeos-home:current-conversation',
     device_name: 'Brian\u2019s iPhone',
     shortcut_name: 'LifeOS Voice Capture',
+    capture_surface: 'iphone',
+    talk_back: true,
     location: {
       latitude: 33.6001,
       longitude: -111.9002,
@@ -430,16 +432,28 @@ describe('OpenClaw delivery', () => {
       send(raw: string) {
         const frame = JSON.parse(raw) as { id: string; method: string; params: Record<string, unknown> };
         sent.push({ method: frame.method, params: frame.params });
-        const payload = frame.method === 'agent'
-          ? { runId: 'gateway-run-1', status: 'accepted' }
-          : frame.method === 'agent.wait'
-            ? { runId: 'gateway-run-1', status: 'ok' }
-            : frame.method === 'chat.history'
+        const payload = frame.method === 'chat.send'
+          ? { runId: 'gateway-run-1', status: 'started' }
+          : frame.method === 'chat.history'
               ? { messages: [{ role: 'assistant', content: [{ type: 'text', text: 'gateway reply text' }] }] }
               : { ok: true };
         queueMicrotask(() => this.emit('message', {
           data: JSON.stringify({ type: 'res', id: frame.id, ok: true, payload })
         }));
+        if (frame.method === 'chat.send') {
+          queueMicrotask(() => this.emit('message', {
+            data: JSON.stringify({
+              type: 'event',
+              event: 'chat',
+              payload: {
+                runId: 'gateway-run-1',
+                sessionKey: 'agent:jay:lifeos-home:current-thread',
+                seq: 1,
+                state: 'final'
+              }
+            })
+          }));
+        }
       }
 
       close() {}
@@ -487,17 +501,17 @@ describe('OpenClaw delivery', () => {
       globalThis.WebSocket = originalWebSocket;
     }
 
-    const agentRequest = sent.find((item) => item.method === 'agent');
-    expect(agentRequest?.params).toMatchObject({
+    const chatRequest = sent.find((item) => item.method === 'chat.send');
+    expect(chatRequest?.params).toMatchObject({
       agentId: 'jay',
       sessionKey: 'agent:jay:lifeos-home:current-thread',
       deliver: false,
       idempotencyKey: 'gateway-idempotency-key'
     });
-    expect(agentRequest?.params).not.toHaveProperty('model');
-    expect(agentRequest?.params).not.toHaveProperty('replyChannel');
-    expect(agentRequest?.params).not.toHaveProperty('replyTo');
-    expect(sent.map((item) => item.method)).toEqual(['connect', 'agent', 'agent.wait', 'chat.history']);
+    expect(chatRequest?.params).not.toHaveProperty('model');
+    expect(chatRequest?.params).not.toHaveProperty('replyChannel');
+    expect(chatRequest?.params).not.toHaveProperty('replyTo');
+    expect(sent.map((item) => item.method)).toEqual(['connect', 'chat.send', 'chat.history']);
     await rm(dir, { recursive: true, force: true });
   });
 
@@ -1226,7 +1240,9 @@ printf 'unexpected' > '${agentAttemptPath}'
           durationMs: 12400,
           transcript: 'Remind me to order coffee filters',
           captureId: 'lifeos-app-voice-request-id',
-          captureSurface: 'iphone'
+          captureSurface: 'iphone',
+          talkBack: true,
+          activeMode: false
         },
         location: {
           status: 'present',

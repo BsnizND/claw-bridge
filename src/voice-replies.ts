@@ -1,8 +1,9 @@
+import { writeFile } from 'node:fs/promises';
 import type { BridgeConfig, DeliveryResult, NormalizedSiriEvent } from './types.js';
 import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { apnsConfigured, sendAppResponseNotification, sendLifeOSReplyNotification } from './apns.js';
-import { synthesizeElevenLabsSpeech } from './elevenlabs.js';
+import { synthesizeSpeechViaOpenClawGateway } from './openclaw-gateway.js';
 import { optionalLifeOSHomeSessionKey } from './session.js';
 
 export async function renderAppVoiceReply(
@@ -22,11 +23,18 @@ export async function renderAppVoiceReply(
   }
 
   await store.markRendering(responseId);
-  const audioPath = store.audioPath(responseId, 'mp3');
   let ready;
   try {
-    const speech = await synthesizeElevenLabsSpeech(config, replyText, audioPath);
-    ready = await store.completeVoice(responseId, replyText, speech.audioPath, speech.mimeType);
+    const speech = await synthesizeSpeechViaOpenClawGateway({
+      gatewayUrl: config.openclawGatewayUrl,
+      deviceIdentityPath: config.openclawDeviceIdentityPath,
+      deviceAuthPath: config.openclawDeviceAuthPath,
+      timeoutMs: config.openclawCliDrainTimeoutMs,
+      text: replyText
+    });
+    const audioPath = store.audioPath(responseId, speech.fileExtension);
+    await writeFile(audioPath, speech.audio, { mode: 0o600 });
+    ready = await store.completeVoice(responseId, replyText, audioPath, speech.mimeType);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await store.fail(responseId, message);

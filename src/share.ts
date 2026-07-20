@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { BridgeConfig, NormalizedSiriEvent, SharedItemMetadata, ShortcutMessageRequest } from './types.js';
+import type { BridgeConfig, CaptureSurface, NormalizedSiriEvent, SharedItemMetadata, ShortcutMessageRequest } from './types.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { optionalLifeOSHomeSessionKey } from './session.js';
 
@@ -13,6 +13,20 @@ export interface UploadedShareFile {
 function asOptionalString(value: unknown): string | undefined {
   if (Array.isArray(value)) return asOptionalString(value[0]);
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function parseBoolean(value: unknown): boolean {
+  const normalized = asOptionalString(value)?.toLowerCase();
+  return normalized === 'true' || normalized === '1';
+}
+
+function parseCaptureSurface(value: unknown): CaptureSurface | undefined {
+  const normalized = asOptionalString(value)?.toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized === 'iphone' || normalized === 'watch' || normalized === 'mac' || normalized === 'web') {
+    return normalized;
+  }
+  throw new Error(`unsupported capture_surface: ${normalized}`);
 }
 
 function parseJsonObject(value: string | undefined): Record<string, unknown> | undefined {
@@ -98,6 +112,17 @@ export function normalizeShareSheetRequest(
 
   const event = normalizeShortcutMessage(config, shortcutBody);
   if (sessionKey) event.session_key = sessionKey;
+  if (source === 'lifeos_app_voice') {
+    event.capture_surface = parseCaptureSurface(body.capture_surface) ?? 'iphone';
+    event.talk_back = parseBoolean(body.talk_back);
+    const sourceContext = asOptionalString(body.source_context);
+    if (sourceContext && sourceContext !== 'golf_mode') {
+      throw new Error(`unsupported source_context: ${sourceContext}`);
+    }
+    if (sourceContext === 'golf_mode' || parseBoolean(body.active_mode)) {
+      event.source_context = 'golf_mode';
+    }
+  }
   const noLocationReason = asOptionalString(body.no_location_reason);
   if (source === 'lifeos_app_voice' && !event.location && noLocationReason) {
     event.capture_receipt = { no_location_reason: noLocationReason };

@@ -2,6 +2,12 @@
 
 All notable changes to Claw Bridge are documented here.
 
+## Unreleased
+
+### Changed
+
+- Walkie voice delivery now uses OpenClaw-native `chat.send` completion events and `tts.speak`; the bridge no longer owns a separate agent-wait or ElevenLabs synthesis lifecycle.
+
 ## v0.1.10 - 2026-06-21
 
 ### Added
@@ -33,4 +39,3 @@ All notable changes to Claw Bridge are documented here.
 - `npm run build`.
 - `npm run lint`.
 - Live snizserver bridge runtime health checked at `8b3edaf`.
-
