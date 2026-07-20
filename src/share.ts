@@ -65,11 +65,17 @@ function inferSharedKind(file: UploadedShareFile | undefined, url: string | unde
   return 'unknown';
 }
 
-function buildSharedText(body: Record<string, unknown>, file: UploadedShareFile | undefined, transcript: string | undefined): string {
+function buildSharedText(
+  body: Record<string, unknown>,
+  file: UploadedShareFile | undefined,
+  transcript: string | undefined,
+  source: string
+): string {
   const message = asOptionalString(body.message);
   if (message) return message;
   const sharedText = asOptionalString(body.shared_text);
   const sharedUrl = asOptionalString(body.shared_url);
+  if (source === 'macos_app' && sharedText) return sharedText;
   if (transcript) return 'Shared audio from iOS share sheet.';
   if (sharedText) return `Shared from iOS share sheet: ${sharedText}`;
   if (sharedUrl) return `Shared URL from iOS share sheet: ${sharedUrl}`;
@@ -95,7 +101,7 @@ export function normalizeShareSheetRequest(
   if (source === 'lifeos_app_voice' && !transcript) {
     throw new Error('lifeos_app_voice requires an audio transcript');
   }
-  const rawText = source === 'lifeos_app_voice' ? transcript : buildSharedText(body, file, transcript);
+  const rawText = source === 'lifeos_app_voice' ? transcript : buildSharedText(body, file, transcript, source);
   const sessionKey = optionalLifeOSHomeSessionKey(body.session_key);
 
   const shortcutBody: ShortcutMessageRequest = {

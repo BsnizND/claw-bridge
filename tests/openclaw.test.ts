@@ -138,6 +138,31 @@ function lifeOSAppVoiceEvent(text = 'Remind me to order coffee filters'): Normal
   };
 }
 
+function lifeOSMacTextEvent(text = 'Turn on the living room lamp please.'): NormalizedSiriEvent {
+  return {
+    source: 'macos_app',
+    assistant: 'jay',
+    raw_text: text,
+    captured_at: '2026-07-20T22:02:15.000Z',
+    request_id: 'lifeos-mac-text-request-id',
+    session_key: 'agent:jay:lifeos-home:current-conversation',
+    device_name: 'Brian\u2019s Mac',
+    shortcut_name: 'LifeOS for Mac',
+    location: {
+      latitude: 33.61028667343154,
+      longitude: -111.85901093046989,
+      horizontal_accuracy: 35,
+      location_timestamp: '2026-07-20T22:02:15.000Z',
+      location_age_seconds: 0.647,
+      maps_url: 'https://maps.apple.com/?ll=33.61028667343154,-111.85901093046989'
+    },
+    shared_item: {
+      kind: 'text',
+      text
+    }
+  };
+}
+
 function parseNativeVoiceDelivery(message: string): {
   transcript: string;
   context: Record<string, unknown>;
@@ -1431,6 +1456,55 @@ printf 'unexpected' > '${agentAttemptPath}'
           size_bytes: 4321
         }
       });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('delivers native LifeOS Mac text without visible transport scaffolding', async () => {
+    for (const style of ['compact', 'detailed'] as const) {
+      const dir = join(tmpdir(), `claw-bridge-lifeos-mac-text-${style}-test-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const queuePath = join(dir, 'queue.jsonl');
+      const archivePath = join(dir, 'queue.archive.jsonl');
+      const binPath = join(dir, 'fake-openclaw');
+      const messagePath = join(dir, 'message.txt');
+      await writeMessageCapturingOpenClaw(binPath, messagePath);
+
+      const config = {
+        openclawAdapter: 'cli',
+        openclawCliBin: binPath,
+        openclawCliDrainTimeoutMs: 1000,
+        openclawMessageStyle: style,
+        assistantId: 'jay',
+        openclawSessionKey: 'agent:jay:main',
+        queuePath,
+        queueArchivePath: archivePath,
+        queueMaxAttempts: 3
+      } as BridgeConfig;
+
+      await acceptForOpenClaw(config, lifeOSMacTextEvent());
+      expect(await drainOpenClawQueue(config)).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+
+      const delivered = parseNativeVoiceDelivery(await readFile(messagePath, 'utf8'));
+      expect(delivered.transcript).toBe('Turn on the living room lamp please.');
+      expect(delivered.context).toMatchObject({
+        schemaVersion: 'lifeos_model_context.v1',
+        createdAt: '2026-07-20T22:02:15.000Z',
+        appSurface: 'ios_lifeos',
+        source: { kind: 'typed_text' },
+        location: {
+          status: 'present',
+          latitude: 33.61028667343154,
+          longitude: -111.85901093046989,
+          accuracyMeters: 35
+        },
+        attachments: []
+      });
+      const message = await readFile(messagePath, 'utf8');
+      expect(message).not.toContain('Sent via Siri voice message:');
+      expect(message).not.toContain('Shared from iOS share sheet:');
+      expect(message).not.toContain('Shared item:');
+      expect(message).not.toContain('Location:');
       await rm(dir, { recursive: true, force: true });
     }
   });

@@ -5,7 +5,7 @@ import type { BridgeConfig } from '../src/types.js';
 const config = {
   assistantId: 'jay',
   maxMessageChars: 1200,
-  allowedSources: new Set(['ios_share_sheet', 'lifeos_app_voice'])
+  allowedSources: new Set(['ios_share_sheet', 'lifeos_app_voice', 'macos_app'])
 } as BridgeConfig;
 
 const audioFile = {
@@ -16,6 +16,29 @@ const audioFile = {
 };
 
 describe('share normalization', () => {
+  it('preserves native Mac text without adding iOS share-sheet prose', () => {
+    const event = normalizeShareSheetRequest(
+      config,
+      {
+        source: 'macos_app',
+        shortcut_name: 'LifeOS for Mac',
+        shared_text: 'Turn on the living room lamp please.',
+        session_key: 'agent:jay:lifeos-home:current-conversation'
+      },
+      undefined,
+      undefined
+    );
+
+    expect(event).toMatchObject({
+      source: 'macos_app',
+      raw_text: 'Turn on the living room lamp please.',
+      shared_item: {
+        kind: 'text',
+        text: 'Turn on the living room lamp please.'
+      }
+    });
+  });
+
   it('uses the native LifeOS voice transcript as raw text while retaining durable audio metadata', () => {
     const event = normalizeShareSheetRequest(
       config,
