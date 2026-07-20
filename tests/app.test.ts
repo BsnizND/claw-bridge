@@ -184,15 +184,16 @@ describe('app routes', () => {
     );
   });
 
-  it('never forwards structured card code to the APNs sender', async () => {
-    const deviceDir = join(tmpdir(), `claw-bridge-notification-card-test-${Date.now()}`);
+  it('saves proactive text into the resolved conversation before sending APNs', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-persisted-notification-${Date.now()}`);
     const deviceStore = new AppDeviceStore(deviceDir);
     await deviceStore.upsert({
-      id: 'ios-notification-card-test-device',
+      id: 'ios-persisted-notification-device',
       platform: 'ios',
-      push_token: 'd'.repeat(64)
+      push_token: 'f'.repeat(64)
     });
     const sendReplyNotification = vi.fn().mockResolvedValue({ ok: true, statusCode: 200 });
+    const injectAssistantMessage = vi.fn().mockResolvedValue('injected-message-1');
     const testConfig = {
       ...config(),
       apnsTeamId: 'TEAMID',
@@ -204,7 +205,87 @@ describe('app routes', () => {
     const res = await request(
       createApp(testConfig, {
         appDeviceStore: deviceStore,
-        sendLifeOSReplyNotification: sendReplyNotification
+        sendLifeOSReplyNotification: sendReplyNotification,
+        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        session_key: 'agent:jay:lifeos-home:thread-1',
+        reply_text: 'A proactive update.',
+        persist_message: true
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({
+      ok: true,
+      session_key: 'agent:jay:lifeos-home:thread-1',
+      message_id: 'injected-message-1',
+      sent: 1
+    });
+    expect(injectAssistantMessage).toHaveBeenCalledWith(
+      testConfig,
+      'agent:jay:lifeos-home:thread-1',
+      'A proactive update.'
+    );
+    expect(injectAssistantMessage.mock.invocationCallOrder[0]).toBeLessThan(
+      sendReplyNotification.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('does not send APNs when proactive transcript persistence fails', async () => {
+    const sendReplyNotification = vi.fn().mockResolvedValue({ ok: true, statusCode: 200 });
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        sendLifeOSReplyNotification: sendReplyNotification,
+        injectAssistantMessageIntoOpenClawSession: vi.fn().mockRejectedValue(new Error('inject failed'))
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        session_key: 'agent:jay:lifeos-home:thread-1',
+        reply_text: 'A proactive update.',
+        persist_message: true
+      });
+
+    expect(res.status).toBe(502);
+    expect(res.body.error).toContain('could not be saved');
+    expect(sendReplyNotification).not.toHaveBeenCalled();
+  });
+
+  it('never forwards structured card code to the APNs sender', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-notification-card-test-${Date.now()}`);
+    const deviceStore = new AppDeviceStore(deviceDir);
+    await deviceStore.upsert({
+      id: 'ios-notification-card-test-device',
+      platform: 'ios',
+      push_token: 'd'.repeat(64)
+    });
+    const sendReplyNotification = vi.fn().mockResolvedValue({ ok: true, statusCode: 200 });
+    const injectAssistantMessage = vi.fn().mockResolvedValue('card-message-1');
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        appDeviceStore: deviceStore,
+        sendLifeOSReplyNotification: sendReplyNotification,
+        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage
       })
     )
       .post('/app/notifications/lifeos-reply')
@@ -213,7 +294,8 @@ describe('app routes', () => {
         session_key: 'agent:jay:lifeos-home:notification-test',
         reply_text:
           'It will be partly cloudy and 83° today.\n' +
-          '<lifeos_ui_composition>{"schema":"lifeos_ui_composition.v1","blocks":[]}</lifeos_ui_composition>'
+          '<lifeos_ui_composition>{"schema":"lifeos_ui_composition.v1","blocks":[]}</lifeos_ui_composition>',
+        persist_message: true
       });
 
     expect(res.status).toBe(202);
@@ -222,6 +304,12 @@ describe('app routes', () => {
       expect.objectContaining({ id: 'ios-notification-card-test-device' }),
       'agent:jay:lifeos-home:notification-test',
       'It will be partly cloudy and 83° today.'
+    );
+    expect(injectAssistantMessage).toHaveBeenCalledWith(
+      testConfig,
+      'agent:jay:lifeos-home:notification-test',
+      'It will be partly cloudy and 83° today.\n' +
+        '<lifeos_ui_composition>{"schema":"lifeos_ui_composition.v1","blocks":[]}</lifeos_ui_composition>'
     );
   });
 

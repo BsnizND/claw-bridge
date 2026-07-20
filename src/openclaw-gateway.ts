@@ -35,6 +35,13 @@ export interface OpenClawGatewayDeliveryParams {
   sessionKey: string;
 }
 
+export interface OpenClawGatewaySessionRequestParams {
+  gatewayUrl: string;
+  deviceIdentityPath: string;
+  deviceAuthPath: string;
+  timeoutMs: number;
+}
+
 function requireString(value: unknown, label: string): string {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} is missing`);
   return value;
@@ -115,7 +122,14 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-export async function deliverViaOpenClawGateway(params: OpenClawGatewayDeliveryParams): Promise<unknown> {
+async function withOpenClawGateway<T>(
+  params: OpenClawGatewaySessionRequestParams,
+  operation: (request: (
+    method: string,
+    requestParams: Record<string, unknown>,
+    timeoutMs?: number
+  ) => Promise<unknown>) => Promise<T>
+): Promise<T> {
   const { identity, auth } = await loadGatewayIdentity(params.deviceIdentityPath, params.deviceAuthPath);
   const socket = new WebSocket(params.gatewayUrl);
   const pending = new Map<string, {
@@ -181,16 +195,43 @@ export async function deliverViaOpenClawGateway(params: OpenClawGatewayDeliveryP
   try {
     await connected;
     clearTimeout(connectTimeout);
+    return await operation(request);
+  } finally {
+    clearTimeout(connectTimeout);
+    socket.close();
+  }
+}
+
+export async function injectAssistantMessageIntoOpenClawSession(
+  params: OpenClawGatewaySessionRequestParams & {
+    sessionKey: string;
+    message: string;
+  }
+): Promise<string> {
+  return withOpenClawGateway(params, async (request) => {
+    const result = asRecord(await request('chat.inject', {
+      sessionKey: params.sessionKey,
+      agentId: 'jay',
+      message: params.message,
+      label: 'LifeOS proactive update'
+    }, 5000));
+    return requireString(result.messageId, 'OpenClaw injected message id');
+  });
+}
+
+export async function deliverViaOpenClawGateway(params: OpenClawGatewayDeliveryParams): Promise<unknown> {
+  return withOpenClawGateway(params, async (request) => {
     const accepted = asRecord(await request('agent', params.agentParams));
     const runId = requireString(accepted.runId, 'OpenClaw Gateway agent run id');
-    const wait = asRecord(await request('agent.wait', { runId, timeoutMs: params.timeoutMs }, params.timeoutMs + 2000));
+    const wait = asRecord(await request(
+      'agent.wait',
+      { runId, timeoutMs: params.timeoutMs },
+      params.timeoutMs + 2000
+    ));
     const status = typeof wait.status === 'string' ? wait.status : 'ok';
     if (status === 'timeout' || status === 'pending' || status === 'error') {
       throw new Error(`OpenClaw Gateway agent run ended with status ${status}${wait.error ? `: ${String(wait.error)}` : ''}`);
     }
     return await request('chat.history', { sessionKey: params.sessionKey, limit: 50 }, 5000);
-  } finally {
-    clearTimeout(connectTimeout);
-    socket.close();
-  }
+  });
 }

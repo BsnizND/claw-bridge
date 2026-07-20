@@ -334,6 +334,13 @@ export function extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(stdout: 
         const session = item as Record<string, unknown>;
         const key = stringValue(session.key) ?? stringValue(session.sessionKey);
         if (!key?.startsWith(LIFEOS_HOME_SESSION_PREFIX)) return undefined;
+        const suffix = key.slice(LIFEOS_HOME_SESSION_PREFIX.length).toLowerCase();
+        if (
+          suffix.startsWith('qa:') ||
+          suffix.startsWith('qa-') ||
+          suffix.startsWith('surface-now:') ||
+          suffix.startsWith('surface-now-')
+        ) return undefined;
         if (stringValue(session.archivedAt)) return undefined;
         const updatedAt = typeof session.updatedAt === 'number' && Number.isFinite(session.updatedAt)
           ? session.updatedAt

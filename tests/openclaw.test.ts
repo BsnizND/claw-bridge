@@ -269,6 +269,22 @@ describe('OpenClaw delivery', () => {
     ).toBe('agent:jay:lifeos-home:newest');
   });
 
+  it('never treats QA or internal LifeOS sessions as the current user conversation', () => {
+    expect(
+      extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(
+        JSON.stringify({
+          sessions: [
+            { key: 'agent:jay:lifeos-home:user-conversation', updatedAt: 100 },
+            { key: 'agent:jay:lifeos-home:qa:expertise-phoenix', updatedAt: 500 },
+            { key: 'agent:jay:lifeos-home:qa-trip-proof', updatedAt: 450 },
+            { key: 'agent:jay:lifeos-home:surface-now:daily', updatedAt: 400 },
+            { key: 'agent:jay:lifeos-home:surface-now-daily', updatedAt: 350 }
+          ]
+        })
+      )
+    ).toBe('agent:jay:lifeos-home:user-conversation');
+  });
+
   it('queues inbound Siri events immediately instead of blocking the request', async () => {
     const dir = join(tmpdir(), `claw-bridge-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });

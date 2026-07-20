@@ -24,6 +24,7 @@ import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
 import { isAudioMimeType, transcribeAudioFile } from './transcribe.js';
 import { normalizeWatchVoiceRequest } from './watch.js';
 import { buildLifeOSNotificationPreview } from './notification-preview.js';
+import { injectAssistantMessageIntoOpenClawSession } from './openclaw-gateway.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -41,6 +42,11 @@ export interface AppDependencies {
   resolveMostRecentLifeOSHomeSessionKey?: (
     config: BridgeConfig,
     assistantId: string
+  ) => Promise<string>;
+  injectAssistantMessageIntoOpenClawSession?: (
+    config: BridgeConfig,
+    sessionKey: string,
+    message: string
   ) => Promise<string>;
 }
 
@@ -374,6 +380,34 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       return;
     }
     const replyText = buildLifeOSNotificationPreview(rawReplyText);
+    const persistMessage = truthy(body.persist_message);
+    let messageId: string | undefined;
+    if (persistMessage) {
+      try {
+        messageId = await (
+          deps.injectAssistantMessageIntoOpenClawSession ??
+          ((bridgeConfig, targetSessionKey, message) =>
+            injectAssistantMessageIntoOpenClawSession({
+              gatewayUrl: bridgeConfig.openclawGatewayUrl,
+              deviceIdentityPath: bridgeConfig.openclawDeviceIdentityPath,
+              deviceAuthPath: bridgeConfig.openclawDeviceAuthPath,
+              timeoutMs: 5000,
+              sessionKey: targetSessionKey,
+              message
+            }))
+        )(config, sessionKey, rawReplyText.trim());
+      } catch (error) {
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error), sessionKey },
+          'LifeOS proactive notification transcript persistence failed'
+        );
+        res.status(502).json({
+          ok: false,
+          error: 'LifeOS notification was not sent because its message could not be saved to the destination conversation'
+        });
+        return;
+      }
+    }
 
     const devices = await deviceStore.list('ios');
     const results = await Promise.allSettled(
@@ -387,6 +421,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     res.status(failed > 0 ? 502 : 202).json({
       ok: failed === 0,
       session_key: sessionKey,
+      ...(messageId ? { message_id: messageId } : {}),
       registered: devices.length,
       sent,
       failed

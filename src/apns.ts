@@ -1,6 +1,6 @@
 import { connect } from 'node:http2';
 import { readFile } from 'node:fs/promises';
-import { sign } from 'node:crypto';
+import { randomUUID, sign } from 'node:crypto';
 import type { AppDeviceRegistration, AppResponseRecord, BridgeConfig } from './types.js';
 import { buildLifeOSNotificationPreview } from './notification-preview.js';
 
@@ -9,6 +9,12 @@ export interface ApnsSendResult {
   statusCode: number;
   apnsId?: string;
   reason?: string;
+}
+
+export interface LifeOSNotificationRoute {
+  schema: 'lifeos_notification_route.v1';
+  route_id: string;
+  session_key: string;
 }
 
 function base64url(value: Buffer | string): string {
@@ -58,8 +64,27 @@ export async function sendLifeOSReplyNotification(
   sessionKey: string,
   replyText: string
 ): Promise<ApnsSendResult> {
+  const routeId = randomUUID();
+  return sendNotification(
+    config,
+    device,
+    buildLifeOSReplyNotificationPayload(sessionKey, replyText, routeId),
+    routeId
+  );
+}
+
+export function buildLifeOSReplyNotificationPayload(
+  sessionKey: string,
+  replyText: string,
+  routeId: string
+): Record<string, unknown> {
   const body = buildLifeOSNotificationPreview(replyText);
-  return sendNotification(config, device, {
+  const route: LifeOSNotificationRoute = {
+    schema: 'lifeos_notification_route.v1',
+    route_id: routeId,
+    session_key: sessionKey
+  };
+  return {
     aps: {
       alert: {
         title: 'Jay',
@@ -67,14 +92,18 @@ export async function sendLifeOSReplyNotification(
       },
       sound: 'default'
     },
+    lifeos_route: route,
+    // Kept for one release so already-installed clients can route the same
+    // exact conversation while the versioned envelope rolls out.
     session_key: sessionKey
-  });
+  };
 }
 
 async function sendNotification(
   config: BridgeConfig,
   device: AppDeviceRegistration,
-  payloadValue: Record<string, unknown>
+  payloadValue: Record<string, unknown>,
+  apnsId?: string
 ): Promise<ApnsSendResult> {
   if (!apnsConfigured(config)) {
     throw new Error('APNs is not configured');
@@ -94,6 +123,7 @@ async function sendNotification(
         'apns-topic': config.apnsBundleId,
         'apns-push-type': 'alert',
         'apns-priority': '10',
+        ...(apnsId ? { 'apns-id': apnsId } : {}),
         'content-type': 'application/json'
       });
       let body = '';
