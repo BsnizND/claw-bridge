@@ -73,6 +73,37 @@ function queryBody(query: Record<string, unknown>): Record<string, unknown> {
   );
 }
 
+function bodyText(body: Record<string, unknown>, key: string): string | undefined {
+  const value = body[key];
+  if (Array.isArray(value)) return typeof value[0] === 'string' && value[0].trim() ? value[0].trim() : undefined;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+async function acceptSilentVoiceCapture(
+  res: express.Response,
+  logger: pino.Logger,
+  body: Record<string, unknown>,
+  file: UploadedShareFile | undefined
+): Promise<void> {
+  const requestId = bodyText(body, 'request_id') ?? randomUUID();
+  await removeUploadedFile(file);
+  logger.info(
+    {
+      requestId,
+      source: bodyText(body, 'source'),
+      deviceName: bodyText(body, 'device_name')
+    },
+    'silent voice capture ignored'
+  );
+  res.status(202).json({
+    ok: true,
+    queued: false,
+    id: requestId,
+    ignored: 'no_speech',
+    spoken: 'No speech detected'
+  });
+}
+
 function sniffImageMimeType(buffer: Buffer): string | undefined {
   if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return 'image/png';
@@ -473,6 +504,16 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         const file = req.file as UploadedShareFile | undefined;
         const transcript =
           file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
+        if (
+          config.audioTranscribeEnabled &&
+          bodyText(body, 'source') === 'lifeos_app_voice' &&
+          file &&
+          isAudioMimeType(file.mimetype) &&
+          !transcript
+        ) {
+          await acceptSilentVoiceCapture(res, logger, body, file);
+          return;
+        }
         const event = normalizeShareSheetRequest(config, body, file, transcript);
         const response = await attachVoiceResponseIfRequested(responseStore, body, event);
         const result = await acceptEvent(event);
@@ -528,6 +569,15 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         size: buffer.length
       };
       const transcript = isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
+      if (
+        config.audioTranscribeEnabled &&
+        bodyText(body, 'source') === 'lifeos_app_voice' &&
+        isAudioMimeType(file.mimetype) &&
+        !transcript
+      ) {
+        await acceptSilentVoiceCapture(res, logger, body, file);
+        return;
+      }
       const event = normalizeShareSheetRequest(config, body, file, transcript);
       const response = await attachVoiceResponseIfRequested(responseStore, body, event);
       const result = await acceptEvent(event);
@@ -575,6 +625,10 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
         await validateWatchVoiceDuration(config, body, file);
         const transcript =
           file && isAudioMimeType(file.mimetype) ? await transcribeAudioFile(config, file.path) : undefined;
+        if (config.audioTranscribeEnabled && file && isAudioMimeType(file.mimetype) && !transcript) {
+          await acceptSilentVoiceCapture(res, logger, body, file);
+          return;
+        }
         const event = normalizeWatchVoiceRequest(config, body, file, transcript);
         const response = await attachVoiceResponseIfRequested(responseStore, body, event);
         const result = await acceptEvent(event);

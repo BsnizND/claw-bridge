@@ -29,7 +29,7 @@ interface WorkerErrorMessage {
 type WorkerMessage = WorkerReadyMessage | WorkerResultMessage | WorkerErrorMessage;
 
 interface PendingTranscription {
-  resolve: (text: string) => void;
+  resolve: (text: string | undefined) => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;
 }
@@ -58,7 +58,7 @@ class PersistentWhisperClient {
     return this.start();
   }
 
-  async transcribe(filePath: string): Promise<string> {
+  async transcribe(filePath: string): Promise<string | undefined> {
     await this.start();
     const child = this.child;
     if (!child || child.killed || !child.stdin.writable) {
@@ -66,7 +66,7 @@ class PersistentWhisperClient {
     }
 
     const id = randomUUID();
-    return new Promise<string>((resolvePromise, rejectPromise) => {
+    return new Promise<string | undefined>((resolvePromise, rejectPromise) => {
       const timeout = setTimeout(() => {
         this.pending.delete(id);
         rejectPromise(new Error(`audio transcription exceeded ${this.config.audioTranscribeTimeoutMs}ms`));
@@ -182,7 +182,9 @@ class PersistentWhisperClient {
     }
     const text = message.text.trim();
     if (!text) {
-      pending.reject(new Error('persistent Whisper returned an empty transcript'));
+      // Match the non-persistent and native OpenClaw media paths: silence is
+      // an empty transcription outcome, not a transport failure worth retrying.
+      pending.resolve(undefined);
       return;
     }
     console.log(`local Whisper transcribed in ${message.duration_ms}ms`);
@@ -226,7 +228,10 @@ export async function warmPersistentWhisper(config: BridgeConfig): Promise<Worke
   return clientFor(config).warm();
 }
 
-export async function transcribeWithPersistentWhisper(config: BridgeConfig, filePath: string): Promise<string> {
+export async function transcribeWithPersistentWhisper(
+  config: BridgeConfig,
+  filePath: string
+): Promise<string | undefined> {
   return clientFor(config).transcribe(filePath);
 }
 

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { describe, expect, it, vi } from 'vitest';
 import { AppResponseStore } from '../src/app-response-store.js';
 import { AppDeviceStore } from '../src/app-device-store.js';
@@ -449,6 +449,92 @@ describe('app routes', () => {
         })
       })
     );
+  });
+
+  it('acknowledges a silent LifeOS voice capture without queueing it or blocking later captures', async () => {
+    const dir = join(tmpdir(), `claw-bridge-silent-lifeos-voice-${Date.now()}`);
+    const uploadDir = join(dir, 'uploads');
+    await mkdir(dir, { recursive: true });
+    const transcriber = join(dir, 'fake-openclaw');
+    await writeFile(transcriber, '#!/bin/sh\nprintf \'{"text":""}\\n\'\n', 'utf8');
+    await chmod(transcriber, 0o755);
+    const acceptEvent = vi.fn();
+    const res = await request(
+      createApp(
+        {
+          ...config(),
+          shareUploadDir: uploadDir,
+          audioTranscribeEnabled: true,
+          audioTranscribeEngine: 'openclaw',
+          audioTranscribeCliBin: transcriber,
+          audioTranscribeTimeoutMs: 1000
+        },
+        { acceptEvent }
+      )
+    )
+      .post('/shortcuts/share')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('source', 'lifeos_app_voice')
+      .field('request_id', 'silent-lifeos-voice-request')
+      .attach('file', Buffer.from('silent-audio'), {
+        filename: 'silent.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({
+      ok: true,
+      queued: false,
+      id: 'silent-lifeos-voice-request',
+      ignored: 'no_speech',
+      spoken: 'No speech detected'
+    });
+    expect(acceptEvent).not.toHaveBeenCalled();
+    expect(await readdir(uploadDir)).toEqual([]);
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('acknowledges silent Watch audio without creating a Jay message', async () => {
+    const dir = join(tmpdir(), `claw-bridge-silent-watch-voice-${Date.now()}`);
+    const uploadDir = join(dir, 'uploads');
+    await mkdir(dir, { recursive: true });
+    const transcriber = join(dir, 'fake-openclaw');
+    await writeFile(transcriber, '#!/bin/sh\nprintf \'{"text":""}\\n\'\n', 'utf8');
+    await chmod(transcriber, 0o755);
+    const acceptEvent = vi.fn();
+    const res = await request(
+      createApp(
+        {
+          ...config(),
+          shareUploadDir: uploadDir,
+          audioTranscribeEnabled: true,
+          audioTranscribeEngine: 'openclaw',
+          audioTranscribeCliBin: transcriber,
+          audioTranscribeTimeoutMs: 1000
+        },
+        { acceptEvent }
+      )
+    )
+      .post('/watch/voice')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .field('request_id', 'silent-watch-voice-request')
+      .field('recording_duration_seconds', '3.6')
+      .attach('audio', Buffer.from('silent-audio'), {
+        filename: 'silent.m4a',
+        contentType: 'audio/mp4'
+      });
+
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({
+      ok: true,
+      queued: false,
+      id: 'silent-watch-voice-request',
+      ignored: 'no_speech',
+      spoken: 'No speech detected'
+    });
+    expect(acceptEvent).not.toHaveBeenCalled();
+    expect(await readdir(uploadDir)).toEqual([]);
+    await rm(dir, { recursive: true, force: true });
   });
 
   it('accepts raw share sheet file body uploads', async () => {
