@@ -11,7 +11,7 @@ import {
   extractReplyTextFromOpenClawOutput,
   resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath
 } from '../src/openclaw.js';
-import { recoverFreshOrphanedDrainLockForExclusiveOwner } from '../src/queue.js';
+import { drainQueue, recoverFreshOrphanedDrainLockForExclusiveOwner } from '../src/queue.js';
 import type { BridgeConfig, NormalizedSiriEvent } from '../src/types.js';
 
 async function exitedProcessPid(): Promise<number> {
@@ -701,6 +701,40 @@ describe('OpenClaw delivery', () => {
     expect(queue).not.toContain('first accepted message');
     const archive = await readFile(archivePath, 'utf8');
     expect(archive).toContain('first accepted message');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('does not erase an event accepted after the drain reads the queue but before its rewrite', async () => {
+    const dir = join(tmpdir(), `claw-bridge-final-rewrite-race-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const config = {
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const secondEvent = {
+      ...event('accepted during final queue rewrite'),
+      request_id: 'accepted-during-final-rewrite'
+    };
+
+    await acceptForOpenClaw(config, event('drained first'));
+    let acceptedDuringRewrite: Promise<unknown> | undefined;
+    const drain = await drainQueue(queuePath, archivePath, 3, async () => undefined, {
+      beforeQueueRewrite: async () => {
+        acceptedDuringRewrite = acceptForOpenClaw(config, secondEvent);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    });
+    await acceptedDuringRewrite;
+
+    expect(drain).toEqual({ delivered: 1, failed: 0, pending: 0, archived: 1 });
+    const queue = await readFile(queuePath, 'utf8');
+    expect(queue).toContain('accepted during final queue rewrite');
+    expect(queue).not.toContain('drained first');
+    const archive = await readFile(archivePath, 'utf8');
+    expect(archive).toContain('drained first');
     await rm(dir, { recursive: true, force: true });
   });
 

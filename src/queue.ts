@@ -1,8 +1,23 @@
-import { mkdir, appendFile, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, appendFile, open, readFile, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { NormalizedSiriEvent, QueueRecord } from './types.js';
 
 const DRAIN_LOCK_STALE_MS = 30 * 60 * 1000;
+const queueMutationTails = new Map<string, Promise<unknown>>();
+
+async function withQueueMutationLock<T>(path: string, operation: () => Promise<T>): Promise<T> {
+  const previous = queueMutationTails.get(path) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(operation);
+  queueMutationTails.set(path, current);
+  try {
+    return await current;
+  } finally {
+    if (queueMutationTails.get(path) === current) {
+      queueMutationTails.delete(path);
+    }
+  }
+}
 
 export async function queueEvent(queuePath: string, event: NormalizedSiriEvent, reason: unknown): Promise<void> {
   const record: QueueRecord = {
@@ -12,11 +27,13 @@ export async function queueEvent(queuePath: string, event: NormalizedSiriEvent, 
     event,
     last_error: reason instanceof Error ? reason.message : String(reason)
   };
-  await mkdir(dirname(queuePath), { recursive: true });
-  await appendFile(queuePath, `${JSON.stringify(record)}\n`, 'utf8');
+  await withQueueMutationLock(queuePath, async () => {
+    await mkdir(dirname(queuePath), { recursive: true });
+    await appendFile(queuePath, `${JSON.stringify(record)}\n`, 'utf8');
+  });
 }
 
-export async function readQueue(queuePath: string): Promise<QueueRecord[]> {
+async function readQueueFile(queuePath: string): Promise<QueueRecord[]> {
   let raw = '';
   try {
     raw = await readFile(queuePath, 'utf8');
@@ -29,6 +46,10 @@ export async function readQueue(queuePath: string): Promise<QueueRecord[]> {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => JSON.parse(line) as QueueRecord);
+}
+
+export async function readQueue(queuePath: string): Promise<QueueRecord[]> {
+  return await withQueueMutationLock(queuePath, async () => await readQueueFile(queuePath));
 }
 
 export async function hasQueuedOrArchivedRequest(
@@ -47,18 +68,24 @@ export async function hasQueuedOrArchivedRequest(
 
 async function writeQueue(queuePath: string, records: QueueRecord[]): Promise<void> {
   await mkdir(dirname(queuePath), { recursive: true });
-  const tmpPath = `${queuePath}.tmp`;
+  const tmpPath = `${queuePath}.${process.pid}.${randomUUID()}.tmp`;
   const body = records.length > 0 ? `${records.map((record) => JSON.stringify(record)).join('\n')}\n` : '';
-  await writeFile(tmpPath, body, 'utf8');
-  await rename(tmpPath, queuePath);
+  try {
+    await writeFile(tmpPath, body, 'utf8');
+    await rename(tmpPath, queuePath);
+  } finally {
+    await rm(tmpPath, { force: true });
+  }
 }
 
 async function appendQueueArchive(archivePath: string, records: QueueRecord[]): Promise<void> {
   if (records.length === 0) return;
-  await mkdir(dirname(archivePath), { recursive: true });
-  const archivedAt = new Date().toISOString();
-  const body = records.map((record) => JSON.stringify({ ...record, archived_at: archivedAt })).join('\n');
-  await appendFile(archivePath, `${body}\n`, 'utf8');
+  await withQueueMutationLock(archivePath, async () => {
+    await mkdir(dirname(archivePath), { recursive: true });
+    const archivedAt = new Date().toISOString();
+    const body = records.map((record) => JSON.stringify({ ...record, archived_at: archivedAt })).join('\n');
+    await appendFile(archivePath, `${body}\n`, 'utf8');
+  });
 }
 
 export interface DrainQueueResult {
@@ -71,6 +98,7 @@ export interface DrainQueueResult {
 
 export interface DrainQueueHooks {
   afterFailed?: (event: NormalizedSiriEvent, error: unknown) => Promise<void>;
+  beforeQueueRewrite?: () => Promise<void>;
 }
 
 function errorMessage(error: unknown): string {
@@ -221,10 +249,13 @@ export async function drainQueue(
 
   let finalPendingRecords = pendingRecords;
   if (changed || terminalRecords.length > 0) {
-    const latestRecords = await readQueue(queuePath);
-    const appendedDuringDrain = latestRecords.filter((record) => !initialRequestIds.has(record.event.request_id));
-    finalPendingRecords = [...pendingRecords, ...appendedDuringDrain];
-    await writeQueue(queuePath, finalPendingRecords);
+    await withQueueMutationLock(queuePath, async () => {
+      const latestRecords = await readQueueFile(queuePath);
+      await hooks.beforeQueueRewrite?.();
+      const appendedDuringDrain = latestRecords.filter((record) => !initialRequestIds.has(record.event.request_id));
+      finalPendingRecords = [...pendingRecords, ...appendedDuringDrain];
+      await writeQueue(queuePath, finalPendingRecords);
+    });
   }
 
   return {
