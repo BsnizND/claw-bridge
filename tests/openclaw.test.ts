@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import {
   acceptForOpenClaw,
+  assertDirectLifeOSHomeNotificationSessionKeyFromStorePath,
   drainOpenClawQueue,
   extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput,
   extractReplyTextFromOpenClawOutput,
@@ -373,6 +374,59 @@ describe('OpenClaw delivery', () => {
 
     await expect(resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(storePath))
       .resolves.toBe('agent:jay:lifeos-home:newest-direct');
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it('allows notifications only for an existing direct Brian-authored LifeOS conversation', async () => {
+    const dir = join(tmpdir(), `claw-bridge-notification-target-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const storePath = join(dir, 'sessions.json');
+    const directPath = join(dir, 'direct.jsonl');
+    const internalPath = join(dir, 'internal.jsonl');
+    await writeFile(
+      directPath,
+      `${directLifeOSUserMessage('2026-07-21T18:00:00Z', 'A real LifeOS message')}\n`,
+      'utf8'
+    );
+    await writeFile(internalPath, `${JSON.stringify({
+      type: 'message',
+      timestamp: '2026-07-21T18:01:00Z',
+      message: { role: 'user', content: 'Synthetic QA prompt' }
+    })}\n`, 'utf8');
+    await writeFile(storePath, JSON.stringify({
+      'agent:jay:lifeos-home:real-conversation': { sessionFile: directPath },
+      'agent:jay:lifeos-home:qa:proof': { sessionFile: directPath },
+      'agent:jay:lifeos-home:internal-without-envelope': { sessionFile: internalPath },
+      'agent:jay:lifeos-home:archived-conversation': {
+        sessionFile: directPath,
+        archivedAt: '2026-07-21T18:02:00Z'
+      }
+    }), 'utf8');
+
+    await expect(
+      assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+        storePath,
+        'agent:jay:lifeos-home:real-conversation'
+      )
+    ).resolves.toBeUndefined();
+    await expect(
+      assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+        storePath,
+        'agent:jay:lifeos-home:qa:proof'
+      )
+    ).rejects.toThrow(/not a user-facing conversation/u);
+    await expect(
+      assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+        storePath,
+        'agent:jay:lifeos-home:internal-without-envelope'
+      )
+    ).rejects.toThrow(/no direct Brian-authored LifeOS message/u);
+    await expect(
+      assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+        storePath,
+        'agent:jay:lifeos-home:archived-conversation'
+      )
+    ).rejects.toThrow(/archived/u);
     await rm(dir, { recursive: true, force: true });
   });
 
