@@ -387,7 +387,7 @@ export function extractMostRecentLifeOSHomeSessionKeyFromOpenClawOutput(stdout: 
   return undefined;
 }
 
-function isEligibleDirectLifeOSHomeSessionKey(key: string): boolean {
+export function isEligibleDirectLifeOSHomeSessionKey(key: string): boolean {
   if (!key.startsWith(LIFEOS_HOME_SESSION_PREFIX)) return false;
   const suffix = key.slice(LIFEOS_HOME_SESSION_PREFIX.length).toLowerCase();
   if (!suffix) return false;
@@ -402,6 +402,36 @@ function isEligibleDirectLifeOSHomeSessionKey(key: string): boolean {
     suffix.includes('stream-proof') ||
     suffix.includes('internal-delivery')
   );
+}
+
+export async function assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+  sessionStorePath: string,
+  sessionKey: string
+): Promise<void> {
+  if (!isEligibleDirectLifeOSHomeSessionKey(sessionKey)) {
+    throw new Error('LifeOS notification target is not a user-facing conversation');
+  }
+
+  const rawStore = await readFile(sessionStorePath, 'utf8');
+  const parsed = JSON.parse(rawStore) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('OpenClaw LifeOS session store is invalid');
+  }
+  const rawSession = (parsed as Record<string, unknown>)[sessionKey];
+  if (!rawSession || typeof rawSession !== 'object' || Array.isArray(rawSession)) {
+    throw new Error('LifeOS notification target does not exist');
+  }
+  const session = rawSession as Record<string, unknown>;
+  if (session.archivedAt) {
+    throw new Error('LifeOS notification target is archived');
+  }
+  const transcriptPath = sessionTranscriptPath(sessionStorePath, session);
+  if (!transcriptPath) {
+    throw new Error('LifeOS notification target has no canonical transcript');
+  }
+  if ((await latestDirectLifeOSUserMessageAt(transcriptPath)) === undefined) {
+    throw new Error('LifeOS notification target has no direct Brian-authored LifeOS message');
+  }
 }
 
 function messageText(content: unknown): string {
@@ -564,6 +594,64 @@ export async function resolveMostRecentLifeOSHomeSessionKey(
         return;
       }
       void resolveMostRecentDirectLifeOSHomeSessionKeyFromStorePath(storePath)
+        .then(resolve)
+        .catch(reject);
+    });
+  });
+}
+
+export async function assertDirectLifeOSHomeNotificationSessionKey(
+  config: BridgeConfig,
+  assistantId: string,
+  sessionKey: string
+): Promise<void> {
+  if (config.openclawSessionStorePath) {
+    return assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(
+      config.openclawSessionStorePath,
+      sessionKey
+    );
+  }
+
+  const args = ['sessions', '--agent', assistantId, '--json', '--limit', 'all'];
+  return new Promise((resolve, reject) => {
+    const child = spawn(config.openclawCliBin, args, {
+      cwd: config.openclawWorkdir,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const timeout = setTimeout(() => {
+      settled = true;
+      child.kill('SIGTERM');
+      reject(new Error(`OpenClaw LifeOS session lookup exceeded ${OPENCLAW_SESSION_LOOKUP_TIMEOUT_MS}ms`));
+    }, OPENCLAW_SESSION_LOOKUP_TIMEOUT_MS);
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (code !== 0) {
+        reject(new Error(`OpenClaw LifeOS session lookup exited ${code}: ${stderr || stdout}`.trim()));
+        return;
+      }
+      const storePath = extractOpenClawSessionStorePath(stdout);
+      if (!storePath) {
+        reject(new Error('OpenClaw LifeOS session lookup did not report its canonical session store'));
+        return;
+      }
+      void assertDirectLifeOSHomeNotificationSessionKeyFromStorePath(storePath, sessionKey)
         .then(resolve)
         .catch(reject);
     });

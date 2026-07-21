@@ -17,7 +17,11 @@ import type {
 import { AppDeviceStore } from './app-device-store.js';
 import { AppResponseStore } from './app-response-store.js';
 import { apnsConfigured, sendLifeOSReplyNotification, type ApnsSendResult } from './apns.js';
-import { acceptForOpenClaw, resolveMostRecentLifeOSHomeSessionKey } from './openclaw.js';
+import {
+  acceptForOpenClaw,
+  assertDirectLifeOSHomeNotificationSessionKey,
+  resolveMostRecentLifeOSHomeSessionKey
+} from './openclaw.js';
 import { optionalLifeOSHomeSessionKey } from './session.js';
 import { normalizeShortcutMessage } from './siri.js';
 import { normalizeShareSheetRequest, type UploadedShareFile } from './share.js';
@@ -43,6 +47,11 @@ export interface AppDependencies {
     config: BridgeConfig,
     assistantId: string
   ) => Promise<string>;
+  assertDirectLifeOSHomeNotificationSessionKey?: (
+    config: BridgeConfig,
+    assistantId: string,
+    sessionKey: string
+  ) => Promise<void>;
   injectAssistantMessageIntoOpenClawSession?: (
     config: BridgeConfig,
     sessionKey: string,
@@ -401,10 +410,14 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
           )
         : optionalLifeOSHomeSessionKey(rawSessionTarget) ?? '';
       if (!sessionKey) throw new Error('missing LifeOS session key');
+      await (
+        deps.assertDirectLifeOSHomeNotificationSessionKey ??
+        assertDirectLifeOSHomeNotificationSessionKey
+      )(config, config.assistantId, sessionKey);
     } catch (error) {
       logger.warn(
         { error: error instanceof Error ? error.message : String(error), rawSessionTarget },
-        'LifeOS reply notification target resolution failed'
+        'LifeOS reply notification target eligibility failed'
       );
       res.status(400).json({
         ok: false,
@@ -450,7 +463,13 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
       (result) => result.status === 'fulfilled' && result.value.ok
     ).length;
     const failed = results.length - sent;
-    logger.info({ sessionKey, registered: devices.length, sent, failed }, 'LifeOS reply notification completed');
+    const routeIds = results.flatMap((result) =>
+      result.status === 'fulfilled' && result.value.routeId ? [result.value.routeId] : []
+    );
+    logger.info(
+      { sessionKey, routeIds, registered: devices.length, sent, failed },
+      'LifeOS reply notification completed'
+    );
     res.status(failed > 0 ? 502 : 202).json({
       ok: failed === 0,
       session_key: sessionKey,

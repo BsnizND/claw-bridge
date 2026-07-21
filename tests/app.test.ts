@@ -143,7 +143,8 @@ describe('app routes', () => {
     const res = await request(
       createApp(testConfig, {
         appDeviceStore: deviceStore,
-        sendLifeOSReplyNotification: sendReplyNotification
+        sendLifeOSReplyNotification: sendReplyNotification,
+        assertDirectLifeOSHomeNotificationSessionKey: vi.fn()
       })
     )
       .post('/app/notifications/lifeos-reply')
@@ -193,7 +194,8 @@ describe('app routes', () => {
       createApp(testConfig, {
         appDeviceStore: deviceStore,
         sendLifeOSReplyNotification: sendReplyNotification,
-        resolveMostRecentLifeOSHomeSessionKey: resolveCurrent
+        resolveMostRecentLifeOSHomeSessionKey: resolveCurrent,
+        assertDirectLifeOSHomeNotificationSessionKey: vi.fn()
       })
     )
       .post('/app/notifications/lifeos-reply')
@@ -211,6 +213,41 @@ describe('app routes', () => {
       'agent:jay:lifeos-home:most-recent-conversation',
       'A timely source-backed update.'
     );
+  });
+
+  it('never sends APNs for an internal or non-user-facing LifeOS session', async () => {
+    const sendReplyNotification = vi.fn();
+    const assertNotificationTarget = vi
+      .fn()
+      .mockRejectedValue(new Error('LifeOS notification target is not a user-facing conversation'));
+    const testConfig = {
+      ...config(),
+      apnsTeamId: 'TEAMID',
+      apnsKeyId: 'KEYID',
+      apnsPrivateKeyPath: '/tmp/AuthKey.p8',
+      apnsBundleId: 'com.briansnyder.lifeos'
+    } as BridgeConfig;
+
+    const res = await request(
+      createApp(testConfig, {
+        sendLifeOSReplyNotification: sendReplyNotification,
+        assertDirectLifeOSHomeNotificationSessionKey: assertNotificationTarget
+      })
+    )
+      .post('/app/notifications/lifeos-reply')
+      .set('Authorization', 'Bearer 0123456789abcdef01234567')
+      .send({
+        session_key: 'agent:jay:lifeos-home:qa:internal-proof',
+        reply_text: 'This must never alert Brian.'
+      });
+
+    expect(res.status).toBe(400);
+    expect(assertNotificationTarget).toHaveBeenCalledWith(
+      testConfig,
+      testConfig.assistantId,
+      'agent:jay:lifeos-home:qa:internal-proof'
+    );
+    expect(sendReplyNotification).not.toHaveBeenCalled();
   });
 
   it('saves proactive text into the resolved conversation before sending APNs', async () => {
@@ -235,7 +272,8 @@ describe('app routes', () => {
       createApp(testConfig, {
         appDeviceStore: deviceStore,
         sendLifeOSReplyNotification: sendReplyNotification,
-        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage
+        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage,
+        assertDirectLifeOSHomeNotificationSessionKey: vi.fn()
       })
     )
       .post('/app/notifications/lifeos-reply')
@@ -276,7 +314,8 @@ describe('app routes', () => {
     const res = await request(
       createApp(testConfig, {
         sendLifeOSReplyNotification: sendReplyNotification,
-        injectAssistantMessageIntoOpenClawSession: vi.fn().mockRejectedValue(new Error('inject failed'))
+        injectAssistantMessageIntoOpenClawSession: vi.fn().mockRejectedValue(new Error('inject failed')),
+        assertDirectLifeOSHomeNotificationSessionKey: vi.fn()
       })
     )
       .post('/app/notifications/lifeos-reply')
@@ -314,7 +353,8 @@ describe('app routes', () => {
       createApp(testConfig, {
         appDeviceStore: deviceStore,
         sendLifeOSReplyNotification: sendReplyNotification,
-        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage
+        injectAssistantMessageIntoOpenClawSession: injectAssistantMessage,
+        assertDirectLifeOSHomeNotificationSessionKey: vi.fn()
       })
     )
       .post('/app/notifications/lifeos-reply')

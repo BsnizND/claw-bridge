@@ -8,6 +8,7 @@ export interface ApnsSendResult {
   ok: boolean;
   statusCode: number;
   apnsId?: string;
+  routeId?: string;
   reason?: string;
 }
 
@@ -65,12 +66,13 @@ export async function sendLifeOSReplyNotification(
   replyText: string
 ): Promise<ApnsSendResult> {
   const routeId = randomUUID();
-  return sendNotification(
+  const result = await sendNotification(
     config,
     device,
     buildLifeOSReplyNotificationPayload(sessionKey, replyText, routeId),
     routeId
   );
+  return { ...result, routeId };
 }
 
 export function buildLifeOSReplyNotificationPayload(
