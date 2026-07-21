@@ -1,4 +1,5 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AppDeviceRegistration, AppPlatform } from './types.js';
 
@@ -89,9 +90,13 @@ export class AppDeviceStore {
   private async writeRecord(record: AppDeviceRegistration): Promise<void> {
     await mkdir(this.deviceDir, { recursive: true });
     const path = this.recordPath(record.id);
-    const tmpPath = `${path}.tmp`;
+    const tmpPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(tmpPath, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
-    await rename(tmpPath, path);
+    try {
+      await writeFile(tmpPath, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+      await rename(tmpPath, path);
+    } finally {
+      await rm(tmpPath, { force: true });
+    }
   }
 }

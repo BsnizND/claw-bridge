@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,6 +44,28 @@ function event(responseId: string): NormalizedSiriEvent {
 }
 
 describe('OpenClaw-native voice replies', () => {
+  it('accepts concurrent updates to one response without sharing a temporary file', async () => {
+    const dir = join(tmpdir(), `claw-bridge-response-race-test-${Date.now()}`);
+    const store = new AppResponseStore(dir, 60000);
+    const pending = await store.createPending({
+      source: 'watch_app',
+      assistant: 'openclaw',
+      raw_text: 'hello',
+      captured_at: new Date().toISOString(),
+      request_id: 'voice-reply-concurrent-update'
+    });
+
+    const updates = await Promise.all(
+      Array.from({ length: 24 }, (_, index) =>
+        store.markNotification(pending.id, 'failed', `notification attempt ${index}`)
+      )
+    );
+
+    expect(updates).toHaveLength(24);
+    expect(await store.get(pending.id)).toMatchObject({ id: pending.id, status: 'pending' });
+    expect((await readdir(dir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
+  });
+
   it('marks app response records ready after rendering', async () => {
     const dir = join(tmpdir(), `claw-bridge-render-test-${Date.now()}`);
     const store = new AppResponseStore(dir, 60000);

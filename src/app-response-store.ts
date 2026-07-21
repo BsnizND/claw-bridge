@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AppResponseRecord, NormalizedSiriEvent } from './types.js';
 
@@ -138,9 +138,13 @@ export class AppResponseStore {
   private async writeRecord(record: AppResponseRecord): Promise<void> {
     await mkdir(this.responseDir, { recursive: true });
     const path = this.recordPath(record.id);
-    const tmpPath = `${path}.tmp`;
+    const tmpPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(tmpPath, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
-    await rename(tmpPath, path);
+    try {
+      await writeFile(tmpPath, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
+      await rename(tmpPath, path);
+    } finally {
+      await rm(tmpPath, { force: true });
+    }
   }
 }

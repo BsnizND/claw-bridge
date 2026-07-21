@@ -67,6 +67,35 @@ describe('app routes', () => {
     ]);
   });
 
+  it('accepts concurrent refreshes for the same app device without sharing a temporary file', async () => {
+    const deviceDir = join(tmpdir(), `claw-bridge-device-race-test-${Date.now()}`);
+    const app = createApp(config(), { appDeviceStore: new AppDeviceStore(deviceDir) });
+    const responses = await Promise.all(
+      Array.from({ length: 24 }, (_, index) =>
+        request(app)
+          .post('/app/devices/register')
+          .set('Authorization', 'Bearer 0123456789abcdef01234567')
+          .send({
+            id: 'ios-concurrent-device',
+            platform: 'ios',
+            push_token: `${index.toString(16).padStart(2, '0')}${'a'.repeat(62)}`,
+            app_version: `1.${index}`,
+            device_name: 'iPhone'
+          })
+      )
+    );
+
+    expect(responses.map((response) => response.status)).toEqual(
+      Array.from({ length: 24 }, () => 202)
+    );
+    expect(await new AppDeviceStore(deviceDir).get('ios-concurrent-device')).toMatchObject({
+      id: 'ios-concurrent-device',
+      platform: 'ios',
+      device_name: 'iPhone'
+    });
+    expect((await readdir(deviceDir)).filter((name) => name.endsWith('.tmp'))).toEqual([]);
+  });
+
   it('registers the LifeOS Mac app for push delivery', async () => {
     const deviceDir = join(tmpdir(), `claw-bridge-mac-device-test-${Date.now()}`);
     const app = createApp(config(), { appDeviceStore: new AppDeviceStore(deviceDir) });
