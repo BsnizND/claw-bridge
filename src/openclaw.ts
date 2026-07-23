@@ -243,6 +243,50 @@ function buildNativeMacTextMessage(event: NormalizedSiriEvent): string {
   return `${text}\n\n<lifeos_client_context_envelope>\n${JSON.stringify(contextEnvelope)}\n</lifeos_client_context_envelope>`;
 }
 
+function buildNativeImageMessage(event: NormalizedSiriEvent): string {
+  const item = event.shared_item;
+  const caption = item?.text?.trim() || "";
+  const contextEnvelope = {
+    schemaVersion: "lifeos_model_context.v1",
+    createdAt: event.captured_at,
+    appSurface: "ios_lifeos",
+    source: {
+      kind: "share_sheet",
+      captureId: event.request_id,
+    },
+    timezone: null,
+    localDateTime: null,
+    location: event.location
+      ? {
+          status: "present",
+          latitude: event.location.latitude,
+          longitude: event.location.longitude,
+          accuracyMeters: event.location.horizontal_accuracy ?? null,
+          altitudeMeters: event.location.altitude ?? null,
+          capturedAt: event.location.location_timestamp ?? event.captured_at,
+          ageMs:
+            event.location.location_age_seconds !== undefined
+              ? Math.round(event.location.location_age_seconds * 1000)
+              : null,
+          mapsUrl: event.location.maps_url ?? null,
+          freshness: "current",
+        }
+      : {
+          status: "unavailable",
+          reason: event.capture_receipt?.no_location_reason ?? null,
+        },
+    thingInView: null,
+    attachments: [
+      {
+        kind: "image",
+        fileName: item?.filename ?? null,
+        mimeType: item?.mime_type ?? null,
+      },
+    ],
+  };
+  return `${caption}\n\n<lifeos_client_context_envelope>\n${JSON.stringify(contextEnvelope)}\n</lifeos_client_context_envelope>`;
+}
+
 function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   const prefix = compactPrefix(config, event);
   const text = compactText(event);
@@ -262,7 +306,37 @@ function buildCompactMessage(config: BridgeConfig, event: NormalizedSiriEvent): 
 function buildOpenClawMessage(config: BridgeConfig, event: NormalizedSiriEvent): string {
   if (event.source === 'lifeos_app_voice' || event.source === 'watch_app') return buildNativeVoiceMessage(event);
   if (event.source === 'macos_app' && event.shared_item?.kind === 'text') return buildNativeMacTextMessage(event);
+  if (event.source === 'ios_share_sheet' && event.shared_item?.kind === 'image') {
+    return buildNativeImageMessage(event);
+  }
   return config.openclawMessageStyle === 'compact' ? buildCompactMessage(config, event) : buildAssistantMessage(event);
+}
+
+async function buildNativeImageAttachments(event: NormalizedSiriEvent): Promise<Array<{
+  type: 'image';
+  mimeType: string;
+  fileName: string;
+  content: string;
+}>> {
+  const item = event.shared_item;
+  if (
+    item?.kind !== 'image' ||
+    !item.file_path ||
+    !item.filename ||
+    !item.mime_type?.startsWith('image/')
+  ) {
+    return [];
+  }
+  const bytes = await readFile(item.file_path);
+  if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) {
+    throw new Error('LifeOS image attachment is empty or exceeds the 10 MB native chat limit');
+  }
+  return [{
+    type: 'image',
+    mimeType: item.mime_type,
+    fileName: item.filename,
+    content: bytes.toString('base64')
+  }];
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -760,6 +834,8 @@ async function deliverViaGateway(config: BridgeConfig, event: NormalizedSiriEven
     deliver: Boolean(config.openclawDeliverReply && !lifeOSSessionKey),
     idempotencyKey: event.request_id
   };
+  const attachments = await buildNativeImageAttachments(event);
+  if (attachments.length > 0) params.attachments = attachments;
   if (config.openclawCliThinking) params.thinking = config.openclawCliThinking;
 
   const history = await deliverViaOpenClawGateway({

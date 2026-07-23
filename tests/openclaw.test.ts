@@ -677,6 +677,115 @@ describe('OpenClaw delivery', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
+  it('delivers a shared photo through native OpenClaw image attachments', async () => {
+    const dir = join(tmpdir(), `claw-bridge-gateway-image-test-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const imagePath = join(dir, 'bucatini.jpeg');
+    await writeFile(imagePath, Buffer.from('photo bytes'));
+    const queuePath = join(dir, 'queue.jsonl');
+    const archivePath = join(dir, 'queue.archive.jsonl');
+    const identityPath = join(dir, 'device.json');
+    const authPath = join(dir, 'device-auth.json');
+    const keys = generateKeyPairSync('ed25519');
+    await writeFile(identityPath, JSON.stringify({
+      deviceId: 'test-device',
+      publicKeyPem: keys.publicKey.export({ type: 'spki', format: 'pem' }),
+      privateKeyPem: keys.privateKey.export({ type: 'pkcs8', format: 'pem' })
+    }));
+    await writeFile(authPath, JSON.stringify({
+      tokens: { operator: { token: 'paired-device-token', scopes: ['operator.read', 'operator.write'] } }
+    }));
+
+    const sent: Array<{ method: string; params: Record<string, unknown> }> = [];
+    const originalWebSocket = globalThis.WebSocket;
+    class FakeWebSocket {
+      private listeners = new Map<string, Array<(event: { data?: string }) => void>>();
+      constructor() {
+        queueMicrotask(() => this.emit('message', {
+          data: JSON.stringify({ type: 'event', event: 'connect.challenge', payload: { nonce: 'test-nonce' } })
+        }));
+      }
+      addEventListener(type: string, listener: (event: { data?: string }) => void) {
+        this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+      }
+      send(raw: string) {
+        const frame = JSON.parse(raw) as { id: string; method: string; params: Record<string, unknown> };
+        sent.push({ method: frame.method, params: frame.params });
+        const payload = frame.method === 'chat.send'
+          ? { runId: 'gateway-image-run', status: 'started' }
+          : frame.method === 'chat.history'
+              ? { messages: [{ role: 'assistant', content: 'I see the photo.' }] }
+              : { ok: true };
+        queueMicrotask(() => this.emit('message', {
+          data: JSON.stringify({ type: 'res', id: frame.id, ok: true, payload })
+        }));
+        if (frame.method === 'chat.send') {
+          queueMicrotask(() => this.emit('message', {
+            data: JSON.stringify({
+              type: 'event',
+              event: 'chat',
+              payload: { runId: 'gateway-image-run', state: 'final' }
+            })
+          }));
+        }
+      }
+      close() {}
+      private emit(type: string, event: { data?: string }) {
+        for (const listener of this.listeners.get(type) ?? []) listener(event);
+      }
+    }
+    globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
+
+    const config = {
+      openclawAdapter: 'gateway',
+      openclawCliDrainTimeoutMs: 1000,
+      openclawGatewayUrl: 'ws://127.0.0.1:18789',
+      openclawDeviceIdentityPath: identityPath,
+      openclawDeviceAuthPath: authPath,
+      assistantId: 'jay',
+      openclawSessionKey: 'agent:jay:lifeos-home:current-thread',
+      queuePath,
+      queueArchivePath: archivePath,
+      queueMaxAttempts: 3
+    } as BridgeConfig;
+    const imageEvent: NormalizedSiriEvent = {
+      ...shareEvent('Shared file from iOS share sheet: bucatini.jpeg'),
+      assistant: 'jay',
+      session_key: 'agent:jay:lifeos-home:current-thread',
+      shared_item: {
+        kind: 'image',
+        filename: 'bucatini.jpeg',
+        mime_type: 'image/jpeg',
+        file_path: imagePath,
+        size_bytes: 11
+      }
+    };
+
+    try {
+      await acceptForOpenClaw(config, imageEvent);
+      expect(await drainOpenClawQueue(config)).toEqual({
+        delivered: 1,
+        failed: 0,
+        pending: 0,
+        archived: 1
+      });
+    } finally {
+      globalThis.WebSocket = originalWebSocket;
+    }
+    const chatRequest = sent.find((item) => item.method === 'chat.send');
+    expect(chatRequest?.params.message).not.toContain('Sent via iOS share sheet');
+    expect(chatRequest?.params.message).not.toContain('File path:');
+    expect(chatRequest?.params.message).not.toContain('Location:');
+    expect(chatRequest?.params.message).toContain('<lifeos_client_context_envelope>');
+    expect(chatRequest?.params.attachments).toEqual([{
+      type: 'image',
+      mimeType: 'image/jpeg',
+      fileName: 'bucatini.jpeg',
+      content: Buffer.from('photo bytes').toString('base64')
+    }]);
+    await rm(dir, { recursive: true, force: true });
+  });
+
   it('delivers a LifeOS capture to its captured conversation session', async () => {
     const dir = join(tmpdir(), `claw-bridge-lifeos-session-test-${Date.now()}`);
     await mkdir(dir, { recursive: true });
