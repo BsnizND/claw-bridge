@@ -166,7 +166,8 @@ describe('app routes', () => {
       testConfig,
       expect.objectContaining({ id: 'ios-notification-test-device', platform: 'ios' }),
       'agent:jay:lifeos-home:notification-test',
-      'Hello from Jay.'
+      'Hello from Jay.',
+      undefined
     );
   });
 
@@ -211,7 +212,8 @@ describe('app routes', () => {
       testConfig,
       expect.objectContaining({ id: 'ios-current-notification-device' }),
       'agent:jay:lifeos-home:most-recent-conversation',
-      'A timely source-backed update.'
+      'A timely source-backed update.',
+      undefined
     );
   });
 
@@ -372,7 +374,8 @@ describe('app routes', () => {
       testConfig,
       expect.objectContaining({ id: 'ios-notification-card-test-device' }),
       'agent:jay:lifeos-home:notification-test',
-      'It will be partly cloudy and 83° today.'
+      'It will be partly cloudy and 83° today.',
+      'card-message-1'
     );
     expect(injectAssistantMessage).toHaveBeenCalledWith(
       testConfig,

@@ -1,6 +1,6 @@
 import { connect } from 'node:http2';
 import { readFile } from 'node:fs/promises';
-import { randomUUID, sign } from 'node:crypto';
+import { createHash, randomUUID, sign } from 'node:crypto';
 import type { AppDeviceRegistration, AppResponseRecord, BridgeConfig } from './types.js';
 import { buildLifeOSNotificationPreview } from './notification-preview.js';
 
@@ -16,6 +16,7 @@ export interface LifeOSNotificationRoute {
   schema: 'lifeos_notification_route.v1';
   route_id: string;
   session_key: string;
+  message_id?: string;
 }
 
 function base64url(value: Buffer | string): string {
@@ -63,13 +64,22 @@ export async function sendLifeOSReplyNotification(
   config: BridgeConfig,
   device: AppDeviceRegistration,
   sessionKey: string,
-  replyText: string
+  replyText: string,
+  messageId?: string
 ): Promise<ApnsSendResult> {
-  const routeId = randomUUID();
+  const normalizedMessageId = messageId?.trim() || undefined;
+  const routeId = normalizedMessageId
+    ? deterministicNotificationUuid(sessionKey, normalizedMessageId)
+    : randomUUID();
   const result = await sendNotification(
     config,
     device,
-    buildLifeOSReplyNotificationPayload(sessionKey, replyText, routeId),
+    buildLifeOSReplyNotificationPayload(
+      sessionKey,
+      replyText,
+      routeId,
+      normalizedMessageId
+    ),
     routeId
   );
   return { ...result, routeId };
@@ -78,13 +88,15 @@ export async function sendLifeOSReplyNotification(
 export function buildLifeOSReplyNotificationPayload(
   sessionKey: string,
   replyText: string,
-  routeId: string
+  routeId: string,
+  messageId?: string
 ): Record<string, unknown> {
   const body = buildLifeOSNotificationPreview(replyText);
   const route: LifeOSNotificationRoute = {
     schema: 'lifeos_notification_route.v1',
     route_id: routeId,
-    session_key: sessionKey
+    session_key: sessionKey,
+    ...(messageId ? { message_id: messageId } : {})
   };
   return {
     aps: {
@@ -99,6 +111,32 @@ export function buildLifeOSReplyNotificationPayload(
     // exact conversation while the versioned envelope rolls out.
     session_key: sessionKey
   };
+}
+
+export function deterministicNotificationUuid(
+  sessionKey: string,
+  messageId: string
+): string {
+  const hex = createHash('sha256')
+    .update('lifeos-notification-route-v1\0')
+    .update(sessionKey)
+    .update('\0')
+    .update(messageId)
+    .digest('hex')
+    .slice(0, 32)
+    .split('');
+  // APNs expects the apns-id header to be a UUID. Mark this stable digest as a
+  // version-5, RFC-4122 variant UUID without changing its dedupe semantics.
+  hex[12] = '5';
+  hex[16] = ((Number.parseInt(hex[16] ?? '0', 16) & 0x3) | 0x8).toString(16);
+  const value = hex.join('');
+  return [
+    value.slice(0, 8),
+    value.slice(8, 12),
+    value.slice(12, 16),
+    value.slice(16, 20),
+    value.slice(20, 32)
+  ].join('-');
 }
 
 async function sendNotification(

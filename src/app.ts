@@ -41,7 +41,8 @@ export interface AppDependencies {
     config: BridgeConfig,
     device: AppDeviceRegistration,
     sessionKey: string,
-    replyText: string
+    replyText: string,
+    messageId?: string
   ) => Promise<ApnsSendResult>;
   resolveMostRecentLifeOSHomeSessionKey?: (
     config: BridgeConfig,
@@ -389,6 +390,7 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     const body = req.body as Record<string, unknown>;
     const rawReplyText = queryValue(body.reply_text);
     const rawSessionTarget = queryValue(body.session_key);
+    const suppliedMessageId = queryValue(body.message_id);
     if (!rawSessionTarget || !rawReplyText) {
       res.status(400).json({
         ok: false,
@@ -456,8 +458,17 @@ export function createApp(config: BridgeConfig, deps: AppDependencies = {}) {
     }
 
     const devices = await deviceStore.list('ios');
+    const notificationMessageId = messageId ?? suppliedMessageId;
     const results = await Promise.allSettled(
-      devices.map((device) => sendReplyNotification(config, device, sessionKey, replyText))
+      devices.map((device) =>
+        sendReplyNotification(
+          config,
+          device,
+          sessionKey,
+          replyText,
+          notificationMessageId
+        )
+      )
     );
     const sent = results.filter(
       (result) => result.status === 'fulfilled' && result.value.ok
